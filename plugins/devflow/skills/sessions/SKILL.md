@@ -39,7 +39,8 @@ work.
    Add `--work "<workId>"` when only one work item should be shown. In MCP
    hosts, use `devflow.sessions_list` with the same `repo` argument and optional
    `work` or `workItemId`. For maintainer-facing terminal checks, omit `--json`
-   to render a short text summary.
+   to render a short text summary with session ids, changed-file counts, or
+   manual note summaries.
 9. When useful work happened outside a supported adapter, record it with
    `devflow sessions note --repo "<repo>" --work "<workId>" --agent manual --summary "<text>" --json`.
    In MCP hosts, use `devflow.sessions_note` with `work`, `agent`, and `summary`.
