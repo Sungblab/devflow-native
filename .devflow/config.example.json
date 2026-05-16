@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "projectName": "solo-devflow-os",
+  "defaultProfile": "standard",
+  "defaultPlatform": "windows-powershell",
+  "docsRouter": "docs/README.md",
+  "skillsPath": "skills",
+  "agentAdapters": ["codex", "claude-code", "gemini-cli", "generic-shell"],
+  "platformAdapters": ["windows-powershell", "wsl-linux", "linux", "macos"],
+  "gates": {
+    "docs": {
+      "description": "Read docs router and ensure key links exist",
+      "command": "devflow doctor docs"
+    },
+    "status": {
+      "description": "Inspect git, work items, gates, and latest handoffs",
+      "command": "devflow status"
+    }
+  }
+}

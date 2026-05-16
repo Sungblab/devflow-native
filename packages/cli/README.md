@@ -1,0 +1,53 @@
+# `@devflow/cli`
+
+`packages/cli` owns the `devflow` command surface. It should stay thin:
+parse arguments, call core services, render text or JSON, and return clear exit
+codes.
+
+## Initial File Boundary
+
+```text
+packages/cli/
+  src/
+    index.ts
+    commands/
+      init.ts
+      status.ts
+      split.ts
+      finish.ts
+      prompt-next.ts
+      doctor.ts
+    renderers/
+      json.ts
+      text.ts
+      markdown.ts
+    io/
+      cwd.ts
+      config.ts
+      files.ts
+    errors.ts
+  test/
+    commands/
+    fixtures/
+```
+
+## Command Rules
+
+- Every state-reading command supports `--json`.
+- Commands default to the current working directory unless `--repo <path>` is
+  provided.
+- Windows PowerShell 7 is a first-class shell target, not a fallback.
+- Shell command output should be rendered from platform adapter descriptors,
+  not from hard-coded inline strings.
+- CLI failures should distinguish contract errors, missing dependencies,
+  failing gates, and unexpected internal errors.
+
+## Initial Commands
+
+- `devflow status`
+- `devflow finish`
+- `devflow doctor`
+- `devflow prompt next`
+
+`devflow split` and `devflow init` can reuse the same rendering and config
+infrastructure once the MVP loop is stable.

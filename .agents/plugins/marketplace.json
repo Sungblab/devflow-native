@@ -1,0 +1,20 @@
+{
+  "name": "solo-devflow-os-local",
+  "interface": {
+    "displayName": "Solo Devflow OS Local"
+  },
+  "plugins": [
+    {
+      "name": "devflow",
+      "source": {
+        "source": "local",
+        "path": "./plugins/devflow"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

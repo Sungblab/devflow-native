@@ -1,0 +1,34 @@
+{
+  "mistakes": [
+    {
+      "id": "shell-path-style-mismatch",
+      "symptom": "Agent used command syntax or path conventions from the wrong shell family.",
+      "correction": "Detect the active shell and render commands for that shell before execution.",
+      "appliesTo": ["platform-adapter", "command-rendering"]
+    },
+    {
+      "id": "shell-file-io-friction",
+      "symptom": "Agent repeatedly failed to read or search files due to quoting, encoding, or path handling assumptions.",
+      "correction": "Use the platform adapter's preferred read and search commands instead of assuming portable shell behavior.",
+      "appliesTo": ["platform-adapter", "file-io"]
+    },
+    {
+      "id": "transport-tool-mismatch",
+      "symptom": "Agent used an integration surface that did not match the maintainer's expected workflow.",
+      "correction": "Prefer the configured local tool or adapter for the operation; use connector tools only when the local path is unavailable or explicitly requested.",
+      "appliesTo": ["agent-adapter", "workflow-policy"]
+    },
+    {
+      "id": "github-pr-transport-preference",
+      "symptom": "Agent picked the wrong GitHub transport for PR create/view/check/comment operations.",
+      "correction": "Follow the repo's configured GitHub transport preference, such as local gh CLI first or connector-first when explicitly configured.",
+      "appliesTo": ["github", "pr-workflow"]
+    },
+    {
+      "id": "framework-major-version-drift",
+      "symptom": "Agent used configuration or API patterns from an older major version of a framework or tool.",
+      "correction": "Before editing framework configuration, inspect installed package versions and current primary docs; do not assume older major-version setup still applies.",
+      "appliesTo": ["tooling-version-drift", "framework-config"]
+    }
+  ]
+}
