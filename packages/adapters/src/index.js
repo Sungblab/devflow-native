@@ -1,3 +1,6 @@
+import { readdir, stat } from "node:fs/promises";
+import { join } from "node:path";
+
 export function discoverCodexSessions(input = {}) {
   const repoPath = input.repoPath ?? process.cwd();
   const records = input.records ?? [];
@@ -7,6 +10,43 @@ export function discoverCodexSessions(input = {}) {
     adapter: "codex",
     sessions: records.map((record) => normalizeCodexRecord(record, repoPath)),
     warnings: [],
+  };
+}
+
+export async function findCodexSessionFiles(input = {}) {
+  const codexHome = input.codexHome;
+  const limit = input.limit ?? 200;
+  const warnings = [];
+
+  if (!codexHome) {
+    return {
+      schemaVersion: "0.1",
+      adapter: "codex",
+      codexHome: null,
+      files: [],
+      warnings: ["codexHome is required for Codex session file discovery."],
+    };
+  }
+
+  const sessionsRoot = join(codexHome, "sessions");
+  const files = [];
+
+  try {
+    await collectJsonlFiles(sessionsRoot, files, limit);
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      warnings.push("Codex sessions directory was not found.");
+    } else {
+      throw error;
+    }
+  }
+
+  return {
+    schemaVersion: "0.1",
+    adapter: "codex",
+    codexHome,
+    files,
+    warnings,
   };
 }
 
@@ -83,4 +123,38 @@ function samePath(left, right) {
 
 function normalizePath(value) {
   return String(value).replaceAll("\\", "/").replace(/\/+$/u, "").toLowerCase();
+}
+
+async function collectJsonlFiles(directory, files, limit) {
+  if (files.length >= limit) {
+    return;
+  }
+
+  const entries = await readdir(directory, { withFileTypes: true });
+
+  for (const entry of entries) {
+    if (files.length >= limit) {
+      return;
+    }
+
+    const fullPath = join(directory, entry.name);
+
+    if (entry.isDirectory()) {
+      await collectJsonlFiles(fullPath, files, limit);
+      continue;
+    }
+
+    if (!entry.isFile() || !entry.name.endsWith(".jsonl")) {
+      continue;
+    }
+
+    const metadata = await stat(fullPath);
+    files.push({
+      path: fullPath,
+      kind: "session-jsonl",
+      sourceKind: "local-history",
+      sizeBytes: metadata.size,
+      modifiedAt: metadata.mtime.toISOString(),
+    });
+  }
 }
