@@ -23,6 +23,7 @@ This is the documentation router for Solo Devflow OS.
 | Repo-local Codex/Claude plugin next skill | [../plugins/devflow/skills/next/SKILL.md](../plugins/devflow/skills/next/SKILL.md) |
 | Repo-local Codex/Claude plugin explain skill | [../plugins/devflow/skills/explain/SKILL.md](../plugins/devflow/skills/explain/SKILL.md) |
 | Repo-local Codex/Claude plugin rewrite skill | [../plugins/devflow/skills/rewrite/SKILL.md](../plugins/devflow/skills/rewrite/SKILL.md) |
+| Repo-local Codex/Claude plugin sessions skill | [../plugins/devflow/skills/sessions/SKILL.md](../plugins/devflow/skills/sessions/SKILL.md) |
 | Repo-local Codex plugin finish skill | [../plugins/devflow/skills/finish/SKILL.md](../plugins/devflow/skills/finish/SKILL.md) |
 
 ## Core Terms
