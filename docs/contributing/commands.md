@@ -510,6 +510,7 @@ Example:
 
 ```powershell
 devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --json
+devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --work phase-6-session-import --json
 ```
 
 Outputs:
@@ -520,7 +521,8 @@ Outputs:
 - warning entries from the local state reader
 
 This command does not read Codex, Claude, or Gemini history. It only renders
-links already recorded in `.devflow/state/events.jsonl`.
+links already recorded in `.devflow/state/events.jsonl`. Use `--work <id>` to
+limit the list to one work item.
 
 ## `devflow sessions note`
 

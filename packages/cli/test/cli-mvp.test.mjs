@@ -559,6 +559,51 @@ test("CLI sessions note records a manual session and lists it", async () => {
   assert.match(parsed.sessions[0].summary, /Reviewed local session context/);
 });
 
+test("CLI sessions list filters by work item", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "note",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-6-session-import",
+    "--summary",
+    "Session import note.",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "note",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-7-beginner-guidance",
+    "--summary",
+    "Beginner guidance note.",
+    "--json",
+  ]);
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "list",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-6-session-import",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.count, 1);
+  assert.equal(parsed.filters.workItemId, "phase-6-session-import");
+  assert.equal(parsed.sessions[0].workItemId, "phase-6-session-import");
+});
+
 async function createTempGitRepo() {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-cli-"));
   await execFileAsync("git", ["init"], { cwd: repoPath });

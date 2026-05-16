@@ -294,6 +294,7 @@ async function renderSessionList(argsForCommand) {
       absolutePath: repoPath,
     },
     state,
+    workItemId: options.work,
   });
 
   render(summary, options.json);

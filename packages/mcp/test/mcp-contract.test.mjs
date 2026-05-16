@@ -365,3 +365,26 @@ test("MCP sessions_note records a manual session note", async () => {
   assert.equal(list.structuredContent.sessions[0].kind, "manual-note");
   assert.match(list.structuredContent.sessions[0].summary, /Reviewed local session context/);
 });
+
+test("MCP sessions_list filters by work item", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-session-list-filter-"));
+  await callTool("devflow.sessions_note", {
+    repo: repoPath,
+    work: "phase-6-session-import",
+    summary: "Session import note.",
+  });
+  await callTool("devflow.sessions_note", {
+    repo: repoPath,
+    work: "phase-7-beginner-guidance",
+    summary: "Beginner guidance note.",
+  });
+
+  const result = await callTool("devflow.sessions_list", {
+    repo: repoPath,
+    work: "phase-6-session-import",
+  });
+
+  assert.equal(result.structuredContent.count, 1);
+  assert.equal(result.structuredContent.filters.workItemId, "phase-6-session-import");
+  assert.equal(result.structuredContent.sessions[0].workItemId, "phase-6-session-import");
+});

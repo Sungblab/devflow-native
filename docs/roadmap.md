@@ -169,7 +169,9 @@ links return the existing event without appending another JSONL line. Attached
 session links are visible through `devflow sessions list --json` and MCP
 `devflow.sessions_list`. Manual or external session context can be recorded via
 `devflow sessions note --work <id> --summary <text> --json` or MCP
-`devflow.sessions_note`, and appears in the same session list.
+`devflow.sessions_note`, and appears in the same session list. Session list
+supports work item filtering through CLI `--work <id>` and MCP `work` or
+`workItemId`.
 
 ## Phase 7: Beginner Guidance Profile
 

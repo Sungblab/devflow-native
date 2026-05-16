@@ -55,7 +55,7 @@ const tools = [
   },
   {
     name: "devflow.sessions_list",
-    description: "List attached sessions from local Devflow state.",
+    description: "List attached sessions from local Devflow state, optionally filtered by work item.",
   },
   {
     name: "devflow.sessions_note",
@@ -281,6 +281,7 @@ async function callSessionList(args) {
       absolutePath: repoPath,
     },
     state,
+    workItemId: args.workItemId ?? args.work,
   });
 
   return toolResult(summary, `devflow sessions_list: ${summary.count} sessions`);

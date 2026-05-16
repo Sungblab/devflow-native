@@ -192,13 +192,20 @@ export function createSessionAttachPlan(input = {}) {
 
 export function createSessionListSummary(input = {}) {
   const state = input.state ?? emptyDevflowState();
-  const sessions = input.sessions ?? state.sessions?.attached ?? [];
+  const workItemId = input.workItemId ?? null;
+  const allSessions = input.sessions ?? state.sessions?.attached ?? [];
+  const sessions = workItemId
+    ? allSessions.filter((session) => session.workItemId === workItemId)
+    : allSessions;
 
   return {
     schemaVersion: "0.1",
     command: "session_list",
     repo: {
       absolutePath: input.repo?.absolutePath ?? process.cwd(),
+    },
+    filters: {
+      workItemId,
     },
     sessions,
     count: sessions.length,
