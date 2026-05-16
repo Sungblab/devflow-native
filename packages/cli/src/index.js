@@ -288,6 +288,7 @@ async function renderSessionAttach(argsForCommand) {
 async function renderSessionList(argsForCommand) {
   const options = parseOptions(argsForCommand);
   const repoPath = options.repo ?? cwd();
+  const limit = parsePositiveIntegerOption(options.limit, "sessions list requires --limit <positive-integer>.");
   const state = await readDevflowState(repoPath);
   const summary = createSessionListSummary({
     repo: {
@@ -295,7 +296,7 @@ async function renderSessionList(argsForCommand) {
     },
     state,
     workItemId: options.work,
-    limit: options.limit,
+    limit,
   });
 
   if (options.json) {
@@ -430,6 +431,19 @@ function renderSessionListText(summary) {
 function extractNextTask(prompt) {
   const match = prompt.match(/^Next task:\s*(.+)$/m);
   return match?.[1] ?? "Inspect devflow status and choose the next slice.";
+}
+
+function parsePositiveIntegerOption(value, message) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(message);
+  }
+
+  return parsed;
 }
 
 function parseOptions(rawArgs) {
