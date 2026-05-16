@@ -8,6 +8,7 @@
   "license": "MIT",
   "keywords": ["devflow", "agents", "workflow", "handoff", "superpowers"],
   "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Devflow",
     "shortDescription": "Project truth, handoffs, gates, and local execution rules for agent workflows.",

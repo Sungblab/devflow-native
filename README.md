@@ -59,6 +59,9 @@ The MCP package exposes the same core contracts through `devflow.doctor`,
 `devflow.finish`, and `devflow.next_prompt` handlers, plus a minimal stdio
 JSON-RPC transport for host integration experiments.
 
+The Codex plugin manifest points to `plugins/devflow/.mcp.json`, which launches
+the local stdio transport with `node packages/mcp/src/stdio.js`.
+
 ## Initial Positioning
 
 Solo Devflow OS should feel closer to a black box recorder and project control

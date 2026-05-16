@@ -37,3 +37,21 @@ Example request:
 
 The transport is intentionally small. Host-specific config templates and richer
 protocol features are follow-up slices.
+
+## Codex Plugin Config
+
+The repo-local Codex plugin at `plugins/devflow` includes `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "devflow": {
+      "command": "node",
+      "args": ["packages/mcp/src/stdio.js"]
+    }
+  }
+}
+```
+
+This keeps the plugin and direct MCP integration pointed at the same local
+transport.
