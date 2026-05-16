@@ -124,6 +124,39 @@ test("CLI status simple summary shows latest session observed time", async () =>
   assert.match(stdout, /Latest session time: 2026-05-16T11:00:00.000Z/);
 });
 
+test("CLI status simple summary shows latest session agent and kind", async () => {
+  const repoPath = await createTempGitRepo();
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await writeFile(
+    join(stateDir, "events.jsonl"),
+    `${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-16T11:00:00.000Z",
+      payload: {
+        sessionId: "codex-note",
+        workItemId: "phase-6-session-import",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "Imported Codex context.",
+      },
+    })}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--simple",
+  ]);
+
+  assert.match(stdout, /Latest session agent: Codex/);
+  assert.match(stdout, /Latest session kind: manual-note/);
+});
+
 test("CLI prompt next renders a copy-paste prompt", async () => {
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",
