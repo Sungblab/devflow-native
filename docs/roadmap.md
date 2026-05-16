@@ -101,6 +101,7 @@ Build:
 - `devflow.rewrite_prompt` MCP tool
 - `devflow.sessions_codex` MCP tool
 - `devflow.sessions_attach_plan` MCP tool
+- `devflow.sessions_attach` MCP tool
 - Claude Code plugin draft with slash commands
 - Codex MCP config template
 - Gemini MCP config template
@@ -118,7 +119,8 @@ Current implementation note: `packages/mcp` has testable handler functions for
 `devflow.status`, `devflow.split`, `devflow.explain_term`, `devflow.doctor`,
 `devflow.finish`, `devflow.record_gate`, `devflow.next_prompt`, and
 `devflow.rewrite_prompt`, plus adapter-backed `devflow.sessions_codex` and
-dry-run `devflow.sessions_attach_plan`, and a
+dry-run `devflow.sessions_attach_plan`, confirmed-write
+`devflow.sessions_attach`, and a
 minimal stdio JSON-RPC transport. The CLI also has thin `devflow split --json`
 and `devflow explain` renderers, plus `devflow prompt rewrite` for converting
 vague maintainer intent into agent-ready requirements. Host-specific Codex and
@@ -158,7 +160,8 @@ CLI exposes this dry-run planner as `devflow sessions attach-plan --input
 <json-file> --json`; MCP exposes the same dry-run planner as
 `devflow.sessions_attach_plan`. The CLI also exposes
 `devflow sessions attach --input <json-file> --session <id> --confirm --json`
-to append an approved `session.attached` event to local state.
+to append an approved `session.attached` event to local state; MCP exposes the
+same confirmed write as `devflow.sessions_attach`.
 
 ## Phase 7: Beginner Guidance Profile
 

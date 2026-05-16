@@ -19,6 +19,7 @@ import {
   readMistakeMemory,
   recordFinishEvent,
   recordGateEvent,
+  recordSessionAttachedEvent,
 } from "../../core/src/index.js";
 
 const tools = [
@@ -45,6 +46,10 @@ const tools = [
   {
     name: "devflow.sessions_attach_plan",
     description: "Plan session-to-work-item links without writing Devflow state.",
+  },
+  {
+    name: "devflow.sessions_attach",
+    description: "Write a confirmed session-to-work-item link into local Devflow state.",
   },
   {
     name: "devflow.doctor",
@@ -91,6 +96,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.sessions_attach_plan") {
     return callSessionAttachPlan(args);
+  }
+
+  if (name === "devflow.sessions_attach") {
+    return callSessionAttach(args);
   }
 
   if (name === "devflow.doctor") {
@@ -222,6 +231,28 @@ function callSessionAttachPlan(args) {
   });
 
   return toolResult(plan, `devflow sessions_attach_plan: ${plan.proposals.length} proposals`);
+}
+
+async function callSessionAttach(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const proposal = args.proposal;
+
+  if (!args.confirm) {
+    throw new Error("devflow.sessions_attach requires confirm: true.");
+  }
+
+  const event = await recordSessionAttachedEvent(repoPath, proposal, {
+    confirmed: true,
+  });
+
+  return toolResult(
+    {
+      schemaVersion: "0.1",
+      command: "session_attach",
+      event,
+    },
+    `devflow sessions_attach: ${event.payload.sessionId}`,
+  );
 }
 
 async function callDoctor(args) {

@@ -30,7 +30,11 @@ work.
 6. If an MCP host is already configured, the equivalent attach planner is
    `devflow.sessions_attach_plan` with explicit `workItems`, `sessions`, and
    optional `warnings` arguments.
-7. Treat low-confidence sessions as visible evidence only. Attach proposals must
+7. To persist an approved proposal, use
+   `devflow sessions attach --input "<jsonFile>" --session "<sessionId>" --confirm --json`.
+   In MCP hosts, use `devflow.sessions_attach` with `confirm: true` and the
+   selected `proposal`.
+8. Treat low-confidence sessions as visible evidence only. Attach proposals must
    remain confirmation-gated unless the planner marks them attach-ready and the
    maintainer accepts the link.
 
@@ -43,6 +47,7 @@ Return:
 - source paths and warnings
 - clear note that the probe is read-only and explicit opt-in
 - dry-run attach proposals when work item inputs are available
+- persisted `session.attached` event only when an approved proposal is confirmed
 - recommended next action, such as inspect one session, accept an attach-ready
   proposal, request confirmation for a low-confidence proposal, or ignore stale
   records

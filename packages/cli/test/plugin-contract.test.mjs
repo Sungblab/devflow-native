@@ -72,6 +72,8 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.match(sessionsSkill, /devflow sessions codex/);
   assert.match(sessionsSkill, /devflow sessions attach-plan/);
   assert.match(sessionsSkill, /devflow\.sessions_attach_plan/);
+  assert.match(sessionsSkill, /devflow sessions attach/);
+  assert.match(sessionsSkill, /devflow\.sessions_attach/);
   assert.match(sessionsSkill, /--codex-home/);
   assert.match(sessionsSkill, /read-only/);
   assert.match(sessionsSkill, /confirmation-gated/);
