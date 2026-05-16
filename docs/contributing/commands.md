@@ -164,8 +164,8 @@ Inputs:
 Outputs:
 
 - branch and dirty files
-- attached/manual session count, latest session work item, and latest session
-  observed time in `--simple` output
+- attached/manual session count, latest session work item, observed time, agent,
+  and kind in `--simple` output
 - active work items
 - latest handoffs from `.devflow/state/events.jsonl`
 - attached/manual session evidence from `.devflow/state/events.jsonl`
