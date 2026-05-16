@@ -142,7 +142,7 @@ Plugin commands should call Devflow CLI or MCP tools. They should not fork a
 separate project model.
 
 The repo-local plugin currently ships shared `start`, `split`, `next`,
-`explain`, and `finish` skills under `plugins/devflow/skills/`. Claude Code
+`explain`, `rewrite`, and `finish` skills under `plugins/devflow/skills/`. Claude Code
 exposes plugin skills under the plugin namespace, so these are the first
 slash-like daily workflow surface.
 
