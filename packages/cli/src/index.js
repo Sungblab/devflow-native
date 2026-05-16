@@ -390,6 +390,7 @@ function renderSimpleStatus(summary) {
     `Changed files: ${changedCount}`,
     `Sessions: ${summary.sessions.attached.length}`,
     `Latest session: ${latestSession?.workItemId ?? "none"}`,
+    `Latest session time: ${latestSession?.observedAt ?? "none"}`,
     `Latest handoff: ${handoff ? handoff.workItemId : "none"}`,
     `Next check: ${nextGate ? nextGate.command : "none"}`,
     `Next step: ${summary.recommendations[0]?.message ?? "Pick the next crisp work item."}`,

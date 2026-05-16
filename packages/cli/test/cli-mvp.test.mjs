@@ -80,6 +80,50 @@ test("CLI status simple summary counts attached sessions", async () => {
   assert.match(stdout, /Latest session: phase-7-beginner-guidance/);
 });
 
+test("CLI status simple summary shows latest session observed time", async () => {
+  const repoPath = await createTempGitRepo();
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await writeFile(
+    join(stateDir, "events.jsonl"),
+    `${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-16T10:00:00.000Z",
+      payload: {
+        sessionId: "old-note",
+        workItemId: "phase-6-session-import",
+        agent: "manual",
+        kind: "manual-note",
+        summary: "Old note.",
+      },
+    })}\n${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-16T11:00:00.000Z",
+      payload: {
+        sessionId: "new-note",
+        workItemId: "phase-7-beginner-guidance",
+        agent: "manual",
+        kind: "manual-note",
+        summary: "New note.",
+      },
+    })}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--simple",
+  ]);
+
+  assert.match(stdout, /Latest session: phase-7-beginner-guidance/);
+  assert.match(stdout, /Latest session time: 2026-05-16T11:00:00.000Z/);
+});
+
 test("CLI prompt next renders a copy-paste prompt", async () => {
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",
