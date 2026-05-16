@@ -446,6 +446,12 @@ Example:
 devflow finish --work worker-static-quality --profile standard --platform powershell --json
 ```
 
+Guided renderer:
+
+```powershell
+devflow finish --work worker-static-quality --guided
+```
+
 Inputs:
 
 - work item
