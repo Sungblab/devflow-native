@@ -6,10 +6,18 @@ export function createStatusSummary(input = {}) {
   const state = input.state ?? emptyDevflowState();
   const gates = mergeGateEvidence(input.gates ?? [], state.gates.latestById);
   const repo = input.repo ?? {};
+  const workItemId = input.workItemId ?? input.filters?.workItemId ?? null;
+  const attachedSessions = filterSessionsByWorkItem(
+    input.sessions?.attached ?? state.sessions?.attached ?? [],
+    workItemId,
+  );
 
   return {
     schemaVersion: "0.1",
     command: "status",
+    filters: {
+      workItemId,
+    },
     repo: {
       absolutePath: repo.absolutePath ?? process.cwd(),
       root: repo.root ?? ".",
@@ -38,7 +46,7 @@ export function createStatusSummary(input = {}) {
     },
     sessions: {
       discovered: input.sessions?.discovered ?? state.sessions?.discovered ?? [],
-      attached: input.sessions?.attached ?? state.sessions?.attached ?? [],
+      attached: attachedSessions,
     },
     gates,
     handoffs: {
@@ -288,6 +296,14 @@ function sortSessionsByObservedAt(sessions, sort) {
       return (leftTime - rightTime) * direction;
     })
     .map(({ session }) => session);
+}
+
+function filterSessionsByWorkItem(sessions, workItemId) {
+  if (!workItemId) {
+    return sessions;
+  }
+
+  return sessions.filter((session) => session.workItemId === workItemId);
 }
 
 function normalizeSessionSort(value) {

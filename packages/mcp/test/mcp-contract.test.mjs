@@ -48,6 +48,32 @@ test("MCP status returns local repo state and latest handoff evidence", async ()
   assert.match(result.content[0].text, /status/);
 });
 
+test("MCP status can focus attached sessions by work item", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-status-work-"));
+  await callTool("devflow.sessions_note", {
+    repo: repoPath,
+    work: "phase-6-session-import",
+    agent: "Codex",
+    summary: "Session import note.",
+  });
+  await callTool("devflow.sessions_note", {
+    repo: repoPath,
+    work: "phase-7-beginner-guidance",
+    agent: "Codex",
+    summary: "Beginner guidance note.",
+  });
+
+  const result = await callTool("devflow.status", {
+    repo: repoPath,
+    work: "phase-6-session-import",
+  });
+
+  assert.equal(result.structuredContent.filters.workItemId, "phase-6-session-import");
+  assert.equal(result.structuredContent.sessions.attached.length, 1);
+  assert.equal(result.structuredContent.sessions.attached[0].workItemId, "phase-6-session-import");
+  assert.match(result.structuredContent.sessions.attached[0].summary, /Session import note/);
+});
+
 test("MCP doctor returns the same structured execution contract", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-doctor-"));
   const result = await callTool("devflow.doctor", {
