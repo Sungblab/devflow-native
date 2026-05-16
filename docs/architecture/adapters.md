@@ -207,10 +207,12 @@ Initial emitted events:
 Current implementation starts with read-only helpers in
 `packages/adapters/src/index.js`. `findCodexSessionFiles` locates `.jsonl`
 candidates under an explicit `codexHome/sessions` directory and returns file
-metadata only. `discoverCodexSessions` accepts Codex-like session records and a
-target repo path, then returns normalized discovery records with confidence,
-signals, source paths, and warnings. Parsing `%USERPROFILE%\.codex` history
-contents is a later slice.
+metadata only. `parseCodexSessionJsonl` extracts safe metadata from
+caller-provided JSONL content without auto-reading private histories.
+`discoverCodexSessions` accepts Codex-like session records and a target repo
+path, then returns normalized discovery records with confidence, signals,
+source paths, and warnings. Automatic import from `%USERPROFILE%\.codex`
+history contents is a later slice.
 
 ### Claude Code
 

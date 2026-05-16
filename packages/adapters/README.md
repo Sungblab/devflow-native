@@ -38,11 +38,15 @@ Current implementation starts with `src/index.js` and read-only Codex helpers:
 
 - `findCodexSessionFiles` locates `.jsonl` candidates under an explicit
   `codexHome/sessions` directory and returns file metadata only.
+- `parseCodexSessionJsonl` extracts safe metadata from caller-provided JSONL
+  content: session id, cwd, timestamps, tool-call signals, file-edit signals,
+  changed files, and parser warnings.
 - `discoverCodexSessions` maps Codex-like session metadata supplied by callers
   into normalized `session.discovered` events, confidence levels, source paths,
   and warnings.
 
-These helpers do not parse private history contents or write Devflow state yet.
+These helpers do not read private history contents by default or write Devflow
+state yet.
 
 ## Agent Adapter Rules
 

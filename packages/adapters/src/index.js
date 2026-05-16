@@ -50,6 +50,36 @@ export async function findCodexSessionFiles(input = {}) {
   };
 }
 
+export function parseCodexSessionJsonl(content, input = {}) {
+  const record = {
+    id: input.id ?? null,
+    cwd: input.cwd ?? null,
+    startedAt: null,
+    updatedAt: null,
+    sourcePath: input.sourcePath ?? null,
+    sourceKind: "local-history",
+    hasToolCalls: false,
+    hasFileEdits: false,
+    changedFiles: [],
+    warnings: [],
+  };
+  const lines = String(content ?? "").split(/\r?\n/u).filter((line) => line.trim().length > 0);
+
+  lines.forEach((line, index) => {
+    let event;
+    try {
+      event = JSON.parse(line);
+    } catch {
+      record.warnings.push(`Invalid JSONL at line ${index + 1}; skipped.`);
+      return;
+    }
+
+    applyCodexJsonlEvent(record, event);
+  });
+
+  return record;
+}
+
 function normalizeCodexRecord(record, repoPath) {
   const project = normalizeProject(record.cwd, repoPath);
   const changedFiles = record.changedFiles ?? [];
@@ -123,6 +153,40 @@ function samePath(left, right) {
 
 function normalizePath(value) {
   return String(value).replaceAll("\\", "/").replace(/\/+$/u, "").toLowerCase();
+}
+
+function applyCodexJsonlEvent(record, event) {
+  const payload = event.payload ?? event;
+  const timestamp = payload.timestamp ?? event.timestamp ?? payload.createdAt ?? event.createdAt;
+
+  if (!record.id) {
+    record.id = payload.id ?? payload.sessionId ?? event.id ?? event.sessionId ?? null;
+  }
+
+  if (!record.cwd) {
+    record.cwd = payload.cwd ?? payload.currentWorkingDirectory ?? event.cwd ?? null;
+  }
+
+  if (timestamp) {
+    record.startedAt ??= timestamp;
+    record.updatedAt = timestamp;
+  }
+
+  const toolName = payload.name ?? payload.toolName ?? event.name ?? event.toolName;
+  const payloadType = payload.type ?? event.type;
+  if (payloadType === "function_call" || toolName) {
+    record.hasToolCalls = true;
+  }
+
+  if (toolName === "apply_patch" || toolName === "shell_command" || payloadType === "file_edit") {
+    record.hasFileEdits = record.hasFileEdits || toolName === "apply_patch" || payloadType === "file_edit";
+  }
+
+  const changedFiles = payload.changedFiles ?? event.changedFiles ?? [];
+  if (Array.isArray(changedFiles)) {
+    record.changedFiles.push(...changedFiles);
+    record.hasFileEdits = record.hasFileEdits || changedFiles.length > 0;
+  }
 }
 
 async function collectJsonlFiles(directory, files, limit) {
