@@ -144,9 +144,11 @@ Plugin commands should call Devflow CLI or MCP tools. They should not fork a
 separate project model.
 
 The repo-local plugin currently ships shared `start`, `split`, `next`,
-`explain`, `rewrite`, `sessions`, and `finish` skills under `plugins/devflow/skills/`. Claude Code
-exposes plugin skills under the plugin namespace, so these are the first
-slash-like daily workflow surface.
+`explain`, `rewrite`, `sessions`, and `finish` skills under
+`plugins/devflow/skills/`. The `sessions` skill covers both read-only Codex
+discovery and confirmation-gated dry-run attach planning through the CLI or MCP
+contracts. Claude Code exposes plugin skills under the plugin namespace, so
+these are the first slash-like daily workflow surface.
 
 ### Gemini CLI
 
