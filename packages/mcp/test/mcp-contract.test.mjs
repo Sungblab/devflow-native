@@ -464,3 +464,58 @@ test("MCP sessions_list filters by agent", async () => {
   assert.equal(result.structuredContent.sessions[0].agent, "Codex");
   assert.match(result.structuredContent.sessions[0].summary, /Codex import note/);
 });
+
+test("MCP sessions_list filters by observed time", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-session-list-since-"));
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await writeFile(
+    join(stateDir, "events.jsonl"),
+    `${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-15T00:00:00.000Z",
+      payload: {
+        sessionId: "old",
+        workItemId: "phase-6-session-import",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "Old Codex note.",
+      },
+    })}\n${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-16T00:00:00.000Z",
+      payload: {
+        sessionId: "new",
+        workItemId: "phase-6-session-import",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "New Codex note.",
+      },
+    })}\n`,
+    "utf8",
+  );
+
+  const result = await callTool("devflow.sessions_list", {
+    repo: repoPath,
+    since: "2026-05-15T12:00:00.000Z",
+  });
+
+  assert.equal(result.structuredContent.count, 1);
+  assert.equal(result.structuredContent.totalCount, 1);
+  assert.equal(result.structuredContent.filters.since, "2026-05-15T12:00:00.000Z");
+  assert.match(result.structuredContent.sessions[0].summary, /New Codex note/);
+});
+
+test("MCP sessions_list rejects invalid since values", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-session-list-invalid-since-"));
+
+  await assert.rejects(
+    callTool("devflow.sessions_list", {
+      repo: repoPath,
+      since: "not-a-date",
+    }),
+    /devflow.sessions_list requires since to be an ISO date/,
+  );
+});

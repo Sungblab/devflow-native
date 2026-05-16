@@ -55,7 +55,7 @@ const tools = [
   },
   {
     name: "devflow.sessions_list",
-    description: "List attached sessions from local Devflow state, optionally filtered by agent/work item and limited to recent matches.",
+    description: "List attached sessions from local Devflow state, optionally filtered by agent/work item/time and limited to recent matches.",
   },
   {
     name: "devflow.sessions_note",
@@ -279,6 +279,10 @@ async function callSessionList(args) {
     args.limit,
     "devflow.sessions_list requires limit to be a positive integer.",
   );
+  const since = parseIsoDateArg(
+    args.since,
+    "devflow.sessions_list requires since to be an ISO date.",
+  );
   const state = await readDevflowState(repoPath);
   const summary = createSessionListSummary({
     repo: {
@@ -287,6 +291,7 @@ async function callSessionList(args) {
     state,
     agent: args.agent,
     workItemId: args.workItemId ?? args.work,
+    since,
     limit,
   });
 
@@ -415,4 +420,16 @@ function parsePositiveIntegerArg(value, message) {
   }
 
   return parsed;
+}
+
+function parseIsoDateArg(value, message) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (Number.isNaN(Date.parse(value))) {
+    throw new Error(message);
+  }
+
+  return value;
 }

@@ -37,13 +37,14 @@ work.
    response as a no-op success.
 8. To inspect recorded links later, use `devflow sessions list --repo "<repo>" --json`.
    Add `--agent "<name>"` for one agent, `--work "<workId>"` for one work item,
-   and positive-integer `--limit <n>` when only the most recent matches are
-   useful. In MCP hosts, use `devflow.sessions_list` with the same `repo`
-   argument and optional `agent`, `work` / `workItemId`, and positive-integer
-   `limit`. For maintainer-facing terminal checks, omit `--json` to render a
-   short text summary with active filters, session ids, changed-file counts,
-   limit totals, or manual note summaries. Treat a non-zero warning count as
-   something to inspect in `--json` output before relying on the list.
+   `--since "<iso-date>"` for recently observed sessions, and positive-integer
+   `--limit <n>` when only the most recent matches are useful. In MCP hosts, use
+   `devflow.sessions_list` with the same `repo` argument and optional `agent`,
+   `work` / `workItemId`, `since`, and positive-integer `limit`. For
+   maintainer-facing terminal checks, omit `--json` to render a short text
+   summary with active filters, session ids, changed-file counts, limit totals,
+   or manual note summaries. Treat a non-zero warning count as something to
+   inspect in `--json` output before relying on the list.
 9. When useful work happened outside a supported adapter, record it with
    `devflow sessions note --repo "<repo>" --work "<workId>" --agent manual --summary "<text>" --json`.
    In MCP hosts, use `devflow.sessions_note` with `work`, `agent`, and `summary`.
