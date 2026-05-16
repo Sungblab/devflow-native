@@ -7,6 +7,7 @@ JSON-RPC transport for MCP-capable hosts.
 ## Initial Tools
 
 - `devflow.doctor`
+- `devflow.status`
 - `devflow.finish`
 - `devflow.next_prompt`
 

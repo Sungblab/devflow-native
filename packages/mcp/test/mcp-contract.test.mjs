@@ -11,8 +11,32 @@ test("MCP lists initial devflow tools", () => {
   const names = tools.map((tool) => tool.name);
 
   assert.ok(names.includes("devflow.doctor"));
+  assert.ok(names.includes("devflow.status"));
   assert.ok(names.includes("devflow.finish"));
   assert.ok(names.includes("devflow.next_prompt"));
+});
+
+test("MCP status returns local repo state and latest handoff evidence", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-status-"));
+  await callTool("devflow.finish", {
+    repo: repoPath,
+    work: "status-source",
+    title: "Status source",
+    intent: "Seed status evidence.",
+    gates: [{ id: "unit", command: "npm test", status: "passed" }],
+    nextTask: "Read status through MCP.",
+  });
+
+  const result = await callTool("devflow.status", {
+    repo: repoPath,
+    changedFiles: [{ path: "packages/mcp/src/index.js", status: "modified" }],
+  });
+
+  assert.equal(result.structuredContent.command, "status");
+  assert.equal(result.structuredContent.repo.absolutePath, repoPath);
+  assert.equal(result.structuredContent.git.changedFiles[0].path, "packages/mcp/src/index.js");
+  assert.equal(result.structuredContent.handoffs.latest.workItemId, "status-source");
+  assert.match(result.content[0].text, /status/);
 });
 
 test("MCP doctor returns the same structured execution contract", async () => {
