@@ -646,6 +646,83 @@ test("CLI sessions list filters by work item", async () => {
   assert.equal(parsed.sessions[0].workItemId, "phase-6-session-import");
 });
 
+test("CLI sessions list limits after work item filtering", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "note",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-6-session-import",
+    "--summary",
+    "First import note.",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "note",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-7-beginner-guidance",
+    "--summary",
+    "Beginner guidance note.",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "note",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-6-session-import",
+    "--summary",
+    "Second import note.",
+    "--json",
+  ]);
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "list",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-6-session-import",
+    "--limit",
+    "1",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.count, 1);
+  assert.equal(parsed.totalCount, 2);
+  assert.equal(parsed.filters.limit, 1);
+  assert.match(parsed.sessions[0].summary, /Second import note/);
+
+  const text = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "list",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-6-session-import",
+    "--limit",
+    "1",
+  ]);
+
+  assert.match(text.stdout, /^Limit: 1$/m);
+  assert.match(text.stdout, /^Total: 2$/m);
+  assert.match(text.stdout, /Second import note/);
+  assert.doesNotMatch(text.stdout, /First import note/);
+});
+
 test("CLI sessions list renders filtered text output", async () => {
   const repoPath = await createTempGitRepo();
 

@@ -294,6 +294,39 @@ test("session list summary filters by work item", async () => {
   assert.equal(summary.sessions[0].workItemId, "phase-6-session-import");
 });
 
+test("session list summary limits after work item filtering", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-list-limit-"));
+  await recordManualSessionNoteEvent(repoPath, {
+    workItemId: "phase-6-session-import",
+    agent: "manual",
+    summary: "First import note.",
+  });
+  await recordManualSessionNoteEvent(repoPath, {
+    workItemId: "phase-7-beginner-guidance",
+    agent: "manual",
+    summary: "Beginner guidance note.",
+  });
+  await recordManualSessionNoteEvent(repoPath, {
+    workItemId: "phase-6-session-import",
+    agent: "manual",
+    summary: "Second import note.",
+  });
+
+  const state = await readDevflowState(repoPath);
+  const summary = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    workItemId: "phase-6-session-import",
+    limit: 1,
+  });
+
+  assert.equal(summary.count, 1);
+  assert.equal(summary.totalCount, 2);
+  assert.equal(summary.filters.workItemId, "phase-6-session-import");
+  assert.equal(summary.filters.limit, 1);
+  assert.match(summary.sessions[0].summary, /Second import note/);
+});
+
 test("term explanation translates beginner-facing development terms", () => {
   const explanation = createTermExplanation({
     term: "toast notification",

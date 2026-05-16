@@ -295,6 +295,7 @@ async function renderSessionList(argsForCommand) {
     },
     state,
     workItemId: options.work,
+    limit: options.limit,
   });
 
   if (options.json) {
@@ -407,6 +408,10 @@ function renderSessionListText(summary) {
     `Filter: ${summary.filters.workItemId ?? "all"}`,
     `Count: ${summary.count}`,
   ];
+  if (summary.filters.limit) {
+    lines.push(`Limit: ${summary.filters.limit}`);
+    lines.push(`Total: ${summary.totalCount}`);
+  }
   if (summary.warnings.length > 0) {
     lines.push(`Warnings: ${summary.warnings.length}`);
   }
