@@ -297,7 +297,12 @@ async function renderSessionList(argsForCommand) {
     workItemId: options.work,
   });
 
-  render(summary, options.json);
+  if (options.json) {
+    render(summary, true);
+    return;
+  }
+
+  renderSessionListText(summary);
 }
 
 async function renderSessionNote(argsForCommand) {
@@ -389,6 +394,22 @@ function renderGuidedFinish(summary) {
     `Review recommendation: ${summary.review.recommendation}`,
     `Next task: ${extractNextTask(summary.nextSession.prompt)}`,
   ];
+
+  process.stdout.write(`${lines.join("\n")}\n`);
+}
+
+function renderSessionListText(summary) {
+  const lines = [
+    "Sessions",
+    `Filter: ${summary.filters.workItemId ?? "all"}`,
+    `Count: ${summary.count}`,
+  ];
+
+  for (const session of summary.sessions) {
+    lines.push(
+      `${session.kind ?? "session"} ${session.workItemId ?? "unknown"} ${session.agent ?? "unknown"} ${session.summary ?? session.sessionId}`,
+    );
+  }
 
   process.stdout.write(`${lines.join("\n")}\n`);
 }

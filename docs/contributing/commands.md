@@ -511,6 +511,7 @@ Example:
 ```powershell
 devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --json
 devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --work phase-6-session-import --json
+devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --work phase-6-session-import
 ```
 
 Outputs:
@@ -519,6 +520,9 @@ Outputs:
 - attached session id, work item id, agent, confidence, changed files, and
   observed time
 - warning entries from the local state reader
+
+Without `--json`, the command renders a short human-readable list with the
+active filter, count, and one line per session.
 
 This command does not read Codex, Claude, or Gemini history. It only renders
 links already recorded in `.devflow/state/events.jsonl`. Use `--work <id>` to

@@ -171,7 +171,8 @@ session links are visible through `devflow sessions list --json` and MCP
 `devflow sessions note --work <id> --summary <text> --json` or MCP
 `devflow.sessions_note`, and appears in the same session list. Session list
 supports work item filtering through CLI `--work <id>` and MCP `work` or
-`workItemId`.
+`workItemId`. The CLI also has a human-readable default renderer for quick
+terminal inspection while `--json` keeps the agent contract stable.
 
 ## Phase 7: Beginner Guidance Profile
 

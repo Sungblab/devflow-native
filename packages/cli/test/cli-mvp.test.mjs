@@ -604,6 +604,40 @@ test("CLI sessions list filters by work item", async () => {
   assert.equal(parsed.sessions[0].workItemId, "phase-6-session-import");
 });
 
+test("CLI sessions list renders filtered text output", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "note",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-6-session-import",
+    "--agent",
+    "manual",
+    "--summary",
+    "Reviewed local session context.",
+    "--json",
+  ]);
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "list",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-6-session-import",
+  ]);
+
+  assert.match(stdout, /^Sessions$/m);
+  assert.match(stdout, /^Filter: phase-6-session-import$/m);
+  assert.match(stdout, /^Count: 1$/m);
+  assert.match(stdout, /manual-note\s+phase-6-session-import\s+manual\s+Reviewed local session context\./);
+});
+
 async function createTempGitRepo() {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-cli-"));
   await execFileAsync("git", ["init"], { cwd: repoPath });
