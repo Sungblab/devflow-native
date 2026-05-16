@@ -153,6 +153,9 @@ Beginner-friendly renderer:
 devflow status --simple
 ```
 
+For a sample renderer output and field guide, see
+[Simple Status Output Example](../examples/simple-status-output.md).
+
 Inputs:
 
 - repository path

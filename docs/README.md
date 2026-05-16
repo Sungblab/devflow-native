@@ -17,6 +17,7 @@ This is the documentation router for Solo Devflow OS.
 | CLI command contract | [contributing/commands.md](./contributing/commands.md) |
 | Architecture map index | [architecture/maps/README.md](./architecture/maps/README.md) |
 | OpenCairn split example | [examples/opencairn-parallel-split.md](./examples/opencairn-parallel-split.md) |
+| Simple status output example | [examples/simple-status-output.md](./examples/simple-status-output.md) |
 | Session list filter examples | [examples/session-list-filters.md](./examples/session-list-filters.md) |
 | Gemini CLI MCP template | [../templates/gemini/README.md](../templates/gemini/README.md) |
 | Repo-local Codex plugin start skill | [../plugins/devflow/skills/start/SKILL.md](../plugins/devflow/skills/start/SKILL.md) |
