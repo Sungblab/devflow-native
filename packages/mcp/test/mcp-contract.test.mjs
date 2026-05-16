@@ -17,6 +17,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.record_gate"));
   assert.ok(names.includes("devflow.split"));
   assert.ok(names.includes("devflow.explain_term"));
+  assert.ok(names.includes("devflow.rewrite_prompt"));
 });
 
 test("MCP status returns local repo state and latest handoff evidence", async () => {
@@ -179,4 +180,17 @@ test("MCP explain_term returns beginner-friendly structured explanation", async 
   assert.equal(result.structuredContent.term, "middleware");
   assert.match(result.structuredContent.plainExplanation, /between/);
   assert.match(result.content[0].text, /explain_term/);
+});
+
+test("MCP rewrite_prompt turns vague request into agent-ready requirements", async () => {
+  const result = await callTool("devflow.rewrite_prompt", {
+    request: "알아서 다음 구현 계속해",
+    context: "Phase 7 still needs MCP prompt rewrite.",
+  });
+
+  assert.equal(result.structuredContent.command, "prompt_rewrite");
+  assert.equal(result.structuredContent.originalRequest, "알아서 다음 구현 계속해");
+  assert.match(result.structuredContent.agentReadyPrompt, /Objective:/);
+  assert.match(result.structuredContent.agentReadyPrompt, /Phase 7/);
+  assert.match(result.content[0].text, /rewrite_prompt/);
 });

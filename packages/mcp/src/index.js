@@ -2,6 +2,7 @@ import {
   createDoctorSummary,
   createFinishSummary,
   createNextPrompt,
+  createPromptRewrite,
   createSplitPlan,
   createStatusSummary,
   createTermExplanation,
@@ -24,6 +25,10 @@ const tools = [
   {
     name: "devflow.explain_term",
     description: "Explain development terms in plain language with project context.",
+  },
+  {
+    name: "devflow.rewrite_prompt",
+    description: "Rewrite vague maintainer requests into agent-ready requirements.",
   },
   {
     name: "devflow.doctor",
@@ -58,6 +63,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.explain_term") {
     return callExplainTerm(args);
+  }
+
+  if (name === "devflow.rewrite_prompt") {
+    return callRewritePrompt(args);
   }
 
   if (name === "devflow.doctor") {
@@ -132,6 +141,15 @@ function callExplainTerm(args) {
   });
 
   return toolResult(explanation, `devflow explain_term: ${explanation.term}`);
+}
+
+function callRewritePrompt(args) {
+  const rewrite = createPromptRewrite({
+    request: args.request,
+    context: args.context,
+  });
+
+  return toolResult(rewrite, "devflow rewrite_prompt");
 }
 
 async function callDoctor(args) {

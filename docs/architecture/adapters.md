@@ -113,6 +113,7 @@ devflow.split
 devflow.finish
 devflow.next_prompt
 devflow.explain_term
+devflow.rewrite_prompt
 ```
 
 Codex may support ChatGPT account login or API key login in its own CLI. Devflow
