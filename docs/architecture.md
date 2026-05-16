@@ -90,7 +90,10 @@ Primary entities:
 - MapNode
 - MapEdge
 
-Events are append-only. Derived views can be rebuilt.
+Events are append-only. Derived views can be rebuilt. Session attach planning
+is separate from `session.attached` persistence: core may propose attach-ready
+or confirmation-required links from discovered sessions and work items, but a
+later command must perform the actual state write.
 
 ## Event Types
 

@@ -178,6 +178,18 @@ export function createPromptRewrite(input = {}) {
   };
 }
 
+export function createSessionAttachPlan(input = {}) {
+  const workItems = input.workItems ?? [];
+  const sessions = input.sessions ?? [];
+
+  return {
+    schemaVersion: "0.1",
+    command: "session_attach_plan",
+    proposals: sessions.map((session) => createSessionAttachProposal(session, workItems)),
+    warnings: input.warnings ?? [],
+  };
+}
+
 export function createTermExplanation(input = {}) {
   const term = normalizeTerm(input.term);
   const entry = glossary[term] ?? createFallbackGlossaryEntry(term);
@@ -193,6 +205,57 @@ export function createTermExplanation(input = {}) {
     relatedTerms: entry.relatedTerms,
     warnings: entry.known ? [] : ["Term is not in the built-in glossary seed."],
   };
+}
+
+function createSessionAttachProposal(session, workItems) {
+  const confidence = session.project?.confidence ?? "low";
+  const changedFiles = collectSessionChangedFiles(session);
+  const recommendedWorkItem = findBestWorkItem(changedFiles, workItems);
+  const requiresConfirmation = confidence !== "high";
+
+  return {
+    sessionId: session.sessionId,
+    agent: session.agent ?? "unknown",
+    recommendedWorkItemId: recommendedWorkItem?.id ?? null,
+    action: requiresConfirmation ? "confirmation-required" : "attach-ready",
+    requiresConfirmation,
+    confidence,
+    changedFiles,
+    reason: requiresConfirmation
+      ? `Session has ${confidence} confidence and should be confirmed before attaching.`
+      : "Session has high confidence and matches the recommended work item paths.",
+    warnings: session.warnings ?? [],
+  };
+}
+
+function collectSessionChangedFiles(session) {
+  const files = [];
+
+  for (const event of session.events ?? []) {
+    if (Array.isArray(event.changedFiles)) {
+      files.push(...event.changedFiles);
+    }
+  }
+
+  return files;
+}
+
+function findBestWorkItem(changedFiles, workItems) {
+  return (
+    workItems.find((workItem) =>
+      changedFiles.some((file) =>
+        (workItem.ownedPaths ?? []).some((pattern) => pathMatchesPattern(file, pattern)),
+      ),
+    ) ?? workItems[0] ?? null
+  );
+}
+
+function pathMatchesPattern(path, pattern) {
+  if (pattern.endsWith("/**")) {
+    return path.startsWith(pattern.slice(0, -3));
+  }
+
+  return path === pattern;
 }
 
 export function createSplitPlan(input = {}) {
