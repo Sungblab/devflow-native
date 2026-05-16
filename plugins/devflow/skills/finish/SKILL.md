@@ -29,6 +29,8 @@ repository.
 7. Record the task with `devflow finish`. If the executable is not installed
    yet, use `node packages/cli/src/index.js finish` with explicit `--work`,
    `--title`, `--intent`, `--gate`, `--risk`, and `--next-task` values.
+   Use `--guided` when the maintainer wants a plain checklist in addition to
+   the local evidence record.
 8. Final output must include changed files, verification evidence, known gaps,
    and the next recommended implementation slice.
 9. End with a closing question asking whether to commit, PR, continue, or

@@ -162,6 +162,39 @@ test("CLI finish renders JSON evidence summary", async () => {
   assert.match(parsed.nextSession.prompt, /file-backed state persistence/);
 });
 
+test("CLI finish renders guided checklist and still records evidence", async () => {
+  const repoPath = await createTempGitRepo();
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "guided-finish",
+    "--title",
+    "Guided finish",
+    "--intent",
+    "Show a guided finish checklist",
+    "--gate",
+    "unit:npm test:passed",
+    "--risk",
+    "No browser smoke run.",
+    "--next-task",
+    "Add browser smoke coverage.",
+    "--guided",
+  ]);
+
+  assert.match(stdout, /Finish checklist/);
+  assert.match(stdout, /Work: guided-finish/);
+  assert.match(stdout, /Verified gates: 1/);
+  assert.match(stdout, /Known risks: 1/);
+  assert.match(stdout, /Next task: Add browser smoke coverage/);
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.match(log, /"type":"work.completed"/);
+  assert.match(log, /guided-finish/);
+});
+
 test("CLI finish persists evidence and status reads the latest local state", async () => {
   const repoPath = await createTempGitRepo();
 

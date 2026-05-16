@@ -114,6 +114,11 @@ async function renderFinish(argsForCommand) {
   });
 
   await recordFinishEvent(repoPath, summary);
+  if (options.guided) {
+    renderGuidedFinish(summary);
+    return;
+  }
+
   render(summary, options.json);
 }
 
@@ -204,6 +209,27 @@ function renderSimpleStatus(summary) {
   process.stdout.write(`${lines.join("\n")}\n`);
 }
 
+function renderGuidedFinish(summary) {
+  const lines = [
+    "Finish checklist",
+    `Work: ${summary.workItem.id}`,
+    `Title: ${summary.workItem.title}`,
+    `Changed files: ${summary.summary.changedFiles.length}`,
+    `Verified gates: ${summary.evidence.gates.length}`,
+    `Skipped checks: ${summary.evidence.skipped.length}`,
+    `Known risks: ${summary.risks.length}`,
+    `Review recommendation: ${summary.review.recommendation}`,
+    `Next task: ${extractNextTask(summary.nextSession.prompt)}`,
+  ];
+
+  process.stdout.write(`${lines.join("\n")}\n`);
+}
+
+function extractNextTask(prompt) {
+  const match = prompt.match(/^Next task:\s*(.+)$/m);
+  return match?.[1] ?? "Inspect devflow status and choose the next slice.";
+}
+
 function parseOptions(rawArgs) {
   return parseOptionsAndPositionals(rawArgs).options;
 }
@@ -220,7 +246,7 @@ function parseOptionsAndPositionals(rawArgs) {
     }
 
     const key = arg.slice(2);
-    if (key === "json" || key === "simple") {
+    if (key === "json" || key === "simple" || key === "guided") {
       options[key] = true;
       continue;
     }
