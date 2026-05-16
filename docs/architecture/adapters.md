@@ -116,6 +116,7 @@ devflow.explain_term
 devflow.rewrite_prompt
 devflow.sessions_codex
 devflow.sessions_attach_plan
+devflow.sessions_attach
 ```
 
 Codex may support ChatGPT account login or API key login in its own CLI. Devflow
@@ -222,8 +223,9 @@ Session-to-work linking remains confirmation-gated. The CLI
 `devflow sessions attach-plan` command and MCP `devflow.sessions_attach_plan`
 tool both return a dry-run proposal from explicit work item and session inputs;
 neither path writes `session.attached` events. The separate CLI
-`devflow sessions attach --confirm` command consumes one approved proposal and
-persists the actual `session.attached` event.
+`devflow sessions attach --confirm` command and MCP `devflow.sessions_attach`
+tool consume one approved proposal and persist the actual `session.attached`
+event.
 
 ### Claude Code
 

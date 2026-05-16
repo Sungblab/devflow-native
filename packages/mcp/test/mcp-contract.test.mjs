@@ -20,6 +20,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.rewrite_prompt"));
   assert.ok(names.includes("devflow.sessions_codex"));
   assert.ok(names.includes("devflow.sessions_attach_plan"));
+  assert.ok(names.includes("devflow.sessions_attach"));
 });
 
 test("MCP status returns local repo state and latest handoff evidence", async () => {
@@ -262,4 +263,31 @@ test("MCP sessions_attach_plan renders dry-run attach proposals", async () => {
   assert.equal(result.structuredContent.proposals[0].recommendedWorkItemId, "phase-6-session-import");
   assert.equal(result.structuredContent.proposals[0].action, "attach-ready");
   assert.match(result.content[0].text, /sessions_attach_plan/);
+});
+
+test("MCP sessions_attach writes confirmed session attach events", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-session-attach-"));
+  const result = await callTool("devflow.sessions_attach", {
+    repo: repoPath,
+    confirm: true,
+    proposal: {
+      sessionId: "high-confidence",
+      agent: "Codex",
+      recommendedWorkItemId: "phase-6-session-import",
+      action: "attach-ready",
+      requiresConfirmation: false,
+      confidence: "high",
+      changedFiles: ["packages/adapters/src/index.js"],
+      reason: "Session has high confidence.",
+      warnings: [],
+    },
+  });
+
+  assert.equal(result.structuredContent.command, "session_attach");
+  assert.equal(result.structuredContent.event.type, "session.attached");
+  assert.equal(result.structuredContent.event.payload.sessionId, "high-confidence");
+  assert.match(result.content[0].text, /sessions_attach/);
+
+  const status = await callTool("devflow.status", { repo: repoPath });
+  assert.equal(status.structuredContent.sessions.attached[0].sessionId, "high-confidence");
 });

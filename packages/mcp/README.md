@@ -13,6 +13,7 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.rewrite_prompt`
 - `devflow.sessions_codex`
 - `devflow.sessions_attach_plan`
+- `devflow.sessions_attach`
 - `devflow.finish`
 - `devflow.record_gate`
 - `devflow.next_prompt`
@@ -27,6 +28,10 @@ argument before it reads local Codex session candidates.
 `workItems`, `sessions`, and optional `warnings` JSON arguments, then returns a
 dry-run plan for which sessions are attach-ready or confirmation-gated. It does
 not write `.devflow` state.
+
+`devflow.sessions_attach` is the write step. It accepts `repo`, `confirm: true`,
+and a selected `proposal`, then appends a `session.attached` event to local
+`.devflow` state.
 
 ## Stdio Transport
 

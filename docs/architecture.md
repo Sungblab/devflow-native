@@ -47,7 +47,7 @@ packages/cli
   devflow init/status/split/finish/doctor/gates/dashboard/session/review
 
 packages/mcp
-  devflow.status/devflow.split/devflow.finish/devflow.doctor/devflow.next_prompt/devflow.rewrite_prompt/devflow.sessions_codex/devflow.sessions_attach_plan tools
+  devflow.status/devflow.split/devflow.finish/devflow.doctor/devflow.next_prompt/devflow.rewrite_prompt/devflow.sessions_codex/devflow.sessions_attach_plan/devflow.sessions_attach tools
 
 packages/integrations
   Claude Code plugin, Codex MCP config, Gemini MCP config, editor hooks
@@ -95,7 +95,8 @@ is separate from `session.attached` persistence: core may propose attach-ready
 or confirmation-required links from discovered sessions and work items, but a
 later command must perform the actual state write.
 The initial write path is `devflow sessions attach --confirm`, which consumes a
-selected attach-plan proposal and appends a `session.attached` event.
+selected attach-plan proposal and appends a `session.attached` event. MCP hosts
+use `devflow.sessions_attach` with `confirm: true` for the same write.
 
 ## Event Types
 
@@ -146,6 +147,7 @@ devflow.explain_term
 devflow.rewrite_prompt
 devflow.sessions_codex
 devflow.sessions_attach_plan
+devflow.sessions_attach
 ```
 
 Rules:
