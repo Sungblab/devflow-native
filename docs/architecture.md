@@ -53,7 +53,8 @@ packages/integrations
   Claude Code plugin, Codex MCP config, Gemini MCP config, editor hooks
 
 plugins/devflow
-  repo-local Codex plugin that wraps the same CLI/MCP contracts as skills
+  repo-local Codex and Claude Code plugin drafts that wrap the same CLI/MCP
+  contracts as skills
 
 packages/web
   local dashboard for timeline, maps, sessions, gates, and prompts
@@ -160,6 +161,9 @@ contracts.
   `devflow status`.
 - Claude Code: plugin with slash commands, skills, hooks, and optional bundled
   MCP server configuration. Claude authentication remains owned by Claude Code.
+- Claude Code plugin draft: repo-local `plugins/devflow/.claude-plugin`
+  manifest sharing the same `plugins/devflow/skills` contracts as the Codex
+  plugin.
 - Gemini CLI: MCP configuration and transcript/session import when available.
 - Hermes Agent: adapter target for persistent-agent session records, memories,
   and tool events when exposed locally.
