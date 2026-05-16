@@ -1,0 +1,10 @@
+{
+  "name": "solo-devflow-os",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "docs:check": "node scripts/check-doc-links.mjs",
+    "test": "node --test"
+  }
+}

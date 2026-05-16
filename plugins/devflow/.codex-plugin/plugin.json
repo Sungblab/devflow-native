@@ -1,0 +1,25 @@
+{
+  "name": "devflow",
+  "version": "0.1.0",
+  "description": "Solo Devflow OS continuity skills for local-first agent workflows.",
+  "author": {
+    "name": "Solo Devflow OS"
+  },
+  "license": "MIT",
+  "keywords": ["devflow", "agents", "workflow", "handoff", "superpowers"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Devflow",
+    "shortDescription": "Project truth, handoffs, gates, and local execution rules for agent workflows.",
+    "longDescription": "Use Solo Devflow OS from Codex to inspect local project state, load environment doctor rules, preserve gate evidence, and generate next-session prompts without replacing your existing Superpowers workflow.",
+    "developerName": "Solo Devflow OS",
+    "category": "Productivity",
+    "capabilities": ["Write"],
+    "defaultPrompt": [
+      "Use Devflow to start this repo safely.",
+      "Run Devflow finish for this task.",
+      "Load local mistake memory before commands."
+    ],
+    "brandColor": "#2563EB"
+  }
+}
