@@ -2,6 +2,7 @@ import {
   createDoctorSummary,
   createFinishSummary,
   createNextPrompt,
+  createSplitPlan,
   createStatusSummary,
   readDevflowState,
   readMistakeMemory,
@@ -13,6 +14,10 @@ const tools = [
   {
     name: "devflow.status",
     description: "Read local repo state, handoffs, gate evidence, and recommendations.",
+  },
+  {
+    name: "devflow.split",
+    description: "Plan safe parallel sessions with worktree commands and prompts.",
   },
   {
     name: "devflow.doctor",
@@ -39,6 +44,10 @@ export function listTools() {
 export async function callTool(name, args = {}) {
   if (name === "devflow.status") {
     return callStatus(args);
+  }
+
+  if (name === "devflow.split") {
+    return callSplit(args);
   }
 
   if (name === "devflow.doctor") {
@@ -85,6 +94,22 @@ async function callStatus(args) {
   });
 
   return toolResult(summary, `devflow status: ${summary.repo.absolutePath}`);
+}
+
+function callSplit(args) {
+  const plan = createSplitPlan({
+    runId: args.runId,
+    goal: args.goal,
+    sessionCount: args.sessionCount ?? args.sessions,
+    profile: args.profile,
+    platform: args.platform,
+    baseBranch: args.baseBranch,
+    baseRef: args.baseRef,
+    worktreeRoot: args.worktreeRoot,
+    tasks: args.tasks,
+  });
+
+  return toolResult(plan, `devflow split: ${plan.sessions.length} sessions`);
 }
 
 async function callDoctor(args) {

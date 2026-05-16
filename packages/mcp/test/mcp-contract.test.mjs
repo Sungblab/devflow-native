@@ -15,6 +15,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.finish"));
   assert.ok(names.includes("devflow.next_prompt"));
   assert.ok(names.includes("devflow.record_gate"));
+  assert.ok(names.includes("devflow.split"));
 });
 
 test("MCP status returns local repo state and latest handoff evidence", async () => {
@@ -104,4 +105,34 @@ test("MCP record_gate records standalone gate evidence", async () => {
   const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
   assert.match(log, /"type":"gate.finished"/);
   assert.match(log, /docs-check/);
+});
+
+test("MCP split returns worktree sessions and copy-paste prompts", async () => {
+  const result = await callTool("devflow.split", {
+    runId: "2026-05-16-mcp-split",
+    goal: "Split the next Devflow implementation.",
+    sessionCount: 2,
+    platform: "windows-powershell",
+    tasks: [
+      {
+        id: "mcp-split-tool",
+        ownedPaths: ["packages/mcp/**", "packages/core/**"],
+        avoidPaths: ["docs/**"],
+        verification: [{ cwd: ".", command: "npm test" }],
+      },
+      {
+        id: "docs-split-contract",
+        role: "audit",
+        ownedPaths: ["docs/**"],
+        avoidPaths: ["packages/**"],
+        verification: [{ cwd: ".", command: "npm run docs:check" }],
+      },
+    ],
+  });
+
+  assert.equal(result.structuredContent.command, "split");
+  assert.equal(result.structuredContent.sessions.length, 2);
+  assert.equal(result.structuredContent.sessions[0].branch, "codex/mcp-split-tool");
+  assert.match(result.structuredContent.sessions[0].prompt, /packages\/mcp\/\*\*/);
+  assert.match(result.content[0].text, /split/);
 });
