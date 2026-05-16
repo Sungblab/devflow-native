@@ -15,6 +15,7 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   const mcpConfig = JSON.parse(await readFile("plugins/devflow/.mcp.json", "utf8"));
   const geminiConfig = JSON.parse(await readFile("templates/gemini/settings.json", "utf8"));
   const startSkill = await readFile("plugins/devflow/skills/start/SKILL.md", "utf8");
+  const splitSkill = await readFile("plugins/devflow/skills/split/SKILL.md", "utf8");
   const finishSkill = await readFile("plugins/devflow/skills/finish/SKILL.md", "utf8");
 
   assert.equal(manifest.name, "devflow");
@@ -47,6 +48,10 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.match(startSkill, /devflow doctor --json/);
   assert.match(startSkill, /not dependent on any one profile/);
   assert.match(startSkill, /Get-Content -LiteralPath/);
+
+  assert.match(splitSkill, /devflow split --json/);
+  assert.match(splitSkill, /owned paths/);
+  assert.match(splitSkill, /worktree/);
 
   assert.match(finishSkill, /devflow finish/);
   assert.match(finishSkill, /documentation needs an update/);
