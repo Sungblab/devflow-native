@@ -374,6 +374,58 @@ test("CLI sessions attach-plan renders dry-run attach proposals", async () => {
   assert.equal(parsed.proposals[0].action, "attach-ready");
 });
 
+test("CLI sessions attach writes approved proposal events", async () => {
+  const repoPath = await createTempGitRepo();
+  const inputPath = join(await mkdtemp(join(tmpdir(), "devflow-cli-attach-")), "plan.json");
+  await writeFile(
+    inputPath,
+    `${JSON.stringify({
+      proposals: [
+        {
+          sessionId: "high-confidence",
+          agent: "Codex",
+          recommendedWorkItemId: "phase-6-session-import",
+          action: "attach-ready",
+          requiresConfirmation: false,
+          confidence: "high",
+          changedFiles: ["packages/adapters/src/index.js"],
+          reason: "Session has high confidence.",
+          warnings: [],
+        },
+      ],
+    })}\n`,
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "attach",
+    "--repo",
+    repoPath,
+    "--input",
+    inputPath,
+    "--session",
+    "high-confidence",
+    "--confirm",
+    "--json",
+  ]);
+
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.command, "session_attach");
+  assert.equal(parsed.event.type, "session.attached");
+  assert.equal(parsed.event.payload.workItemId, "phase-6-session-import");
+
+  const status = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const statusJson = JSON.parse(status.stdout);
+  assert.equal(statusJson.sessions.attached[0].sessionId, "high-confidence");
+});
+
 async function createTempGitRepo() {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-cli-"));
   await execFileAsync("git", ["init"], { cwd: repoPath });

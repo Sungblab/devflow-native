@@ -18,6 +18,7 @@ import {
   readDevflowState,
   recordGateEvent,
   recordFinishEvent,
+  recordSessionAttachedEvent,
 } from "../src/index.js";
 
 test("status summary captures repo, dirty files, gates, and prompt recommendation", () => {
@@ -127,6 +128,51 @@ test("session attach plan proposes confirmation-gated work links", () => {
   assert.equal(plan.proposals[1].action, "confirmation-required");
   assert.equal(plan.proposals[1].requiresConfirmation, true);
   assert.match(plan.proposals[1].reason, /low confidence/);
+});
+
+test("session attach persistence records approved session links", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-attach-"));
+  const event = await recordSessionAttachedEvent(
+    repoPath,
+    {
+      sessionId: "high-confidence",
+      agent: "Codex",
+      recommendedWorkItemId: "phase-6-session-import",
+      action: "attach-ready",
+      requiresConfirmation: false,
+      confidence: "high",
+      changedFiles: ["packages/adapters/src/index.js"],
+      reason: "Session has high confidence.",
+      warnings: [],
+    },
+    {
+      confirmed: true,
+      observedAt: "2026-05-16T12:00:00+09:00",
+    },
+  );
+
+  const state = await readDevflowState(repoPath);
+
+  assert.equal(event.type, "session.attached");
+  assert.equal(event.payload.sessionId, "high-confidence");
+  assert.equal(event.payload.workItemId, "phase-6-session-import");
+  assert.equal(state.sessions.attached[0].sessionId, "high-confidence");
+  assert.equal(state.sessions.attached[0].workItemId, "phase-6-session-import");
+});
+
+test("session attach persistence requires explicit confirmation", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-attach-confirm-"));
+
+  await assert.rejects(
+    () =>
+      recordSessionAttachedEvent(repoPath, {
+        sessionId: "low-confidence",
+        recommendedWorkItemId: "phase-6-session-import",
+        requiresConfirmation: true,
+        confidence: "low",
+      }),
+    /requires explicit confirmation/,
+  );
 });
 
 test("term explanation translates beginner-facing development terms", () => {

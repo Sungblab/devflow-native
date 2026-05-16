@@ -22,6 +22,7 @@ import {
   readDevflowState,
   readMistakeMemory,
   recordFinishEvent,
+  recordSessionAttachedEvent,
 } from "../../core/src/index.js";
 
 const args = process.argv.slice(2);
@@ -46,6 +47,8 @@ try {
     await renderCodexSessions(args.slice(2));
   } else if (command === "sessions" && args[1] === "attach-plan") {
     await renderSessionAttachPlan(args.slice(2));
+  } else if (command === "sessions" && args[1] === "attach") {
+    await renderSessionAttach(args.slice(2));
   } else {
     throw new Error(`Unknown command: ${args.join(" ") || "<none>"}`);
   }
@@ -236,6 +239,46 @@ async function renderSessionAttachPlan(argsForCommand) {
   render(plan, options.json);
 }
 
+async function renderSessionAttach(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+
+  if (!options.input) {
+    throw new Error("sessions attach requires --input <json-file>.");
+  }
+
+  if (!options.session) {
+    throw new Error("sessions attach requires --session <session-id>.");
+  }
+
+  if (!options.confirm) {
+    throw new Error("sessions attach requires --confirm.");
+  }
+
+  const raw = await readFile(options.input, "utf8");
+  const input = JSON.parse(raw);
+  const proposal = (input.proposals ?? []).find(
+    (candidate) => candidate.sessionId === options.session,
+  );
+
+  if (!proposal) {
+    throw new Error(`No attach proposal found for session: ${options.session}`);
+  }
+
+  const event = await recordSessionAttachedEvent(repoPath, proposal, {
+    confirmed: true,
+  });
+
+  render(
+    {
+      schemaVersion: "0.1",
+      command: "session_attach",
+      event,
+    },
+    options.json,
+  );
+}
+
 function defaultPlatformName() {
   if (process.platform === "win32") {
     return "windows-powershell";
@@ -322,7 +365,7 @@ function parseOptionsAndPositionals(rawArgs) {
     }
 
     const key = arg.slice(2);
-    if (key === "json" || key === "simple" || key === "guided") {
+    if (key === "json" || key === "simple" || key === "guided" || key === "confirm") {
       options[key] = true;
       continue;
     }

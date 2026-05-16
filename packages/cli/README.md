@@ -52,10 +52,13 @@ packages/cli/
 - `devflow prompt rewrite`
 - `devflow sessions codex`
 - `devflow sessions attach-plan`
+- `devflow sessions attach`
 
 `devflow split` currently renders the first local worktree-session plan. The
 `devflow sessions codex` is read-only and requires an explicit
 `--codex-home <path>` before it reads local Codex session candidates.
 `devflow sessions attach-plan` is a dry-run planner over an explicit JSON input
-file and does not write `.devflow` state. The future `devflow init` command can
-reuse the same rendering and config infrastructure once the MVP loop is stable.
+file and does not write `.devflow` state. `devflow sessions attach` consumes a
+selected proposal from a plan file and writes a `session.attached` event only
+when `--confirm` is present. The future `devflow init` command can reuse the
+same rendering and config infrastructure once the MVP loop is stable.

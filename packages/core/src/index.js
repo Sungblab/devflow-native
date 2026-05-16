@@ -37,8 +37,8 @@ export function createStatusSummary(input = {}) {
       readyToFinish: input.work?.readyToFinish ?? [],
     },
     sessions: {
-      discovered: input.sessions?.discovered ?? [],
-      attached: input.sessions?.attached ?? [],
+      discovered: input.sessions?.discovered ?? state.sessions?.discovered ?? [],
+      attached: input.sessions?.attached ?? state.sessions?.attached ?? [],
     },
     gates,
     handoffs: {
@@ -403,6 +403,43 @@ export async function recordGateEvent(repoPath, gateEvidence, options = {}) {
   return event;
 }
 
+export async function recordSessionAttachedEvent(repoPath, proposal, options = {}) {
+  if (!options.confirmed) {
+    throw new Error("session attach requires explicit confirmation.");
+  }
+
+  if (!proposal?.sessionId) {
+    throw new Error("session attach requires a proposal with sessionId.");
+  }
+
+  if (!proposal.recommendedWorkItemId) {
+    throw new Error("session attach requires a proposal with recommendedWorkItemId.");
+  }
+
+  const observedAt = options.observedAt ?? new Date().toISOString();
+  const event = {
+    schemaVersion: "0.1",
+    type: "session.attached",
+    observedAt,
+    payload: {
+      sessionId: proposal.sessionId,
+      workItemId: proposal.recommendedWorkItemId,
+      agent: proposal.agent ?? "unknown",
+      confidence: proposal.confidence ?? "low",
+      changedFiles: proposal.changedFiles ?? [],
+      reason: proposal.reason ?? null,
+      warnings: proposal.warnings ?? [],
+      confirmed: true,
+    },
+  };
+
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await appendFile(join(stateDir, "events.jsonl"), `${JSON.stringify(event)}\n`, "utf8");
+
+  return event;
+}
+
 export async function readDevflowState(repoPath) {
   let raw;
   try {
@@ -529,6 +566,10 @@ function deriveStateFromEvents(events, warnings = []) {
     gates: {
       latestById: createLatestGateEvidence(events),
     },
+    sessions: {
+      discovered: [],
+      attached: createAttachedSessionEvidence(events),
+    },
   };
 }
 
@@ -576,6 +617,20 @@ function createLatestGateEvidence(events) {
   return latestById;
 }
 
+function createAttachedSessionEvidence(events) {
+  return events
+    .filter((event) => event.type === "session.attached")
+    .map((event) => ({
+      sessionId: event.payload.sessionId,
+      workItemId: event.payload.workItemId,
+      agent: event.payload.agent,
+      confidence: event.payload.confidence,
+      changedFiles: event.payload.changedFiles ?? [],
+      observedAt: event.observedAt,
+      warnings: event.payload.warnings ?? [],
+    }));
+}
+
 function mergeGateEvidence(configuredGates, latestById) {
   const merged = [];
   const seen = new Set();
@@ -613,6 +668,10 @@ function emptyDevflowState() {
     },
     gates: {
       latestById: {},
+    },
+    sessions: {
+      discovered: [],
+      attached: [],
     },
   };
 }
