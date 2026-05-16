@@ -3,8 +3,8 @@
 `packages/cli` owns the `devflow` command surface. It should stay thin:
 parse arguments, call core services, render text or JSON, and return clear exit
 codes. `devflow status --simple` includes branch, dirty-file count, recorded
-session count, latest session work item, latest handoff, next check, and next
-step.
+session count, latest session work item, latest session observed time, latest
+handoff, next check, and next step.
 
 ## Initial File Boundary
 
