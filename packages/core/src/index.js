@@ -235,6 +235,43 @@ export function createSessionListSummary(input = {}) {
   };
 }
 
+export function parseSessionListLimit(value, message) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(message);
+  }
+
+  return parsed;
+}
+
+export function parseSessionListSince(value, message) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (Number.isNaN(Date.parse(value))) {
+    throw new Error(message);
+  }
+
+  return value;
+}
+
+export function parseSessionListSort(value, message) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (value !== "observedAt:asc" && value !== "observedAt:desc") {
+    throw new Error(message);
+  }
+
+  return value;
+}
+
 function sortSessionsByObservedAt(sessions, sort) {
   const direction = sort === "observedAt:asc" ? 1 : -1;
 

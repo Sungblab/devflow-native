@@ -157,6 +157,8 @@ devflow.sessions_note
 Rules:
 
 - MCP tools call `packages/core`; they do not reimplement CLI behavior.
+- Shared option parsing and validation for agent-facing contracts lives in
+  `packages/core` so CLI and MCP adapters reject the same inputs.
 - Tools should return structured JSON plus short human-readable summaries.
 - Tools must not reuse Codex, Claude, or Gemini authentication tokens.
 - Host-specific plugins may wrap these tools in slash commands or skills.

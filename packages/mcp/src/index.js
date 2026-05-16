@@ -15,6 +15,9 @@ import {
   createSplitPlan,
   createStatusSummary,
   createTermExplanation,
+  parseSessionListLimit,
+  parseSessionListSince,
+  parseSessionListSort,
   readDevflowConfig,
   readDevflowState,
   readMistakeMemory,
@@ -275,15 +278,15 @@ async function callSessionAttach(args) {
 
 async function callSessionList(args) {
   const repoPath = args.repo ?? process.cwd();
-  const limit = parsePositiveIntegerArg(
+  const limit = parseSessionListLimit(
     args.limit,
     "devflow.sessions_list requires limit to be a positive integer.",
   );
-  const since = parseIsoDateArg(
+  const since = parseSessionListSince(
     args.since,
     "devflow.sessions_list requires since to be an ISO date.",
   );
-  const sort = parseSessionSortArg(
+  const sort = parseSessionListSort(
     args.sort,
     "devflow.sessions_list requires sort to be observedAt:asc or observedAt:desc.",
   );
@@ -412,41 +415,4 @@ function toolResult(structuredContent, text) {
     content: [{ type: "text", text }],
     structuredContent,
   };
-}
-
-function parsePositiveIntegerArg(value, message) {
-  if (value === undefined || value === null || value === "") {
-    return null;
-  }
-
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 1) {
-    throw new Error(message);
-  }
-
-  return parsed;
-}
-
-function parseIsoDateArg(value, message) {
-  if (value === undefined || value === null || value === "") {
-    return null;
-  }
-
-  if (Number.isNaN(Date.parse(value))) {
-    throw new Error(message);
-  }
-
-  return value;
-}
-
-function parseSessionSortArg(value, message) {
-  if (value === undefined || value === null || value === "") {
-    return null;
-  }
-
-  if (value !== "observedAt:asc" && value !== "observedAt:desc") {
-    throw new Error(message);
-  }
-
-  return value;
 }
