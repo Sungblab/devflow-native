@@ -513,7 +513,7 @@ Example:
 
 ```powershell
 devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --json
-devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --work phase-6-session-import --json
+devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --agent Codex --work phase-6-session-import --json
 devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --work phase-6-session-import --limit 1
 ```
 
@@ -522,6 +522,7 @@ Outputs:
 - `session_list` JSON wrapper
 - attached session id, work item id, agent, confidence, changed files, and
   observed time
+- `filters.agent` when `--agent <name>` is used
 - `filters.limit`, `totalCount`, and limited `count` when `--limit <n>` is used
 - warning entries from the local state reader
 
@@ -533,9 +534,10 @@ count.
 
 This command does not read Codex, Claude, or Gemini history. It only renders
 links already recorded in `.devflow/state/events.jsonl`. Use `--work <id>` to
-limit the list to one work item. Use `--limit <n>` to show only the most recent
-matching sessions after the work item filter is applied. Limit values must be
-positive integers.
+limit the list to one work item. Use `--agent <name>` to limit the list to one
+agent before the work item filter is applied. Use `--limit <n>` to show only the
+most recent matching sessions after the filters are applied. Limit values must
+be positive integers.
 
 ## `devflow sessions note`
 

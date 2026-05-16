@@ -438,3 +438,29 @@ test("MCP sessions_list rejects invalid limit values", async () => {
     /devflow.sessions_list requires limit to be a positive integer/,
   );
 });
+
+test("MCP sessions_list filters by agent", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-session-list-agent-"));
+  await callTool("devflow.sessions_note", {
+    repo: repoPath,
+    work: "phase-6-session-import",
+    agent: "manual",
+    summary: "Manual import note.",
+  });
+  await callTool("devflow.sessions_note", {
+    repo: repoPath,
+    work: "phase-6-session-import",
+    agent: "Codex",
+    summary: "Codex import note.",
+  });
+
+  const result = await callTool("devflow.sessions_list", {
+    repo: repoPath,
+    agent: "Codex",
+  });
+
+  assert.equal(result.structuredContent.count, 1);
+  assert.equal(result.structuredContent.filters.agent, "Codex");
+  assert.equal(result.structuredContent.sessions[0].agent, "Codex");
+  assert.match(result.structuredContent.sessions[0].summary, /Codex import note/);
+});
