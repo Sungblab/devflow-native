@@ -20,6 +20,7 @@ devflow explain
 devflow finish
 devflow prompt next
 devflow prompt rewrite
+devflow sessions codex
 devflow dashboard
 devflow doctor
 ```
@@ -49,6 +50,9 @@ but work-item persistence and project-specific split discovery remain later
 slices. `devflow init` and `devflow dashboard` stay in the broad contract.
 `doctor` is included early because plugin/skill-first workflows need a cheap
 way to avoid repeated local-environment mistakes.
+`devflow sessions codex` is included as a read-only adapter probe. It requires
+an explicit `--codex-home <path>` and should not read private agent history by
+default.
 
 ## MVP State Persistence
 
@@ -385,6 +389,30 @@ Outputs:
 - requirements checklist
 - missing details to resolve from local context
 - copy-paste agent-ready prompt
+
+## `devflow sessions codex`
+
+Discovers Codex sessions from an explicitly supplied Codex home directory.
+
+Example:
+
+```powershell
+devflow sessions codex --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --codex-home C:\Users\Sungbin\.codex --json
+```
+
+The command composes the adapter helpers:
+
+- locate JSONL candidates under `codexHome/sessions`
+- parse safe metadata from caller-selected JSONL content
+- normalize records into `session.discovered` events
+
+Privacy boundary:
+
+- it is read-only
+- it requires explicit `--codex-home`
+- it returns metadata, confidence, signals, source paths, and warnings
+- it does not attach sessions to work items
+- it should not become a Codex authentication or credential reader
 
 ## `devflow doctor`
 

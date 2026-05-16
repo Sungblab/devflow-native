@@ -146,7 +146,8 @@ files under an explicit `codexHome/sessions` directory without parsing private
 contents. `parseCodexSessionJsonl` extracts safe metadata from caller-provided
 JSONL content. `discoverCodexSessions` accepts caller-supplied Codex-like records and
 normalizes them into discovery events with confidence, source, and warning
-fields. It does not attach sessions to work items yet.
+fields. The CLI exposes this as `devflow sessions codex --codex-home <path>
+--json`. It does not attach sessions to work items yet.
 
 ## Phase 7: Beginner Guidance Profile
 
