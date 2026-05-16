@@ -42,13 +42,15 @@ packages/core/
 
 ## Responsibilities
 
-- Define JSON-serializable contracts for `status`, `split`, `finish`, and
-  `doctor`.
+- Define JSON-serializable contracts for `status`, `split`, `finish`,
+  `doctor`, and session attach planning.
 - Normalize paths to repo-relative POSIX-style paths internally while preserving
   platform metadata for command generation.
 - Store append-only events and rebuild derived status views from those events.
 - Recommend gates and next prompts from project contracts, changed files, and
   session evidence.
+- Propose session-to-work-item links without writing attach state. Low- or
+  medium-confidence session matches must stay confirmation-gated.
 - Render local execution contracts and repeated-mistake memory into agent-safe
   recommendations.
 

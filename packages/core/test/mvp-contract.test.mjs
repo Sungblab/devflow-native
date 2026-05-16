@@ -7,6 +7,7 @@ import test from "node:test";
 import {
   createFinishSummary,
   createDoctorSummary,
+  createSessionAttachPlan,
   createTermExplanation,
   createNextPrompt,
   createPromptRewrite,
@@ -88,6 +89,44 @@ test("prompt rewrite turns vague intent into agent-ready requirements", () => {
   assert.match(rewrite.agentReadyPrompt, /Phase 7/);
   assert.ok(rewrite.requirements.some((item) => item.includes("Infer")));
   assert.ok(rewrite.missingDetails.includes("target repository or feature area"));
+});
+
+test("session attach plan proposes confirmation-gated work links", () => {
+  const plan = createSessionAttachPlan({
+    workItems: [
+      {
+        id: "phase-6-session-import",
+        title: "Phase 6 session import",
+        ownedPaths: ["packages/adapters/**", "packages/cli/**"],
+      },
+    ],
+    sessions: [
+      {
+        sessionId: "high-confidence",
+        agent: "Codex",
+        project: { confidence: "high" },
+        events: [{ type: "git.diff.captured", changedFiles: ["packages/adapters/src/index.js"] }],
+      },
+      {
+        sessionId: "low-confidence",
+        agent: "Codex",
+        project: { confidence: "low" },
+        events: [],
+        warnings: ["No cwd metadata was available for this Codex session."],
+      },
+    ],
+  });
+
+  assert.equal(plan.schemaVersion, "0.1");
+  assert.equal(plan.command, "session_attach_plan");
+  assert.equal(plan.proposals.length, 2);
+  assert.equal(plan.proposals[0].sessionId, "high-confidence");
+  assert.equal(plan.proposals[0].recommendedWorkItemId, "phase-6-session-import");
+  assert.equal(plan.proposals[0].action, "attach-ready");
+  assert.equal(plan.proposals[0].requiresConfirmation, false);
+  assert.equal(plan.proposals[1].action, "confirmation-required");
+  assert.equal(plan.proposals[1].requiresConfirmation, true);
+  assert.match(plan.proposals[1].reason, /low confidence/);
 });
 
 test("term explanation translates beginner-facing development terms", () => {
