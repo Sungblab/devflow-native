@@ -13,6 +13,7 @@ test("stdio transport lists tools over JSON-RPC", async () => {
   assert.equal(response.id, 1);
   assert.equal(response.result.tools[0].name, "devflow.status");
   assert.ok(response.result.tools.some((tool) => tool.name === "devflow.finish"));
+  assert.ok(response.result.tools.some((tool) => tool.name === "devflow.record_gate"));
 });
 
 test("stdio transport calls devflow.doctor over JSON-RPC", async () => {

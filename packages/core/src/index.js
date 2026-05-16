@@ -191,6 +191,29 @@ export async function recordFinishEvent(repoPath, finishSummary, options = {}) {
   return event;
 }
 
+export async function recordGateEvent(repoPath, gateEvidence, options = {}) {
+  const observedAt = options.observedAt ?? gateEvidence.observedAt ?? new Date().toISOString();
+  const event = {
+    schemaVersion: "0.1",
+    type: "gate.finished",
+    observedAt,
+    payload: {
+      id: gateEvidence.id,
+      command: gateEvidence.command,
+      status: gateEvidence.status,
+      observedAt,
+      summary: gateEvidence.summary ?? null,
+      workItemId: gateEvidence.workItemId ?? null,
+    },
+  };
+
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await appendFile(join(stateDir, "events.jsonl"), `${JSON.stringify(event)}\n`, "utf8");
+
+  return event;
+}
+
 export async function readDevflowState(repoPath) {
   let raw;
   try {
@@ -309,7 +332,7 @@ function deriveStateFromEvents(events, warnings = []) {
       stale: olderCompletions.map(createHandoffEvidence).reverse(),
     },
     gates: {
-      latestById: createLatestGateEvidence(completedWork),
+      latestById: createLatestGateEvidence(events),
     },
   };
 }
@@ -327,6 +350,22 @@ function createLatestGateEvidence(events) {
   const latestById = {};
 
   for (const event of events) {
+    if (event.type === "gate.finished") {
+      latestById[event.payload.id] = {
+        id: event.payload.id,
+        command: event.payload.command,
+        status: event.payload.status,
+        observedAt: event.payload.observedAt ?? event.observedAt,
+        summary: event.payload.summary ?? null,
+        workItemId: event.payload.workItemId ?? null,
+      };
+      continue;
+    }
+
+    if (event.type !== "work.completed" || event.payload?.command !== "finish") {
+      continue;
+    }
+
     for (const gate of event.payload.evidence.gates ?? []) {
       latestById[gate.id] = {
         id: gate.id,

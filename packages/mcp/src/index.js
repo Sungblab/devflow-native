@@ -6,6 +6,7 @@ import {
   readDevflowState,
   readMistakeMemory,
   recordFinishEvent,
+  recordGateEvent,
 } from "../../core/src/index.js";
 
 const tools = [
@@ -20,6 +21,10 @@ const tools = [
   {
     name: "devflow.finish",
     description: "Record completion evidence and generate a next-session prompt.",
+  },
+  {
+    name: "devflow.record_gate",
+    description: "Record standalone gate evidence without closing a work item.",
   },
   {
     name: "devflow.next_prompt",
@@ -42,6 +47,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.finish") {
     return callFinish(args);
+  }
+
+  if (name === "devflow.record_gate") {
+    return callRecordGate(args);
   }
 
   if (name === "devflow.next_prompt") {
@@ -122,6 +131,27 @@ async function callFinish(args) {
   await recordFinishEvent(repoPath, summary);
 
   return toolResult(summary, `devflow finish: ${summary.workItem.id}`);
+}
+
+async function callRecordGate(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const event = await recordGateEvent(repoPath, {
+    id: args.id,
+    command: args.command,
+    status: args.status,
+    summary: args.summary,
+    workItemId: args.workItemId ?? args.work,
+  });
+
+  return toolResult(
+    {
+      schemaVersion: "0.1",
+      command: "record_gate",
+      gate: event.payload,
+      event,
+    },
+    `devflow record_gate: ${event.payload.id}`,
+  );
 }
 
 function callNextPrompt(args) {

@@ -9,6 +9,7 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.doctor`
 - `devflow.status`
 - `devflow.finish`
+- `devflow.record_gate`
 - `devflow.next_prompt`
 
 Handlers call `packages/core` and return structured content plus a short text
