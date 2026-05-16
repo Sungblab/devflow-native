@@ -509,6 +509,9 @@ Safety boundary:
 
 Lists attached sessions from local `.devflow` state.
 
+For copy-paste filter combinations, see
+[Session List Filter Examples](../examples/session-list-filters.md).
+
 Example:
 
 ```powershell
