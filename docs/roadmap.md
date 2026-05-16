@@ -114,8 +114,9 @@ Exit criteria:
 Current implementation note: `packages/mcp` has testable handler functions for
 `devflow.status`, `devflow.split`, `devflow.doctor`, `devflow.finish`,
 `devflow.record_gate`, and `devflow.next_prompt`, plus a minimal stdio JSON-RPC
-transport. Host-specific MCP config templates and a CLI renderer for
-`devflow split` remain follow-up slices.
+transport. The CLI also has a thin `devflow split --json` renderer. Host-specific
+MCP config templates and project-specific split discovery remain follow-up
+slices.
 
 ## Phase 6: Session Import
 

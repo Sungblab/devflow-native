@@ -28,6 +28,7 @@ The first implementation slice is deliberately narrow:
 
 ```text
 devflow status
+devflow split
 devflow finish
 devflow doctor
 devflow prompt next
@@ -41,9 +42,11 @@ This loop should answer three daily questions before larger surfaces exist:
 - What local shell, path, tool, and repeated-mistake rules should the agent
   follow before running commands?
 
-`devflow split`, `devflow init`, `devflow doctor`, and `devflow dashboard` stay
-in the broad contract. `doctor` is included early because plugin/skill-first
-workflows need a cheap way to avoid repeated local-environment mistakes.
+`devflow split` now has a first thin CLI renderer over the core split contract,
+but work-item persistence and project-specific split discovery remain later
+slices. `devflow init` and `devflow dashboard` stay in the broad contract.
+`doctor` is included early because plugin/skill-first workflows need a cheap
+way to avoid repeated local-environment mistakes.
 
 ## MVP State Persistence
 

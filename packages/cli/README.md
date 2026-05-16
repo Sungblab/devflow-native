@@ -45,9 +45,11 @@ packages/cli/
 ## Initial Commands
 
 - `devflow status`
+- `devflow split`
 - `devflow finish`
 - `devflow doctor`
 - `devflow prompt next`
 
-`devflow split` and `devflow init` can reuse the same rendering and config
+`devflow split` currently renders the first local worktree-session plan. The
+future `devflow init` command can reuse the same rendering and config
 infrastructure once the MVP loop is stable.
