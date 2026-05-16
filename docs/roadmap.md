@@ -141,7 +141,7 @@ Exit criteria:
 
 Build:
 
-- `devflow status --simple`
+- `devflow status --simple` (implemented as a CLI renderer)
 - `devflow finish --guided`
 - `devflow explain <term>`
 - glossary seed for common UI, web, git, testing, deployment, and agent terms

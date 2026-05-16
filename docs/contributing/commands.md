@@ -134,6 +134,12 @@ Example:
 devflow status --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --profile standard --platform powershell --json
 ```
 
+Beginner-friendly renderer:
+
+```powershell
+devflow status --simple
+```
+
 Inputs:
 
 - repository path
