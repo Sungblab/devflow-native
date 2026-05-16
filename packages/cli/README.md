@@ -4,7 +4,7 @@
 parse arguments, call core services, render text or JSON, and return clear exit
 codes. `devflow status --simple` includes branch, dirty-file count, recorded
 session count, latest session work item, session id, observed time, agent,
-kind, summary, latest handoff, next check, and next step.
+kind, summary, changed-file count, latest handoff, next check, and next step.
 
 ## Initial File Boundary
 

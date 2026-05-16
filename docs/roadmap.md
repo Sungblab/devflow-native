@@ -185,7 +185,7 @@ Build:
 
 - `devflow status --simple` (implemented as a CLI renderer, including session
   evidence counts, latest session work item, session id, observed time, agent,
-  kind, and summary)
+  kind, summary, and changed-file count)
 - `devflow finish --guided` (implemented as a CLI renderer)
 - `devflow explain <term>`
 - glossary seed for common UI, web, git, testing, deployment, and agent terms
