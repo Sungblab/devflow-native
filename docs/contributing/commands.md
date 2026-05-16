@@ -54,9 +54,11 @@ The MVP loop stores local evidence in an append-only JSONL event log:
 ```
 
 `devflow finish` appends one `work.completed` event containing the finish JSON
-contract. `devflow status` reads the same log and derives the latest handoff and
-latest gate evidence from it. The event log is local-first project state and is
-ignored by git by default in this repository.
+contract. Agent hosts may also record standalone `gate.finished` evidence
+through the MCP layer before a work item is closed. `devflow status` reads the
+same log and derives the latest handoff and latest gate evidence from it. The
+event log is local-first project state and is ignored by git by default in this
+repository.
 
 ## Shared CLI Rules
 

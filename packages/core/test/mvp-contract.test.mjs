@@ -11,6 +11,7 @@ import {
   createStatusSummary,
   parseGitStatusLines,
   readDevflowState,
+  recordGateEvent,
   recordFinishEvent,
 } from "../src/index.js";
 
@@ -145,6 +146,33 @@ test("status summary can derive latest handoff and gate evidence from devflow st
   assert.match(status.handoffs.latest.prompt, /persisted status evidence/);
   assert.equal(status.gates[0].lastRun.status, "passed");
   assert.equal(status.gates[0].lastRun.observedAt, "2026-05-16T10:00:00+09:00");
+});
+
+test("status summary can derive gate evidence recorded independently", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-gate-"));
+
+  await recordGateEvent(
+    repoPath,
+    {
+      id: "docs",
+      command: "npm run docs:check",
+      status: "passed",
+      summary: "Documentation link check passed.",
+      workItemId: "docs-check",
+    },
+    { observedAt: "2026-05-16T11:00:00+09:00" },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath, branch: "main" },
+    state,
+    gates: [{ id: "docs", command: "npm run docs:check", recommended: true }],
+  });
+
+  assert.equal(status.gates[0].lastRun.status, "passed");
+  assert.equal(status.gates[0].lastRun.summary, "Documentation link check passed.");
+  assert.equal(status.gates[0].lastRun.workItemId, "docs-check");
 });
 
 test("doctor summary renders platform rules and repeated mistake memory", () => {

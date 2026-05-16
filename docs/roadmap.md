@@ -96,6 +96,7 @@ Build:
 - `devflow.status` MCP tool
 - `devflow.split` MCP tool
 - `devflow.finish` MCP tool
+- `devflow.record_gate` MCP tool
 - `devflow.next_prompt` MCP tool
 - Claude Code plugin draft with slash commands
 - Codex MCP config template
@@ -111,9 +112,9 @@ Exit criteria:
 - plugin/slash-command UX calls the same core contracts as the CLI
 
 Current implementation note: `packages/mcp` has testable handler functions for
-`devflow.status`, `devflow.doctor`, `devflow.finish`, and
-`devflow.next_prompt`, plus a minimal stdio JSON-RPC transport. Host-specific
-MCP config templates remain a follow-up slice.
+`devflow.status`, `devflow.doctor`, `devflow.finish`,
+`devflow.record_gate`, and `devflow.next_prompt`, plus a minimal stdio JSON-RPC
+transport. Host-specific MCP config templates remain a follow-up slice.
 
 ## Phase 6: Session Import
 
