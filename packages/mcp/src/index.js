@@ -4,6 +4,7 @@ import {
   createNextPrompt,
   createSplitPlan,
   createStatusSummary,
+  readDevflowConfig,
   readDevflowState,
   readMistakeMemory,
   recordFinishEvent,
@@ -96,7 +97,9 @@ async function callStatus(args) {
   return toolResult(summary, `devflow status: ${summary.repo.absolutePath}`);
 }
 
-function callSplit(args) {
+async function callSplit(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const config = await readDevflowConfig(repoPath);
   const plan = createSplitPlan({
     runId: args.runId,
     goal: args.goal,
@@ -107,6 +110,7 @@ function callSplit(args) {
     baseRef: args.baseRef,
     worktreeRoot: args.worktreeRoot,
     tasks: args.tasks,
+    config,
   });
 
   return toolResult(plan, `devflow split: ${plan.sessions.length} sessions`);

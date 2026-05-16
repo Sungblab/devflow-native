@@ -236,6 +236,7 @@ Inputs:
 - session count
 - profile
 - platform
+- optional `.devflow/config.json` `split.tasks`
 - optional preferred agents
 - optional base branch
 - optional worktree root
@@ -249,6 +250,11 @@ Outputs:
 - paths to avoid
 - verification commands
 - merge/review order
+
+When `split.tasks` exists in `.devflow/config.json`, `devflow split` uses those
+project-specific tasks unless explicit tasks are supplied by an MCP caller.
+This lets a project define stable ownership boundaries and verification gates
+without hard-coding them into an agent prompt.
 
 JSON output:
 

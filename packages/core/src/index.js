@@ -136,10 +136,12 @@ export function createNextPrompt(input) {
 }
 
 export function createSplitPlan(input = {}) {
-  const sessionCount = input.sessionCount ?? input.sessions ?? 2;
-  const tasks = normalizeSplitTasks(input.tasks, sessionCount);
-  const profileName = input.profile ?? "standard";
-  const platform = normalizePlatform(input.platform ?? "powershell");
+  const config = input.config ?? {};
+  const configuredTasks = config.split?.tasks ?? config.splitTasks;
+  const sessionCount = input.sessionCount ?? input.sessions ?? configuredTasks?.length ?? 2;
+  const tasks = normalizeSplitTasks(input.tasks ?? configuredTasks, sessionCount);
+  const profileName = input.profile ?? config.defaultProfile ?? "standard";
+  const platform = normalizePlatform(input.platform ?? config.defaultPlatform ?? "powershell");
   const base = {
     branch: input.baseBranch ?? "main",
     ref: input.baseRef ?? "origin/main",
@@ -170,7 +172,7 @@ export function createSplitPlan(input = {}) {
     sessions,
     mergeOrder: createMergeOrder(sessions),
     collisionRisks: createCollisionRisks(sessions),
-    warnings: [],
+    warnings: config.warnings ?? [],
   };
 }
 
@@ -210,6 +212,31 @@ export async function readMistakeMemory(repoPath) {
     return {
       mistakes: [],
       warnings: ["Ignoring invalid .devflow/mistakes.json."],
+    };
+  }
+}
+
+export async function readDevflowConfig(repoPath) {
+  let raw;
+  try {
+    raw = await readFile(join(repoPath, ".devflow", "config.json"), "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return { warnings: [] };
+    }
+
+    throw error;
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    return {
+      ...parsed,
+      warnings: [],
+    };
+  } catch {
+    return {
+      warnings: ["Ignoring invalid .devflow/config.json."],
     };
   }
 }

@@ -9,6 +9,7 @@ import {
   createSplitPlan,
   createStatusSummary,
   parseGitStatusLines,
+  readDevflowConfig,
   readDevflowState,
   readMistakeMemory,
   recordFinishEvent,
@@ -21,7 +22,7 @@ try {
   if (command === "status") {
     await renderStatus(args.slice(1));
   } else if (command === "split") {
-    renderSplit(args.slice(1));
+    await renderSplit(args.slice(1));
   } else if (command === "finish") {
     await renderFinish(args.slice(1));
   } else if (command === "doctor") {
@@ -50,8 +51,10 @@ async function renderStatus(argsForCommand) {
   render(summary, options.json);
 }
 
-function renderSplit(argsForCommand) {
+async function renderSplit(argsForCommand) {
   const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const config = await readDevflowConfig(repoPath);
   const plan = createSplitPlan({
     runId: options["run-id"],
     goal: options.goal,
@@ -61,6 +64,7 @@ function renderSplit(argsForCommand) {
     baseBranch: options["base-branch"],
     baseRef: options["base-ref"],
     worktreeRoot: options["worktree-root"],
+    config,
   });
 
   render(plan, options.json);

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -135,4 +135,35 @@ test("MCP split returns worktree sessions and copy-paste prompts", async () => {
   assert.equal(result.structuredContent.sessions[0].branch, "codex/mcp-split-tool");
   assert.match(result.structuredContent.sessions[0].prompt, /packages\/mcp\/\*\*/);
   assert.match(result.content[0].text, /split/);
+});
+
+test("MCP split reads project-specific tasks from devflow config", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-config-split-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      defaultProfile: "hermes",
+      defaultPlatform: "windows-powershell",
+      split: {
+        tasks: [
+          {
+            id: "configured-mcp",
+            ownedPaths: ["packages/mcp/**"],
+            avoidPaths: ["docs/**"],
+            verification: [{ cwd: ".", command: "npm test" }],
+          },
+        ],
+      },
+    })}\n`,
+  );
+
+  const result = await callTool("devflow.split", {
+    repo: repoPath,
+    goal: "Use configured MCP split.",
+  });
+
+  assert.equal(result.structuredContent.profile.name, "hermes");
+  assert.equal(result.structuredContent.sessions[0].id, "configured-mcp");
+  assert.deepEqual(result.structuredContent.sessions[0].ownedPaths, ["packages/mcp/**"]);
 });

@@ -16,5 +16,23 @@
       "description": "Inspect git, work items, gates, and latest handoffs",
       "command": "devflow status"
     }
+  },
+  "split": {
+    "tasks": [
+      {
+        "id": "implementation",
+        "role": "implementation",
+        "ownedPaths": ["packages/**"],
+        "avoidPaths": ["docs/**"],
+        "verification": [{ "cwd": ".", "command": "npm test" }]
+      },
+      {
+        "id": "docs-audit",
+        "role": "audit",
+        "ownedPaths": ["docs/**"],
+        "avoidPaths": ["packages/**"],
+        "verification": [{ "cwd": ".", "command": "npm run docs:check" }]
+      }
+    ]
   }
 }
