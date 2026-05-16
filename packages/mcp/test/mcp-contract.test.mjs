@@ -388,3 +388,33 @@ test("MCP sessions_list filters by work item", async () => {
   assert.equal(result.structuredContent.filters.workItemId, "phase-6-session-import");
   assert.equal(result.structuredContent.sessions[0].workItemId, "phase-6-session-import");
 });
+
+test("MCP sessions_list limits after work item filtering", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-session-list-limit-"));
+  await callTool("devflow.sessions_note", {
+    repo: repoPath,
+    work: "phase-6-session-import",
+    summary: "First import note.",
+  });
+  await callTool("devflow.sessions_note", {
+    repo: repoPath,
+    work: "phase-7-beginner-guidance",
+    summary: "Beginner guidance note.",
+  });
+  await callTool("devflow.sessions_note", {
+    repo: repoPath,
+    work: "phase-6-session-import",
+    summary: "Second import note.",
+  });
+
+  const result = await callTool("devflow.sessions_list", {
+    repo: repoPath,
+    work: "phase-6-session-import",
+    limit: 1,
+  });
+
+  assert.equal(result.structuredContent.count, 1);
+  assert.equal(result.structuredContent.totalCount, 2);
+  assert.equal(result.structuredContent.filters.limit, 1);
+  assert.match(result.structuredContent.sessions[0].summary, /Second import note/);
+});

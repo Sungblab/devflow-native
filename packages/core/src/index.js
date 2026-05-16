@@ -193,10 +193,12 @@ export function createSessionAttachPlan(input = {}) {
 export function createSessionListSummary(input = {}) {
   const state = input.state ?? emptyDevflowState();
   const workItemId = input.workItemId ?? null;
+  const limit = normalizePositiveInteger(input.limit);
   const allSessions = input.sessions ?? state.sessions?.attached ?? [];
-  const sessions = workItemId
+  const filteredSessions = workItemId
     ? allSessions.filter((session) => session.workItemId === workItemId)
     : allSessions;
+  const sessions = limit ? filteredSessions.slice(-limit) : filteredSessions;
 
   return {
     schemaVersion: "0.1",
@@ -206,9 +208,11 @@ export function createSessionListSummary(input = {}) {
     },
     filters: {
       workItemId,
+      limit,
     },
     sessions,
     count: sessions.length,
+    totalCount: filteredSessions.length,
     warnings: [...(input.warnings ?? []), ...(state.warnings ?? [])],
   };
 }
@@ -869,6 +873,19 @@ const glossary = {
 
 function normalizeTerm(term) {
   return String(term ?? "unknown term").trim().toLowerCase();
+}
+
+function normalizePositiveInteger(value) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    return null;
+  }
+
+  return parsed;
 }
 
 function createFallbackGlossaryEntry(term) {

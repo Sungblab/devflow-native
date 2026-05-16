@@ -36,12 +36,13 @@ work.
    selected `proposal`. If the link already exists, treat the `existing: true`
    response as a no-op success.
 8. To inspect recorded links later, use `devflow sessions list --repo "<repo>" --json`.
-   Add `--work "<workId>"` when only one work item should be shown. In MCP
-   hosts, use `devflow.sessions_list` with the same `repo` argument and optional
-   `work` or `workItemId`. For maintainer-facing terminal checks, omit `--json`
-   to render a short text summary with session ids, changed-file counts, or
-   manual note summaries. Treat a non-zero warning count as something to inspect
-   in `--json` output before relying on the list.
+   Add `--work "<workId>"` when only one work item should be shown, and
+   `--limit <n>` when only the most recent matches are useful. In MCP hosts, use
+   `devflow.sessions_list` with the same `repo` argument and optional `work` /
+   `workItemId` and `limit`. For maintainer-facing terminal checks, omit
+   `--json` to render a short text summary with session ids, changed-file
+   counts, limit totals, or manual note summaries. Treat a non-zero warning
+   count as something to inspect in `--json` output before relying on the list.
 9. When useful work happened outside a supported adapter, record it with
    `devflow sessions note --repo "<repo>" --work "<workId>" --agent manual --summary "<text>" --json`.
    In MCP hosts, use `devflow.sessions_note` with `work`, `agent`, and `summary`.
