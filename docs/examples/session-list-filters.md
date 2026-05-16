@@ -21,8 +21,8 @@ Count: 5
 Sort: observedAt:desc
 Limit: 5
 Total: 12
-manual-note phase-6-session-import manual Reviewed local context.
-attached phase-6-session-import Codex high-confidence files:3
+manual-note phase-6-session-import manual 2026-05-16T11:00:00.000Z Reviewed local context.
+attached phase-6-session-import Codex 2026-05-16T10:30:00.000Z high-confidence files:3
 ```
 
 Use `--json` when another tool or agent needs the stable structured contract.

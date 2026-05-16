@@ -1027,7 +1027,7 @@ test("CLI sessions list renders filtered text output", async () => {
   assert.match(stdout, /^Sessions$/m);
   assert.match(stdout, /^Filter: phase-6-session-import$/m);
   assert.match(stdout, /^Count: 1$/m);
-  assert.match(stdout, /manual-note\s+phase-6-session-import\s+manual\s+Reviewed local session context\./);
+  assert.match(stdout, /manual-note\s+phase-6-session-import\s+manual\s+\S+\s+Reviewed local session context\./);
 });
 
 test("CLI sessions list text output shows attached session details", async () => {
@@ -1074,7 +1074,42 @@ test("CLI sessions list text output shows attached session details", async () =>
     repoPath,
   ]);
 
-  assert.match(stdout, /attached\s+phase-6-session-import\s+Codex\s+high-confidence\s+files:1/);
+  assert.match(stdout, /attached\s+phase-6-session-import\s+Codex\s+\S+\s+high-confidence\s+files:1/);
+});
+
+test("CLI sessions list text output shows observed time", async () => {
+  const repoPath = await createTempGitRepo();
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await writeFile(
+    join(stateDir, "events.jsonl"),
+    `${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-16T11:00:00.000Z",
+      payload: {
+        sessionId: "manual-note-1",
+        workItemId: "phase-6-session-import",
+        agent: "manual",
+        kind: "manual-note",
+        summary: "Reviewed local context.",
+      },
+    })}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "list",
+    "--repo",
+    repoPath,
+  ]);
+
+  assert.match(
+    stdout,
+    /manual-note\s+phase-6-session-import\s+manual\s+2026-05-16T11:00:00.000Z\s+Reviewed local context\./,
+  );
 });
 
 test("CLI sessions list text output surfaces state warnings", async () => {

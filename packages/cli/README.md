@@ -72,8 +72,8 @@ filtered by `--agent <name>`, `--work <id>`, `--since <iso-date>`, sorted by
 `--sort`, the default recorded order and recent-match limit behavior stay
 unchanged. Use `--json` for the stable agent contract or omit it for a short
 terminal summary with active filters, attached session ids, changed-file counts,
-limit totals, sort choice, or manual note summaries. The text summary also
-surfaces a compact warning count when local state has warnings. `devflow
+observed times, limit totals, sort choice, or manual note summaries. The text
+summary also surfaces a compact warning count when local state has warnings. `devflow
 sessions note` records manual or external session context as local state. The
 future `devflow init` command can reuse the same rendering and config
 infrastructure once the MVP loop is stable.
