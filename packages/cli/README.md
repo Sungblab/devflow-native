@@ -2,10 +2,11 @@
 
 `packages/cli` owns the `devflow` command surface. It should stay thin:
 parse arguments, call core services, render text or JSON, and return clear exit
-codes. `devflow status --simple` includes branch, work filter, dirty-file
-count, recorded session count, latest session work item, session id, observed
-time, agent, kind, summary, changed-file count, latest handoff, next check, and
-next step. Pass `--work <id>` to focus status session evidence on one work item.
+codes. `devflow status --simple` includes branch, work filter, agent filter,
+dirty-file count, recorded session count, latest session work item, session id,
+observed time, agent, kind, summary, changed-file count, latest handoff, next
+check, and next step. Pass `--work <id>` or `--agent <name>` to focus status
+session evidence.
 
 ## Initial File Boundary
 

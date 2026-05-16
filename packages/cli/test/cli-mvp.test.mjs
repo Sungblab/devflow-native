@@ -303,6 +303,55 @@ test("CLI status simple summary can focus sessions by work item", async () => {
   assert.doesNotMatch(stdout, /Beginner guidance note/);
 });
 
+test("CLI status simple summary can focus sessions by agent", async () => {
+  const repoPath = await createTempGitRepo();
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await writeFile(
+    join(stateDir, "events.jsonl"),
+    `${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-16T10:00:00.000Z",
+      payload: {
+        sessionId: "codex-note",
+        workItemId: "phase-6-session-import",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "Codex import note.",
+      },
+    })}\n${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-16T11:00:00.000Z",
+      payload: {
+        sessionId: "manual-note",
+        workItemId: "phase-6-session-import",
+        agent: "manual",
+        kind: "manual-note",
+        summary: "Manual import note.",
+      },
+    })}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--agent",
+    "Codex",
+    "--simple",
+  ]);
+
+  assert.match(stdout, /Agent filter: Codex/);
+  assert.match(stdout, /Sessions: 1/);
+  assert.match(stdout, /Latest session agent: Codex/);
+  assert.match(stdout, /Latest session summary: Codex import note\./);
+  assert.doesNotMatch(stdout, /Manual import note/);
+});
+
 test("CLI prompt next renders a copy-paste prompt", async () => {
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",

@@ -692,6 +692,40 @@ test("status summary can focus attached sessions by work item", async () => {
   assert.match(status.sessions.attached[0].summary, /Session import note/);
 });
 
+test("status summary can focus attached sessions by agent", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-status-agent-filter-"));
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "Codex",
+      summary: "Codex import note.",
+    },
+    { observedAt: "2026-05-16T10:00:00.000Z" },
+  );
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "manual",
+      summary: "Manual import note.",
+    },
+    { observedAt: "2026-05-16T11:00:00.000Z" },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath, branch: "main" },
+    state,
+    agent: "Codex",
+  });
+
+  assert.equal(status.filters.agent, "Codex");
+  assert.equal(status.sessions.attached.length, 1);
+  assert.equal(status.sessions.attached[0].agent, "Codex");
+  assert.match(status.sessions.attached[0].summary, /Codex import note/);
+});
+
 test("status summary can derive gate evidence recorded independently", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-gate-"));
 

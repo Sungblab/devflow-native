@@ -25,7 +25,8 @@ content plus a short text summary for agent hosts.
 
 `devflow.status` reads repo state, gate evidence, handoffs, and attached
 session evidence. Pass `work` or `workItemId` to focus attached sessions on one
-work item while preserving the same core JSON contract used by the CLI.
+work item, and `agent` to focus sessions from one recorded agent/manual source,
+while preserving the same core JSON contract used by the CLI.
 
 `devflow.sessions_codex` is read-only and requires an explicit `codexHome`
 argument before it reads local Codex session candidates.

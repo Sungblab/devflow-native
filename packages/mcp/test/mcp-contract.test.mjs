@@ -74,6 +74,32 @@ test("MCP status can focus attached sessions by work item", async () => {
   assert.match(result.structuredContent.sessions.attached[0].summary, /Session import note/);
 });
 
+test("MCP status can focus attached sessions by agent", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-status-agent-"));
+  await callTool("devflow.sessions_note", {
+    repo: repoPath,
+    work: "phase-6-session-import",
+    agent: "Codex",
+    summary: "Codex import note.",
+  });
+  await callTool("devflow.sessions_note", {
+    repo: repoPath,
+    work: "phase-6-session-import",
+    agent: "manual",
+    summary: "Manual import note.",
+  });
+
+  const result = await callTool("devflow.status", {
+    repo: repoPath,
+    agent: "Codex",
+  });
+
+  assert.equal(result.structuredContent.filters.agent, "Codex");
+  assert.equal(result.structuredContent.sessions.attached.length, 1);
+  assert.equal(result.structuredContent.sessions.attached[0].agent, "Codex");
+  assert.match(result.structuredContent.sessions.attached[0].summary, /Codex import note/);
+});
+
 test("MCP doctor returns the same structured execution contract", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-doctor-"));
   const result = await callTool("devflow.doctor", {
