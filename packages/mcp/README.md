@@ -8,6 +8,7 @@ JSON-RPC transport for MCP-capable hosts.
 
 - `devflow.doctor`
 - `devflow.status`
+- `devflow.split`
 - `devflow.finish`
 - `devflow.record_gate`
 - `devflow.next_prompt`

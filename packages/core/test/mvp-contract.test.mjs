@@ -8,6 +8,7 @@ import {
   createFinishSummary,
   createDoctorSummary,
   createNextPrompt,
+  createSplitPlan,
   createStatusSummary,
   parseGitStatusLines,
   readDevflowState,
@@ -70,6 +71,44 @@ test("next prompt includes objective, changed files, evidence, risks, and next t
   assert.match(prompt, /npm test/);
   assert.match(prompt, /No SQLite persistence yet/);
   assert.match(prompt, /Add CLI rendering for status/);
+});
+
+test("split plan creates disjoint worktree sessions with prompts and commands", () => {
+  const plan = createSplitPlan({
+    runId: "2026-05-16-devflow-next",
+    goal: "Continue Solo Devflow OS MCP work.",
+    sessionCount: 2,
+    profile: "standard",
+    platform: "windows-powershell",
+    baseRef: "origin/main",
+    tasks: [
+      {
+        id: "mcp-split-tool",
+        role: "implementation",
+        ownedPaths: ["packages/mcp/**", "packages/core/**"],
+        avoidPaths: ["packages/web/**"],
+        verification: [{ cwd: ".", command: "npm test" }],
+      },
+      {
+        id: "docs-split-contract",
+        role: "audit",
+        ownedPaths: ["docs/**"],
+        avoidPaths: ["packages/**"],
+        verification: [{ cwd: ".", command: "npm run docs:check" }],
+      },
+    ],
+  });
+
+  assert.equal(plan.schemaVersion, "0.1");
+  assert.equal(plan.command, "split");
+  assert.equal(plan.platform.name, "windows-powershell");
+  assert.equal(plan.sessions.length, 2);
+  assert.equal(plan.sessions[0].branch, "codex/mcp-split-tool");
+  assert.equal(plan.sessions[0].worktreePath, ".worktrees/mcp-split-tool");
+  assert.match(plan.sessions[0].commands[0].variants.powershell, /git worktree add/);
+  assert.match(plan.sessions[0].prompt, /packages\/mcp\/\*\*/);
+  assert.deepEqual(plan.mergeOrder, ["docs-split-contract", "mcp-split-tool"]);
+  assert.equal(plan.collisionRisks.length, 0);
 });
 
 test("git status parser preserves file-level untracked paths", () => {

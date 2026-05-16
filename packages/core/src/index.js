@@ -135,6 +135,45 @@ export function createNextPrompt(input) {
   return `${lines.join("\n")}\n`;
 }
 
+export function createSplitPlan(input = {}) {
+  const sessionCount = input.sessionCount ?? input.sessions ?? 2;
+  const tasks = normalizeSplitTasks(input.tasks, sessionCount);
+  const profileName = input.profile ?? "standard";
+  const platform = normalizePlatform(input.platform ?? "powershell");
+  const base = {
+    branch: input.baseBranch ?? "main",
+    ref: input.baseRef ?? "origin/main",
+  };
+  const sessions = tasks.map((task, index) =>
+    createSplitSession({
+      task,
+      index,
+      goal: input.goal ?? "Continue Solo Devflow OS from the latest project state.",
+      profileName,
+      platform,
+      baseRef: base.ref,
+      worktreeRoot: input.worktreeRoot ?? ".worktrees",
+    }),
+  );
+
+  return {
+    schemaVersion: "0.1",
+    command: "split",
+    runId: input.runId ?? createRunId(input.goal),
+    goal: input.goal ?? "Continue Solo Devflow OS from the latest project state.",
+    profile: {
+      name: profileName,
+      requiredRuntime: false,
+    },
+    platform,
+    base,
+    sessions,
+    mergeOrder: createMergeOrder(sessions),
+    collisionRisks: createCollisionRisks(sessions),
+    warnings: [],
+  };
+}
+
 export function parseGitStatusLines(output) {
   if (!output) {
     return [];
@@ -245,6 +284,12 @@ export async function readDevflowState(repoPath) {
 }
 
 function normalizePlatform(platform = {}) {
+  if (typeof platform === "string") {
+    return normalizePlatform({
+      name: platform === "powershell" ? "windows-powershell" : platform,
+    });
+  }
+
   const name = platform.name ?? "windows-powershell";
 
   if (name === "windows-powershell") {
@@ -457,4 +502,148 @@ function formatList(items) {
   }
 
   return items.map((item) => `- ${item}`);
+}
+
+function normalizeSplitTasks(tasks, sessionCount) {
+  if (Array.isArray(tasks) && tasks.length > 0) {
+    return tasks.slice(0, sessionCount);
+  }
+
+  return Array.from({ length: sessionCount }, (_, index) => ({
+    id: index === 0 ? "implementation" : `review-${index}`,
+    role: index === 0 ? "implementation" : "audit",
+    ownedPaths: index === 0 ? ["packages/**"] : ["docs/**"],
+    avoidPaths: index === 0 ? ["docs/**"] : ["packages/**"],
+    verification: [{ cwd: ".", command: index === 0 ? "npm test" : "npm run docs:check" }],
+  }));
+}
+
+function createSplitSession({ task, index, goal, profileName, platform, baseRef, worktreeRoot }) {
+  const id = slugify(task.id ?? task.title ?? `session-${index + 1}`);
+  const branch = task.branch ?? `codex/${id}`;
+  const worktreePath = task.worktreePath ?? `${worktreeRoot}/${id}`;
+  const role = task.role ?? (index === 0 ? "implementation" : "audit");
+  const ownedPaths = task.ownedPaths ?? [];
+  const avoidPaths = task.avoidPaths ?? [];
+  const verification = task.verification ?? [{ cwd: ".", command: "npm test" }];
+
+  return {
+    id,
+    role,
+    agent: task.agent ?? { preferred: "Codex", fallback: "generic-shell" },
+    branch,
+    worktreePath,
+    ownedPaths,
+    avoidPaths,
+    readFirst: task.readFirst ?? ["AGENTS.md", "docs/README.md", "docs/roadmap.md"],
+    goal: task.goal ?? goal,
+    commands: [createWorktreeCommand(id, branch, worktreePath, baseRef)],
+    verification,
+    prompt: createSplitPrompt({
+      id,
+      role,
+      goal: task.goal ?? goal,
+      profileName,
+      platform,
+      ownedPaths,
+      avoidPaths,
+      verification,
+    }),
+  };
+}
+
+function createWorktreeCommand(id, branch, worktreePath, baseRef) {
+  return {
+    id: `create-${id}-worktree`,
+    intent: "createWorktree",
+    cwd: ".",
+    args: {
+      branch,
+      path: worktreePath,
+      base: baseRef,
+    },
+    variants: {
+      powershell: `git fetch origin; git worktree add '${worktreePath}' -b '${branch}' '${baseRef}'`,
+      posix: `git fetch origin && git worktree add ${worktreePath} -b ${branch} ${baseRef}`,
+    },
+  };
+}
+
+function createSplitPrompt(input) {
+  const lines = [
+    `You are working on ${input.id} for Solo Devflow OS.`,
+    `Role: ${input.role}.`,
+    `Goal: ${input.goal}`,
+    `Profile: ${input.profileName}.`,
+    `Platform: ${input.platform.name}.`,
+    "",
+    "Read first:",
+    "- AGENTS.md",
+    "- docs/README.md",
+    "- docs/roadmap.md",
+    "",
+    "Owned paths:",
+    ...formatList(input.ownedPaths),
+    "",
+    "Avoid paths:",
+    ...formatList(input.avoidPaths),
+    "",
+    "Verification:",
+    ...formatList(input.verification.map((gate) => `${gate.cwd ?? "."}: ${gate.command}`)),
+    "",
+    "Finish by recording changed files, gates, risks, and a next-session prompt.",
+  ];
+
+  return `${lines.join("\n")}\n`;
+}
+
+function createMergeOrder(sessions) {
+  return [...sessions]
+    .sort((left, right) => {
+      if (left.role === right.role) {
+        return 0;
+      }
+
+      return left.role === "audit" ? -1 : 1;
+    })
+    .map((session) => session.id);
+}
+
+function createCollisionRisks(sessions) {
+  const risks = [];
+
+  for (let leftIndex = 0; leftIndex < sessions.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < sessions.length; rightIndex += 1) {
+      const overlap = findPathOverlap(
+        sessions[leftIndex].ownedPaths,
+        sessions[rightIndex].ownedPaths,
+      );
+
+      if (overlap.length > 0) {
+        risks.push({
+          paths: overlap,
+          reason: `${sessions[leftIndex].id} and ${sessions[rightIndex].id} share owned paths.`,
+        });
+      }
+    }
+  }
+
+  return risks;
+}
+
+function findPathOverlap(leftPaths, rightPaths) {
+  const right = new Set(rightPaths);
+  return leftPaths.filter((path) => right.has(path));
+}
+
+function createRunId(goal) {
+  return slugify(goal ?? "devflow-split");
+}
+
+function slugify(value) {
+  return String(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
 }
