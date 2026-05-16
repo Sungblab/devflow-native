@@ -390,6 +390,7 @@ function renderSimpleStatus(summary) {
     `Changed files: ${changedCount}`,
     `Sessions: ${summary.sessions.attached.length}`,
     `Latest session: ${latestSession?.workItemId ?? "none"}`,
+    `Latest session id: ${latestSession?.sessionId ?? "none"}`,
     `Latest session time: ${latestSession?.observedAt ?? "none"}`,
     `Latest session agent: ${latestSession?.agent ?? "none"}`,
     `Latest session kind: ${latestSession?.kind ?? "none"}`,
