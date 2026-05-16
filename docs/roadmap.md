@@ -117,7 +117,9 @@ Current implementation note: `packages/mcp` has testable handler functions for
 transport. The CLI also has a thin `devflow split --json` renderer. Host-specific
 Codex and Gemini MCP config templates are present. Project-specific split
 discovery can now read `.devflow/config.json` `split.tasks`; richer docs/code
-map inference remains later work.
+map inference remains later work. The repo-local plugin ships shared
+`start`, `split`, and `finish` skills for Codex and Claude Code style plugin
+workflows.
 
 ## Phase 6: Session Import
 
