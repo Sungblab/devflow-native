@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "devflow": {
+      "command": "node",
+      "args": ["packages/mcp/src/stdio.js"],
+      "cwd": ".",
+      "trust": false,
+      "description": "Solo Devflow OS local project truth tools"
+    }
+  }
+}
