@@ -64,6 +64,7 @@ file and does not write `.devflow` state. `devflow sessions attach` consumes a
 selected proposal from a plan file and writes a `session.attached` event only
 when `--confirm` is present. `devflow sessions list` reads local state and
 renders attached sessions without probing private agent history, optionally
-filtered by `--work <id>`. `devflow sessions note` records manual or external
-session context as local state. The future `devflow init` command can reuse the
-same rendering and config infrastructure once the MVP loop is stable.
+filtered by `--work <id>`. Use `--json` for the stable agent contract or omit it
+for a short terminal summary. `devflow sessions note` records manual or
+external session context as local state. The future `devflow init` command can
+reuse the same rendering and config infrastructure once the MVP loop is stable.
