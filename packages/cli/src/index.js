@@ -13,6 +13,7 @@ import {
   createDoctorSummary,
   createNextPrompt,
   createPromptRewrite,
+  createSessionAttachPlan,
   createSplitPlan,
   createStatusSummary,
   createTermExplanation,
@@ -43,6 +44,8 @@ try {
     renderPromptRewrite(args.slice(2));
   } else if (command === "sessions" && args[1] === "codex") {
     await renderCodexSessions(args.slice(2));
+  } else if (command === "sessions" && args[1] === "attach-plan") {
+    await renderSessionAttachPlan(args.slice(2));
   } else {
     throw new Error(`Unknown command: ${args.join(" ") || "<none>"}`);
   }
@@ -218,6 +221,19 @@ async function renderCodexSessions(argsForCommand) {
   };
 
   render(summary, options.json);
+}
+
+async function renderSessionAttachPlan(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  if (!options.input) {
+    throw new Error("sessions attach-plan requires --input <json-file>.");
+  }
+
+  const raw = await readFile(options.input, "utf8");
+  const input = JSON.parse(raw);
+  const plan = createSessionAttachPlan(input);
+
+  render(plan, options.json);
 }
 
 function defaultPlatformName() {

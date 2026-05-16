@@ -330,6 +330,50 @@ test("CLI sessions codex renders explicit read-only Codex discovery JSON", async
   assert.equal(parsed.discovery.sessions[0].signals.hasFileEdits, true);
 });
 
+test("CLI sessions attach-plan renders dry-run attach proposals", async () => {
+  const inputPath = join(await mkdtemp(join(tmpdir(), "devflow-cli-attach-plan-")), "input.json");
+  await writeFile(
+    inputPath,
+    `${JSON.stringify({
+      workItems: [
+        {
+          id: "phase-6-session-import",
+          title: "Phase 6 session import",
+          ownedPaths: ["packages/adapters/**"],
+        },
+      ],
+      sessions: [
+        {
+          sessionId: "high-confidence",
+          agent: "Codex",
+          project: { confidence: "high" },
+          events: [
+            {
+              type: "git.diff.captured",
+              changedFiles: ["packages/adapters/src/index.js"],
+            },
+          ],
+        },
+      ],
+    })}\n`,
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "attach-plan",
+    "--input",
+    inputPath,
+    "--json",
+  ]);
+
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.command, "session_attach_plan");
+  assert.equal(parsed.proposals[0].sessionId, "high-confidence");
+  assert.equal(parsed.proposals[0].recommendedWorkItemId, "phase-6-session-import");
+  assert.equal(parsed.proposals[0].action, "attach-ready");
+});
+
 async function createTempGitRepo() {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-cli-"));
   await execFileAsync("git", ["init"], { cwd: repoPath });
