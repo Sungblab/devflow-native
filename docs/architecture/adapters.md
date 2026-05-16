@@ -221,7 +221,9 @@ history contents is a later slice.
 Session-to-work linking remains confirmation-gated. The CLI
 `devflow sessions attach-plan` command and MCP `devflow.sessions_attach_plan`
 tool both return a dry-run proposal from explicit work item and session inputs;
-neither path writes `session.attached` events yet.
+neither path writes `session.attached` events. The separate CLI
+`devflow sessions attach --confirm` command consumes one approved proposal and
+persists the actual `session.attached` event.
 
 ### Claude Code
 

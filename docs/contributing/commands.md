@@ -22,6 +22,7 @@ devflow prompt next
 devflow prompt rewrite
 devflow sessions codex
 devflow sessions attach-plan
+devflow sessions attach
 devflow dashboard
 devflow doctor
 ```
@@ -54,7 +55,8 @@ way to avoid repeated local-environment mistakes.
 `devflow sessions codex` is included as a read-only adapter probe. It requires
 an explicit `--codex-home <path>` and should not read private agent history by
 default. `devflow sessions attach-plan` is a dry-run proposal command and does
-not write `session.attached` events.
+not write `session.attached` events. `devflow sessions attach` is the explicit
+write step and requires `--confirm`.
 
 ## MVP State Persistence
 
@@ -460,8 +462,40 @@ Outputs:
 - confidence and changed-file evidence
 - warnings copied from discovered sessions
 
-This command does not write state. A later command should create
+This command does not write state. `devflow sessions attach` creates
 `session.attached` events only after confirmation rules are satisfied.
+
+## `devflow sessions attach`
+
+Writes an approved attach-plan proposal as a `session.attached` event.
+
+Example:
+
+```powershell
+devflow sessions attach --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --input .devflow/attach-plan.json --session high-confidence --confirm --json
+```
+
+Inputs:
+
+- repository path
+- attach-plan JSON containing `proposals`
+- selected session id
+- explicit `--confirm`
+
+Outputs:
+
+- `session_attach` JSON wrapper
+- appended `.devflow/state/events.jsonl` `session.attached` event
+- status-visible attached session evidence
+
+Safety boundary:
+
+- it refuses to run without `--confirm`
+- it requires a proposal with `sessionId` and `recommendedWorkItemId`
+- it records the selected proposal; it does not rediscover or infer sessions
+  during the write step
+- low-confidence proposals should still be treated as maintainer-approved
+  decisions before this command is run
 
 ## `devflow doctor`
 

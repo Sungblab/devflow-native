@@ -94,6 +94,8 @@ Events are append-only. Derived views can be rebuilt. Session attach planning
 is separate from `session.attached` persistence: core may propose attach-ready
 or confirmation-required links from discovered sessions and work items, but a
 later command must perform the actual state write.
+The initial write path is `devflow sessions attach --confirm`, which consumes a
+selected attach-plan proposal and appends a `session.attached` event.
 
 ## Event Types
 
