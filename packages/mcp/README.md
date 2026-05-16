@@ -36,7 +36,8 @@ and a selected `proposal`, then appends a `session.attached` event to local
 `.devflow` state.
 
 `devflow.sessions_list` reads local `.devflow` state and returns attached
-sessions without probing any agent history.
+sessions without probing any agent history. Pass `work` or `workItemId` to
+limit the list to one work item.
 
 `devflow.sessions_note` writes a manual session note as a local
 `session.message` event so external work can appear beside agent sessions.

@@ -269,6 +269,31 @@ test("manual session note persistence appears in session list state", async () =
   assert.match(summary.sessions[0].summary, /Reviewed local session context/);
 });
 
+test("session list summary filters by work item", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-list-filter-"));
+  await recordManualSessionNoteEvent(repoPath, {
+    workItemId: "phase-6-session-import",
+    agent: "manual",
+    summary: "Session import note.",
+  });
+  await recordManualSessionNoteEvent(repoPath, {
+    workItemId: "phase-7-beginner-guidance",
+    agent: "manual",
+    summary: "Beginner guidance note.",
+  });
+
+  const state = await readDevflowState(repoPath);
+  const summary = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    workItemId: "phase-6-session-import",
+  });
+
+  assert.equal(summary.count, 1);
+  assert.equal(summary.filters.workItemId, "phase-6-session-import");
+  assert.equal(summary.sessions[0].workItemId, "phase-6-session-import");
+});
+
 test("term explanation translates beginner-facing development terms", () => {
   const explanation = createTermExplanation({
     term: "toast notification",
