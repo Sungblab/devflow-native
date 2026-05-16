@@ -441,7 +441,7 @@ function renderSessionListText(summary) {
     const changedFileCount = session.changedFiles?.length;
     const detail = session.summary ?? `${session.sessionId} files:${changedFileCount ?? 0}`;
     lines.push(
-      `${session.kind ?? "session"} ${session.workItemId ?? "unknown"} ${session.agent ?? "unknown"} ${detail}`,
+      `${session.kind ?? "session"} ${session.workItemId ?? "unknown"} ${session.agent ?? "unknown"} ${session.observedAt ?? "unknown-time"} ${detail}`,
     );
   }
 
