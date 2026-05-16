@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -11,6 +11,7 @@ import {
   createSplitPlan,
   createStatusSummary,
   parseGitStatusLines,
+  readDevflowConfig,
   readDevflowState,
   recordGateEvent,
   recordFinishEvent,
@@ -109,6 +110,68 @@ test("split plan creates disjoint worktree sessions with prompts and commands", 
   assert.match(plan.sessions[0].prompt, /packages\/mcp\/\*\*/);
   assert.deepEqual(plan.mergeOrder, ["docs-split-contract", "mcp-split-tool"]);
   assert.equal(plan.collisionRisks.length, 0);
+});
+
+test("split plan can derive project-specific tasks from devflow config", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-config-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        defaultProfile: "superpowers",
+        defaultPlatform: "windows-powershell",
+        split: {
+          tasks: [
+            {
+              id: "configured-api",
+              role: "implementation",
+              ownedPaths: ["apps/api/**"],
+              avoidPaths: ["apps/web/**"],
+              verification: [{ cwd: "apps/api", command: "npm test" }],
+            },
+            {
+              id: "configured-docs",
+              role: "audit",
+              ownedPaths: ["docs/**"],
+              avoidPaths: ["apps/**"],
+              verification: [{ cwd: ".", command: "npm run docs:check" }],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  const config = await readDevflowConfig(repoPath);
+  const plan = createSplitPlan({
+    goal: "Use configured split tasks.",
+    config,
+  });
+
+  assert.equal(plan.profile.name, "superpowers");
+  assert.equal(plan.sessions[0].id, "configured-api");
+  assert.deepEqual(plan.sessions[0].ownedPaths, ["apps/api/**"]);
+  assert.equal(plan.sessions[0].verification[0].cwd, "apps/api");
+  assert.deepEqual(plan.mergeOrder, ["configured-docs", "configured-api"]);
+});
+
+test("split plan surfaces invalid config warnings while falling back to defaults", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-invalid-config-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(join(repoPath, ".devflow", "config.json"), "{ invalid json\n");
+
+  const config = await readDevflowConfig(repoPath);
+  const plan = createSplitPlan({
+    goal: "Fallback from invalid config.",
+    config,
+  });
+
+  assert.equal(plan.sessions[0].id, "implementation");
+  assert.match(plan.warnings[0], /Ignoring invalid .devflow\/config.json/);
 });
 
 test("git status parser preserves file-level untracked paths", () => {

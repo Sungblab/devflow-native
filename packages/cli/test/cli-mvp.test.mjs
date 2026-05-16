@@ -55,6 +55,43 @@ test("CLI split renders JSON worktree session plan", async () => {
   assert.match(parsed.sessions[0].prompt, /Continue Devflow split support/);
 });
 
+test("CLI split reads project-specific tasks from devflow config", async () => {
+  const repoPath = await createTempGitRepo();
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      defaultProfile: "superpowers",
+      defaultPlatform: "windows-powershell",
+      split: {
+        tasks: [
+          {
+            id: "configured-cli",
+            ownedPaths: ["packages/cli/**"],
+            avoidPaths: ["packages/web/**"],
+            verification: [{ cwd: ".", command: "npm test" }],
+          },
+        ],
+      },
+    })}\n`,
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "split",
+    "--repo",
+    repoPath,
+    "--goal",
+    "Use configured CLI split",
+    "--json",
+  ]);
+
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.profile.name, "superpowers");
+  assert.equal(parsed.sessions[0].id, "configured-cli");
+  assert.deepEqual(parsed.sessions[0].ownedPaths, ["packages/cli/**"]);
+});
+
 test("CLI finish renders JSON evidence summary", async () => {
   const repoPath = await createTempGitRepo();
   const { stdout } = await execFileAsync("node", [
