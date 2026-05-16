@@ -99,6 +99,7 @@ Build:
 - `devflow.record_gate` MCP tool
 - `devflow.next_prompt` MCP tool
 - `devflow.rewrite_prompt` MCP tool
+- `devflow.sessions_codex` MCP tool
 - Claude Code plugin draft with slash commands
 - Codex MCP config template
 - Gemini MCP config template
@@ -115,7 +116,7 @@ Exit criteria:
 Current implementation note: `packages/mcp` has testable handler functions for
 `devflow.status`, `devflow.split`, `devflow.explain_term`, `devflow.doctor`,
 `devflow.finish`, `devflow.record_gate`, `devflow.next_prompt`, and
-`devflow.rewrite_prompt`, plus a
+`devflow.rewrite_prompt`, plus adapter-backed `devflow.sessions_codex` and a
 minimal stdio JSON-RPC transport. The CLI also has thin `devflow split --json`
 and `devflow explain` renderers, plus `devflow prompt rewrite` for converting
 vague maintainer intent into agent-ready requirements. Host-specific Codex and
@@ -147,7 +148,8 @@ contents. `parseCodexSessionJsonl` extracts safe metadata from caller-provided
 JSONL content. `discoverCodexSessions` accepts caller-supplied Codex-like records and
 normalizes them into discovery events with confidence, source, and warning
 fields. The CLI exposes this as `devflow sessions codex --codex-home <path>
---json`. It does not attach sessions to work items yet.
+--json`; MCP exposes the same read-only probe as `devflow.sessions_codex`. It
+does not attach sessions to work items yet.
 
 ## Phase 7: Beginner Guidance Profile
 

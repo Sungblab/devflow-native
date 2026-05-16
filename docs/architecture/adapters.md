@@ -114,6 +114,7 @@ devflow.finish
 devflow.next_prompt
 devflow.explain_term
 devflow.rewrite_prompt
+devflow.sessions_codex
 ```
 
 Codex may support ChatGPT account login or API key login in its own CLI. Devflow

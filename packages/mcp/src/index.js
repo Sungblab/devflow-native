@@ -1,3 +1,10 @@
+import { readFile } from "node:fs/promises";
+
+import {
+  discoverCodexSessions,
+  findCodexSessionFiles,
+  parseCodexSessionJsonl,
+} from "../../adapters/src/index.js";
 import {
   createDoctorSummary,
   createFinishSummary,
@@ -29,6 +36,10 @@ const tools = [
   {
     name: "devflow.rewrite_prompt",
     description: "Rewrite vague maintainer requests into agent-ready requirements.",
+  },
+  {
+    name: "devflow.sessions_codex",
+    description: "Read explicit Codex session metadata through the Devflow adapter contract.",
   },
   {
     name: "devflow.doctor",
@@ -67,6 +78,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.rewrite_prompt") {
     return callRewritePrompt(args);
+  }
+
+  if (name === "devflow.sessions_codex") {
+    return callCodexSessions(args);
   }
 
   if (name === "devflow.doctor") {
@@ -150,6 +165,44 @@ function callRewritePrompt(args) {
   });
 
   return toolResult(rewrite, "devflow rewrite_prompt");
+}
+
+async function callCodexSessions(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const candidates = await findCodexSessionFiles({
+    codexHome: args.codexHome ?? args["codex-home"],
+  });
+  const records = [];
+  const warnings = [...candidates.warnings];
+
+  for (const file of candidates.files) {
+    try {
+      const content = await readFile(file.path, "utf8");
+      const record = parseCodexSessionJsonl(content, {
+        sourcePath: file.path,
+      });
+      records.push(record);
+      warnings.push(...record.warnings);
+    } catch (error) {
+      warnings.push(`Failed to read Codex session candidate ${file.path}: ${error.message}`);
+    }
+  }
+
+  const summary = {
+    schemaVersion: "0.1",
+    command: "sessions_codex",
+    repo: {
+      absolutePath: repoPath,
+    },
+    files: candidates.files,
+    discovery: discoverCodexSessions({
+      repoPath,
+      records,
+    }),
+    warnings,
+  };
+
+  return toolResult(summary, `devflow sessions_codex: ${summary.files.length} files`);
 }
 
 async function callDoctor(args) {

@@ -18,6 +18,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.split"));
   assert.ok(names.includes("devflow.explain_term"));
   assert.ok(names.includes("devflow.rewrite_prompt"));
+  assert.ok(names.includes("devflow.sessions_codex"));
 });
 
 test("MCP status returns local repo state and latest handoff evidence", async () => {
@@ -193,4 +194,40 @@ test("MCP rewrite_prompt turns vague request into agent-ready requirements", asy
   assert.match(result.structuredContent.agentReadyPrompt, /Objective:/);
   assert.match(result.structuredContent.agentReadyPrompt, /Phase 7/);
   assert.match(result.content[0].text, /rewrite_prompt/);
+});
+
+test("MCP sessions_codex renders explicit read-only Codex discovery JSON", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-codex-repo-"));
+  const codexHome = await mkdtemp(join(tmpdir(), "devflow-mcp-codex-home-"));
+  const sessionDir = join(codexHome, "sessions", "2026", "05", "16");
+  await mkdir(sessionDir, { recursive: true });
+  await writeFile(
+    join(sessionDir, "fixture.jsonl"),
+    `${JSON.stringify({
+      type: "session_meta",
+      payload: {
+        id: "019c7714-3b77-74d1-9866-e1f484aae2ab",
+        cwd: repoPath,
+        timestamp: "2026-05-16T11:00:00+09:00",
+      },
+    })}\n${JSON.stringify({
+      type: "response_item",
+      payload: { type: "function_call", name: "apply_patch" },
+    })}\n`,
+  );
+
+  const result = await callTool("devflow.sessions_codex", {
+    repo: repoPath,
+    codexHome,
+  });
+
+  assert.equal(result.structuredContent.command, "sessions_codex");
+  assert.equal(result.structuredContent.files.length, 1);
+  assert.equal(
+    result.structuredContent.discovery.sessions[0].sessionId,
+    "019c7714-3b77-74d1-9866-e1f484aae2ab",
+  );
+  assert.equal(result.structuredContent.discovery.sessions[0].project.confidence, "high");
+  assert.equal(result.structuredContent.discovery.sessions[0].signals.hasFileEdits, true);
+  assert.match(result.content[0].text, /sessions_codex/);
 });
