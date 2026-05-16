@@ -19,6 +19,7 @@ import {
   readDevflowState,
   recordGateEvent,
   recordFinishEvent,
+  recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
 } from "../src/index.js";
 
@@ -239,6 +240,33 @@ test("session list summary renders attached session evidence", async () => {
   assert.equal(summary.sessions[0].sessionId, "high-confidence");
   assert.equal(summary.sessions[0].workItemId, "phase-6-session-import");
   assert.equal(summary.sessions[0].agent, "Codex");
+});
+
+test("manual session note persistence appears in session list state", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-manual-session-note-"));
+  const event = await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "manual",
+      summary: "Reviewed local session context outside an agent transcript.",
+    },
+    {
+      observedAt: "2026-05-16T13:00:00+09:00",
+    },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const summary = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(event.type, "session.message");
+  assert.equal(event.payload.workItemId, "phase-6-session-import");
+  assert.equal(summary.sessions[0].agent, "manual");
+  assert.equal(summary.sessions[0].kind, "manual-note");
+  assert.match(summary.sessions[0].summary, /Reviewed local session context/);
 });
 
 test("term explanation translates beginner-facing development terms", () => {

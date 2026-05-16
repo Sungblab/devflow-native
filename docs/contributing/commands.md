@@ -24,6 +24,7 @@ devflow sessions codex
 devflow sessions attach-plan
 devflow sessions attach
 devflow sessions list
+devflow sessions note
 devflow dashboard
 devflow doctor
 ```
@@ -58,7 +59,8 @@ an explicit `--codex-home <path>` and should not read private agent history by
 default. `devflow sessions attach-plan` is a dry-run proposal command and does
 not write `session.attached` events. `devflow sessions attach` is the explicit
 write step and requires `--confirm`. `devflow sessions list` shows attached
-session evidence from local state.
+session evidence from local state. `devflow sessions note` records manual or
+external session context without requiring an agent transcript.
 
 ## MVP State Persistence
 
@@ -519,6 +521,32 @@ Outputs:
 
 This command does not read Codex, Claude, or Gemini history. It only renders
 links already recorded in `.devflow/state/events.jsonl`.
+
+## `devflow sessions note`
+
+Records a manual or external session note as local session evidence.
+
+Example:
+
+```powershell
+devflow sessions note --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --work phase-6-session-import --agent manual --summary "Reviewed local session context outside an agent transcript." --json
+```
+
+Inputs:
+
+- repository path
+- work item id
+- agent label, defaulting to `manual`
+- summary text
+
+Outputs:
+
+- `session_note` JSON wrapper
+- appended `.devflow/state/events.jsonl` `session.message` event
+- session list/status-visible manual note evidence
+
+Use this when work happened in a browser, terminal, IDE, meeting, or agent host
+that does not have a stable adapter yet.
 
 ## `devflow doctor`
 

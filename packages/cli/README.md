@@ -54,6 +54,7 @@ packages/cli/
 - `devflow sessions attach-plan`
 - `devflow sessions attach`
 - `devflow sessions list`
+- `devflow sessions note`
 
 `devflow split` currently renders the first local worktree-session plan. The
 `devflow sessions codex` is read-only and requires an explicit
@@ -62,6 +63,7 @@ packages/cli/
 file and does not write `.devflow` state. `devflow sessions attach` consumes a
 selected proposal from a plan file and writes a `session.attached` event only
 when `--confirm` is present. `devflow sessions list` reads local state and
-renders attached sessions without probing private agent history. The future
-`devflow init` command can reuse the same rendering and config infrastructure
-once the MVP loop is stable.
+renders attached sessions without probing private agent history. `devflow
+sessions note` records manual or external session context as local state. The
+future `devflow init` command can reuse the same rendering and config
+infrastructure once the MVP loop is stable.

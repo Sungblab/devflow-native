@@ -15,6 +15,7 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.sessions_attach_plan`
 - `devflow.sessions_attach`
 - `devflow.sessions_list`
+- `devflow.sessions_note`
 - `devflow.finish`
 - `devflow.record_gate`
 - `devflow.next_prompt`
@@ -36,6 +37,9 @@ and a selected `proposal`, then appends a `session.attached` event to local
 
 `devflow.sessions_list` reads local `.devflow` state and returns attached
 sessions without probing any agent history.
+
+`devflow.sessions_note` writes a manual session note as a local
+`session.message` event so external work can appear beside agent sessions.
 
 ## Stdio Transport
 
