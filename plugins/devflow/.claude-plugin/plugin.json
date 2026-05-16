@@ -1,0 +1,17 @@
+{
+  "name": "devflow",
+  "description": "Solo Devflow OS continuity skills for project truth, evidence, handoffs, and local execution rules.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Solo Devflow OS"
+  },
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "workflow",
+    "handoff",
+    "evidence",
+    "mcp",
+    "local-first"
+  ]
+}

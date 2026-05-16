@@ -6,6 +6,9 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   const manifest = JSON.parse(
     await readFile("plugins/devflow/.codex-plugin/plugin.json", "utf8"),
   );
+  const claudeManifest = JSON.parse(
+    await readFile("plugins/devflow/.claude-plugin/plugin.json", "utf8"),
+  );
   const marketplace = JSON.parse(
     await readFile(".agents/plugins/marketplace.json", "utf8"),
   );
@@ -17,6 +20,9 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.equal(manifest.skills, "./skills/");
   assert.equal(manifest.mcpServers, "./.mcp.json");
   assert.match(manifest.interface.shortDescription, /project truth/i);
+  assert.equal(claudeManifest.name, "devflow");
+  assert.match(claudeManifest.description, /continuity/i);
+  assert.ok(claudeManifest.keywords.includes("handoff"));
   assert.deepEqual(mcpConfig.mcpServers.devflow.command, "node");
   assert.deepEqual(mcpConfig.mcpServers.devflow.args, ["packages/mcp/src/stdio.js"]);
 
