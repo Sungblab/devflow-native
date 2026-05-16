@@ -192,12 +192,16 @@ export function createSessionAttachPlan(input = {}) {
 
 export function createSessionListSummary(input = {}) {
   const state = input.state ?? emptyDevflowState();
+  const agent = input.agent ?? null;
   const workItemId = input.workItemId ?? null;
   const limit = normalizePositiveInteger(input.limit);
   const allSessions = input.sessions ?? state.sessions?.attached ?? [];
-  const filteredSessions = workItemId
-    ? allSessions.filter((session) => session.workItemId === workItemId)
+  const agentFilteredSessions = agent
+    ? allSessions.filter((session) => session.agent === agent)
     : allSessions;
+  const filteredSessions = workItemId
+    ? agentFilteredSessions.filter((session) => session.workItemId === workItemId)
+    : agentFilteredSessions;
   const sessions = limit ? filteredSessions.slice(-limit) : filteredSessions;
 
   return {
@@ -207,6 +211,7 @@ export function createSessionListSummary(input = {}) {
       absolutePath: input.repo?.absolutePath ?? process.cwd(),
     },
     filters: {
+      agent,
       workItemId,
       limit,
     },

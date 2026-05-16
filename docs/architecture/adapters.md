@@ -233,8 +233,9 @@ instead of being appended again. Recorded attachments can be listed through
 history. Manual or external work can be captured as a session note through
 `devflow sessions note` or MCP `devflow.sessions_note`, then appears in the
 same session list. Session list calls can be filtered by work item through CLI
-`--work <id>` or MCP `work` / `workItemId`, and limited to recent matches
-through CLI `--limit <n>` or MCP `limit`.
+`--work <id>` or MCP `work` / `workItemId`, filtered by agent through CLI
+`--agent <name>` or MCP `agent`, and limited to recent matches through CLI
+`--limit <n>` or MCP `limit`.
 
 ### Claude Code
 

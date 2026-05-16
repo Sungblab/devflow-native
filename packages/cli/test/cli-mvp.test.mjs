@@ -753,6 +753,70 @@ test("CLI sessions list rejects invalid limit values", async () => {
   );
 });
 
+test("CLI sessions list filters by agent", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "note",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-6-session-import",
+    "--agent",
+    "manual",
+    "--summary",
+    "Manual import note.",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "note",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-6-session-import",
+    "--agent",
+    "Codex",
+    "--summary",
+    "Codex import note.",
+    "--json",
+  ]);
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "list",
+    "--repo",
+    repoPath,
+    "--agent",
+    "Codex",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.count, 1);
+  assert.equal(parsed.filters.agent, "Codex");
+  assert.equal(parsed.sessions[0].agent, "Codex");
+  assert.match(parsed.sessions[0].summary, /Codex import note/);
+
+  const text = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "list",
+    "--repo",
+    repoPath,
+    "--agent",
+    "Codex",
+  ]);
+
+  assert.match(text.stdout, /^Agent: Codex$/m);
+  assert.match(text.stdout, /Codex import note/);
+  assert.doesNotMatch(text.stdout, /Manual import note/);
+});
+
 test("CLI sessions list renders filtered text output", async () => {
   const repoPath = await createTempGitRepo();
 

@@ -295,6 +295,7 @@ async function renderSessionList(argsForCommand) {
       absolutePath: repoPath,
     },
     state,
+    agent: options.agent,
     workItemId: options.work,
     limit,
   });
@@ -409,6 +410,9 @@ function renderSessionListText(summary) {
     `Filter: ${summary.filters.workItemId ?? "all"}`,
     `Count: ${summary.count}`,
   ];
+  if (summary.filters.agent) {
+    lines.push(`Agent: ${summary.filters.agent}`);
+  }
   if (summary.filters.limit) {
     lines.push(`Limit: ${summary.filters.limit}`);
     lines.push(`Total: ${summary.totalCount}`);
