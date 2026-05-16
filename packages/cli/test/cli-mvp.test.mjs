@@ -51,6 +51,24 @@ test("CLI prompt next renders a copy-paste prompt", async () => {
   assert.match(stdout, /Next task/);
 });
 
+test("CLI prompt rewrite renders agent-ready prompt JSON", async () => {
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "prompt",
+    "rewrite",
+    "--request",
+    "알아서 다음 구현 계속해",
+    "--context",
+    "Phase 7 still needs prompt rewrite helper.",
+    "--json",
+  ]);
+
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.command, "prompt_rewrite");
+  assert.match(parsed.agentReadyPrompt, /Objective:/);
+  assert.match(parsed.agentReadyPrompt, /Phase 7/);
+});
+
 test("CLI explain renders beginner-friendly term JSON", async () => {
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",

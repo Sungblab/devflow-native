@@ -146,6 +146,7 @@ Build:
 - `devflow explain <term>`
 - glossary seed for common UI, web, git, testing, deployment, and agent terms
 - prompt rewrite helper that turns vague intent into agent-ready requirements
+  (implemented as `devflow prompt rewrite`)
 
 Exit criteria:
 

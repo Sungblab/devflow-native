@@ -19,6 +19,7 @@ devflow split
 devflow explain
 devflow finish
 devflow prompt next
+devflow prompt rewrite
 devflow dashboard
 devflow doctor
 ```
@@ -361,6 +362,29 @@ Outputs:
 - verification steps
 - related terms
 - warnings when the term is not in the built-in glossary seed
+
+## `devflow prompt rewrite`
+
+Turns a vague maintainer request into an agent-ready prompt with inferred
+intent, requirements, missing details, and verification expectations.
+
+Example:
+
+```powershell
+devflow prompt rewrite --request "알아서 다음 구현 계속해" --context "Phase 7 still needs prompt rewrite helper." --json
+```
+
+Inputs:
+
+- raw maintainer request
+- optional project context
+
+Outputs:
+
+- inferred intent
+- requirements checklist
+- missing details to resolve from local context
+- copy-paste agent-ready prompt
 
 ## `devflow doctor`
 
