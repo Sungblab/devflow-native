@@ -225,7 +225,8 @@ tool both return a dry-run proposal from explicit work item and session inputs;
 neither path writes `session.attached` events. The separate CLI
 `devflow sessions attach --confirm` command and MCP `devflow.sessions_attach`
 tool consume one approved proposal and persist the actual `session.attached`
-event.
+event. Duplicate session/work item links are reported as existing attachments
+instead of being appended again.
 
 ### Claude Code
 

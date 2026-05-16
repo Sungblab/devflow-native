@@ -33,7 +33,8 @@ work.
 7. To persist an approved proposal, use
    `devflow sessions attach --input "<jsonFile>" --session "<sessionId>" --confirm --json`.
    In MCP hosts, use `devflow.sessions_attach` with `confirm: true` and the
-   selected `proposal`.
+   selected `proposal`. If the link already exists, treat the `existing: true`
+   response as a no-op success.
 8. Treat low-confidence sessions as visible evidence only. Attach proposals must
    remain confirmation-gated unless the planner marks them attach-ready and the
    maintainer accepts the link.
@@ -48,6 +49,7 @@ Return:
 - clear note that the probe is read-only and explicit opt-in
 - dry-run attach proposals when work item inputs are available
 - persisted `session.attached` event only when an approved proposal is confirmed
+- existing attachment response when the link was already recorded
 - recommended next action, such as inspect one session, accept an attach-ready
   proposal, request confirmation for a low-confidence proposal, or ignore stale
   records

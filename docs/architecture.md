@@ -96,7 +96,9 @@ or confirmation-required links from discovered sessions and work items, but a
 later command must perform the actual state write.
 The initial write path is `devflow sessions attach --confirm`, which consumes a
 selected attach-plan proposal and appends a `session.attached` event. MCP hosts
-use `devflow.sessions_attach` with `confirm: true` for the same write.
+use `devflow.sessions_attach` with `confirm: true` for the same write. Repeated
+attach requests for the same session/work item return the existing event rather
+than appending duplicates.
 
 ## Event Types
 

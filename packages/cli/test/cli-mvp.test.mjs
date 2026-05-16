@@ -426,6 +426,50 @@ test("CLI sessions attach writes approved proposal events", async () => {
   assert.equal(statusJson.sessions.attached[0].sessionId, "high-confidence");
 });
 
+test("CLI sessions attach reports existing links without duplicate events", async () => {
+  const repoPath = await createTempGitRepo();
+  const inputPath = join(await mkdtemp(join(tmpdir(), "devflow-cli-attach-dedupe-")), "plan.json");
+  await writeFile(
+    inputPath,
+    `${JSON.stringify({
+      proposals: [
+        {
+          sessionId: "high-confidence",
+          agent: "Codex",
+          recommendedWorkItemId: "phase-6-session-import",
+          action: "attach-ready",
+          requiresConfirmation: false,
+          confidence: "high",
+          changedFiles: ["packages/adapters/src/index.js"],
+          reason: "Session has high confidence.",
+          warnings: [],
+        },
+      ],
+    })}\n`,
+  );
+  const commandArgs = [
+    "packages/cli/src/index.js",
+    "sessions",
+    "attach",
+    "--repo",
+    repoPath,
+    "--input",
+    inputPath,
+    "--session",
+    "high-confidence",
+    "--confirm",
+    "--json",
+  ];
+
+  await execFileAsync("node", commandArgs);
+  const { stdout } = await execFileAsync("node", commandArgs);
+  const parsed = JSON.parse(stdout);
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+
+  assert.equal(parsed.event.existing, true);
+  assert.equal(log.trim().split("\n").length, 1);
+});
+
 async function createTempGitRepo() {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-cli-"));
   await execFileAsync("git", ["init"], { cwd: repoPath });

@@ -492,6 +492,7 @@ Safety boundary:
 
 - it refuses to run without `--confirm`
 - it requires a proposal with `sessionId` and `recommendedWorkItemId`
+- it reports an existing attachment instead of appending a duplicate event
 - it records the selected proposal; it does not rediscover or infer sessions
   during the write step
 - low-confidence proposals should still be treated as maintainer-approved
