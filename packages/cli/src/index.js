@@ -6,6 +6,7 @@ import {
   createFinishSummary,
   createDoctorSummary,
   createNextPrompt,
+  createSplitPlan,
   createStatusSummary,
   parseGitStatusLines,
   readDevflowState,
@@ -19,6 +20,8 @@ const command = args[0];
 try {
   if (command === "status") {
     await renderStatus(args.slice(1));
+  } else if (command === "split") {
+    renderSplit(args.slice(1));
   } else if (command === "finish") {
     await renderFinish(args.slice(1));
   } else if (command === "doctor") {
@@ -45,6 +48,22 @@ async function renderStatus(argsForCommand) {
   });
 
   render(summary, options.json);
+}
+
+function renderSplit(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const plan = createSplitPlan({
+    runId: options["run-id"],
+    goal: options.goal,
+    sessionCount: options.sessions ? Number.parseInt(options.sessions, 10) : undefined,
+    profile: options.profile,
+    platform: options.platform ?? defaultPlatformName(),
+    baseBranch: options["base-branch"],
+    baseRef: options["base-ref"],
+    worktreeRoot: options["worktree-root"],
+  });
+
+  render(plan, options.json);
 }
 
 async function renderFinish(argsForCommand) {

@@ -34,6 +34,27 @@ test("CLI prompt next renders a copy-paste prompt", async () => {
   assert.match(stdout, /Next task/);
 });
 
+test("CLI split renders JSON worktree session plan", async () => {
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "split",
+    "--goal",
+    "Continue Devflow split support",
+    "--sessions",
+    "2",
+    "--platform",
+    "windows-powershell",
+    "--json",
+  ]);
+
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.command, "split");
+  assert.equal(parsed.sessions.length, 2);
+  assert.equal(parsed.sessions[0].branch, "codex/implementation");
+  assert.match(parsed.sessions[0].commands[0].variants.powershell, /git worktree add/);
+  assert.match(parsed.sessions[0].prompt, /Continue Devflow split support/);
+});
+
 test("CLI finish renders JSON evidence summary", async () => {
   const repoPath = await createTempGitRepo();
   const { stdout } = await execFileAsync("node", [
