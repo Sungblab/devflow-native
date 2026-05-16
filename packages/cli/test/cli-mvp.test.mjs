@@ -291,6 +291,45 @@ test("CLI doctor renders platform and mistake memory JSON", async () => {
   assert.match(parsed.recommendations[0].message, /Get-Content -LiteralPath/);
 });
 
+test("CLI sessions codex renders explicit read-only Codex discovery JSON", async () => {
+  const repoPath = await createTempGitRepo();
+  const codexHome = await mkdtemp(join(tmpdir(), "devflow-cli-codex-home-"));
+  const sessionDir = join(codexHome, "sessions", "2026", "05", "16");
+  await mkdir(sessionDir, { recursive: true });
+  await writeFile(
+    join(sessionDir, "fixture.jsonl"),
+    `${JSON.stringify({
+      type: "session_meta",
+      payload: {
+        id: "019c7714-3b77-74d1-9866-e1f484aae2ab",
+        cwd: repoPath,
+        timestamp: "2026-05-16T11:00:00+09:00",
+      },
+    })}\n${JSON.stringify({
+      type: "response_item",
+      payload: { type: "function_call", name: "apply_patch" },
+    })}\n`,
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "codex",
+    "--repo",
+    repoPath,
+    "--codex-home",
+    codexHome,
+    "--json",
+  ]);
+
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.command, "sessions_codex");
+  assert.equal(parsed.files.length, 1);
+  assert.equal(parsed.discovery.sessions[0].sessionId, "019c7714-3b77-74d1-9866-e1f484aae2ab");
+  assert.equal(parsed.discovery.sessions[0].project.confidence, "high");
+  assert.equal(parsed.discovery.sessions[0].signals.hasFileEdits, true);
+});
+
 async function createTempGitRepo() {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-cli-"));
   await execFileAsync("git", ["init"], { cwd: repoPath });

@@ -9,7 +9,7 @@ codes.
 ```text
 packages/cli/
   src/
-    index.ts
+    index.js
     commands/
       init.ts
       status.ts
@@ -49,7 +49,11 @@ packages/cli/
 - `devflow finish`
 - `devflow doctor`
 - `devflow prompt next`
+- `devflow prompt rewrite`
+- `devflow sessions codex`
 
 `devflow split` currently renders the first local worktree-session plan. The
-future `devflow init` command can reuse the same rendering and config
-infrastructure once the MVP loop is stable.
+`devflow sessions codex` is read-only and requires an explicit
+`--codex-home <path>` before it reads local Codex session candidates. The future
+`devflow init` command can reuse the same rendering and config infrastructure
+once the MVP loop is stable.

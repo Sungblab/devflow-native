@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
+import { readFile } from "node:fs/promises";
 import { cwd, exit } from "node:process";
 
+import {
+  discoverCodexSessions,
+  findCodexSessionFiles,
+  parseCodexSessionJsonl,
+} from "../../adapters/src/index.js";
 import {
   createFinishSummary,
   createDoctorSummary,
@@ -35,6 +41,8 @@ try {
     renderNextPrompt(args.slice(2));
   } else if (command === "prompt" && args[1] === "rewrite") {
     renderPromptRewrite(args.slice(2));
+  } else if (command === "sessions" && args[1] === "codex") {
+    await renderCodexSessions(args.slice(2));
   } else {
     throw new Error(`Unknown command: ${args.join(" ") || "<none>"}`);
   }
@@ -171,6 +179,45 @@ function renderPromptRewrite(argsForCommand) {
   });
 
   render(rewrite, options.json);
+}
+
+async function renderCodexSessions(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const candidates = await findCodexSessionFiles({
+    codexHome: options["codex-home"],
+  });
+  const records = [];
+  const warnings = [...candidates.warnings];
+
+  for (const file of candidates.files) {
+    try {
+      const content = await readFile(file.path, "utf8");
+      const record = parseCodexSessionJsonl(content, {
+        sourcePath: file.path,
+      });
+      records.push(record);
+      warnings.push(...record.warnings);
+    } catch (error) {
+      warnings.push(`Failed to read Codex session candidate ${file.path}: ${error.message}`);
+    }
+  }
+
+  const summary = {
+    schemaVersion: "0.1",
+    command: "sessions_codex",
+    repo: {
+      absolutePath: repoPath,
+    },
+    files: candidates.files,
+    discovery: discoverCodexSessions({
+      repoPath,
+      records,
+    }),
+    warnings,
+  };
+
+  render(summary, options.json);
 }
 
 function defaultPlatformName() {
