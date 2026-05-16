@@ -23,6 +23,10 @@ JSON-RPC transport for MCP-capable hosts.
 Handlers call `packages/core` or `packages/adapters` and return structured
 content plus a short text summary for agent hosts.
 
+`devflow.status` reads repo state, gate evidence, handoffs, and attached
+session evidence. Pass `work` or `workItemId` to focus attached sessions on one
+work item while preserving the same core JSON contract used by the CLI.
+
 `devflow.sessions_codex` is read-only and requires an explicit `codexHome`
 argument before it reads local Codex session candidates.
 

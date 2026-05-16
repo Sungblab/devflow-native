@@ -254,6 +254,55 @@ test("CLI status simple summary shows latest session changed-file count", async 
   assert.match(stdout, /Latest session files: 2/);
 });
 
+test("CLI status simple summary can focus sessions by work item", async () => {
+  const repoPath = await createTempGitRepo();
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await writeFile(
+    join(stateDir, "events.jsonl"),
+    `${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-16T10:00:00.000Z",
+      payload: {
+        sessionId: "session-import-note",
+        workItemId: "phase-6-session-import",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "Session import note.",
+      },
+    })}\n${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-16T11:00:00.000Z",
+      payload: {
+        sessionId: "beginner-guidance-note",
+        workItemId: "phase-7-beginner-guidance",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "Beginner guidance note.",
+      },
+    })}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-6-session-import",
+    "--simple",
+  ]);
+
+  assert.match(stdout, /Work filter: phase-6-session-import/);
+  assert.match(stdout, /Sessions: 1/);
+  assert.match(stdout, /Latest session: phase-6-session-import/);
+  assert.match(stdout, /Latest session summary: Session import note\./);
+  assert.doesNotMatch(stdout, /Beginner guidance note/);
+});
+
 test("CLI prompt next renders a copy-paste prompt", async () => {
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",

@@ -658,6 +658,40 @@ test("status summary can derive latest handoff and gate evidence from devflow st
   assert.equal(status.gates[0].lastRun.observedAt, "2026-05-16T10:00:00+09:00");
 });
 
+test("status summary can focus attached sessions by work item", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-status-work-filter-"));
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "Codex",
+      summary: "Session import note.",
+    },
+    { observedAt: "2026-05-16T10:00:00.000Z" },
+  );
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-7-beginner-guidance",
+      agent: "Codex",
+      summary: "Beginner guidance note.",
+    },
+    { observedAt: "2026-05-16T11:00:00.000Z" },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath, branch: "main" },
+    state,
+    workItemId: "phase-6-session-import",
+  });
+
+  assert.equal(status.filters.workItemId, "phase-6-session-import");
+  assert.equal(status.sessions.attached.length, 1);
+  assert.equal(status.sessions.attached[0].workItemId, "phase-6-session-import");
+  assert.match(status.sessions.attached[0].summary, /Session import note/);
+});
+
 test("status summary can derive gate evidence recorded independently", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-gate-"));
 

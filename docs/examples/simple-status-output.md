@@ -9,6 +9,7 @@ human-readable renderer over the same local state used by `devflow status
 
 ```powershell
 devflow status --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --simple
+devflow status --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --work phase-6-session-import --simple
 ```
 
 ## Example Output
@@ -16,6 +17,7 @@ devflow status --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --simple
 ```text
 Project status
 Branch: main
+Work filter: phase-6-session-import
 Changed files: 0
 Sessions: 3
 Latest session: phase-6-session-import
@@ -33,6 +35,8 @@ Next step: Run npm run docs:check before finishing.
 ## How To Read It
 
 - `Changed files` shows the current git working tree size from `git status`.
+- `Work filter` shows the focused work item when `--work <id>` is provided,
+  or `all` when status is reading the whole project.
 - `Sessions` counts attached agent sessions and manual session notes recorded
   in `.devflow/state/events.jsonl`.
 - `Latest session` is the work item id for the most recent recorded session

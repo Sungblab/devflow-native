@@ -74,6 +74,7 @@ async function renderStatus(argsForCommand) {
     repo: readGitRepo(repoPath),
     changedFiles: readChangedFiles(repoPath),
     state,
+    workItemId: options.work,
     gates: [{ id: "docs-check", command: "npm run docs:check", recommended: true }],
   });
 
@@ -387,6 +388,7 @@ function renderSimpleStatus(summary) {
   const lines = [
     "Project status",
     `Branch: ${summary.repo.branch ?? "unknown"}`,
+    `Work filter: ${summary.filters.workItemId ?? "all"}`,
     `Changed files: ${changedCount}`,
     `Sessions: ${summary.sessions.attached.length}`,
     `Latest session: ${latestSession?.workItemId ?? "none"}`,

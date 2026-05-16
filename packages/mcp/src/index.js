@@ -154,6 +154,7 @@ async function callStatus(args) {
     },
     changedFiles: args.changedFiles ?? [],
     state,
+    workItemId: args.work ?? args.workItemId,
     gates: args.gates ?? [{ id: "docs-check", command: "npm run docs:check", recommended: true }],
     profile: {
       name: args.profile ?? "standard",
