@@ -680,6 +680,53 @@ test("CLI sessions list renders filtered text output", async () => {
   assert.match(stdout, /manual-note\s+phase-6-session-import\s+manual\s+Reviewed local session context\./);
 });
 
+test("CLI sessions list text output shows attached session details", async () => {
+  const repoPath = await createTempGitRepo();
+  const inputPath = join(await mkdtemp(join(tmpdir(), "devflow-cli-list-text-")), "plan.json");
+  await writeFile(
+    inputPath,
+    `${JSON.stringify({
+      proposals: [
+        {
+          sessionId: "high-confidence",
+          agent: "Codex",
+          recommendedWorkItemId: "phase-6-session-import",
+          action: "attach-ready",
+          requiresConfirmation: false,
+          confidence: "high",
+          changedFiles: ["packages/adapters/src/index.js"],
+          reason: "Session has high confidence.",
+          warnings: [],
+        },
+      ],
+    })}\n`,
+  );
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "attach",
+    "--repo",
+    repoPath,
+    "--input",
+    inputPath,
+    "--session",
+    "high-confidence",
+    "--confirm",
+    "--json",
+  ]);
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "list",
+    "--repo",
+    repoPath,
+  ]);
+
+  assert.match(stdout, /attached\s+phase-6-session-import\s+Codex\s+high-confidence\s+files:1/);
+});
+
 async function createTempGitRepo() {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-cli-"));
   await execFileAsync("git", ["init"], { cwd: repoPath });

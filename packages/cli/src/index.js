@@ -409,8 +409,10 @@ function renderSessionListText(summary) {
   ];
 
   for (const session of summary.sessions) {
+    const changedFileCount = session.changedFiles?.length;
+    const detail = session.summary ?? `${session.sessionId} files:${changedFileCount ?? 0}`;
     lines.push(
-      `${session.kind ?? "session"} ${session.workItemId ?? "unknown"} ${session.agent ?? "unknown"} ${session.summary ?? session.sessionId}`,
+      `${session.kind ?? "session"} ${session.workItemId ?? "unknown"} ${session.agent ?? "unknown"} ${detail}`,
     );
   }
 
