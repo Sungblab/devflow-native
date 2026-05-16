@@ -526,7 +526,9 @@ Outputs:
 
 Without `--json`, the command renders a short human-readable list with the
 active filter, count, and one line per session. Attached agent sessions include
-the session id and changed-file count; manual notes include their summary.
+the session id and changed-file count; manual notes include their summary. If
+local state warnings are present, the text output includes a compact warning
+count.
 
 This command does not read Codex, Claude, or Gemini history. It only renders
 links already recorded in `.devflow/state/events.jsonl`. Use `--work <id>` to
