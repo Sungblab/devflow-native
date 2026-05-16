@@ -21,6 +21,7 @@ This is the documentation router for Solo Devflow OS.
 | Repo-local Codex plugin start skill | [../plugins/devflow/skills/start/SKILL.md](../plugins/devflow/skills/start/SKILL.md) |
 | Repo-local Codex/Claude plugin split skill | [../plugins/devflow/skills/split/SKILL.md](../plugins/devflow/skills/split/SKILL.md) |
 | Repo-local Codex/Claude plugin next skill | [../plugins/devflow/skills/next/SKILL.md](../plugins/devflow/skills/next/SKILL.md) |
+| Repo-local Codex/Claude plugin explain skill | [../plugins/devflow/skills/explain/SKILL.md](../plugins/devflow/skills/explain/SKILL.md) |
 | Repo-local Codex plugin finish skill | [../plugins/devflow/skills/finish/SKILL.md](../plugins/devflow/skills/finish/SKILL.md) |
 
 ## Core Terms

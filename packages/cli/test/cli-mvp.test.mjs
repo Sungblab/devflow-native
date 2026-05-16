@@ -34,6 +34,23 @@ test("CLI prompt next renders a copy-paste prompt", async () => {
   assert.match(stdout, /Next task/);
 });
 
+test("CLI explain renders beginner-friendly term JSON", async () => {
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "explain",
+    "toast notification",
+    "--context",
+    "Agent said saving should show a toast notification.",
+    "--json",
+  ]);
+
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.command, "explain");
+  assert.equal(parsed.term, "toast notification");
+  assert.match(parsed.plainExplanation, /small message/);
+  assert.match(parsed.projectContext, /saving/);
+});
+
 test("CLI split renders JSON worktree session plan", async () => {
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",

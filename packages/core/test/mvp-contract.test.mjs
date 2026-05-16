@@ -7,6 +7,7 @@ import test from "node:test";
 import {
   createFinishSummary,
   createDoctorSummary,
+  createTermExplanation,
   createNextPrompt,
   createSplitPlan,
   createStatusSummary,
@@ -72,6 +73,20 @@ test("next prompt includes objective, changed files, evidence, risks, and next t
   assert.match(prompt, /npm test/);
   assert.match(prompt, /No SQLite persistence yet/);
   assert.match(prompt, /Add CLI rendering for status/);
+});
+
+test("term explanation translates beginner-facing development terms", () => {
+  const explanation = createTermExplanation({
+    term: "toast notification",
+    context: "Agent said the save action should show a toast notification.",
+  });
+
+  assert.equal(explanation.schemaVersion, "0.1");
+  assert.equal(explanation.command, "explain");
+  assert.equal(explanation.term, "toast notification");
+  assert.match(explanation.plainExplanation, /small message/);
+  assert.match(explanation.projectContext, /save action/);
+  assert.ok(explanation.relatedTerms.includes("modal"));
 });
 
 test("split plan creates disjoint worktree sessions with prompts and commands", () => {

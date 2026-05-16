@@ -17,6 +17,7 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   const startSkill = await readFile("plugins/devflow/skills/start/SKILL.md", "utf8");
   const splitSkill = await readFile("plugins/devflow/skills/split/SKILL.md", "utf8");
   const nextSkill = await readFile("plugins/devflow/skills/next/SKILL.md", "utf8");
+  const explainSkill = await readFile("plugins/devflow/skills/explain/SKILL.md", "utf8");
   const finishSkill = await readFile("plugins/devflow/skills/finish/SKILL.md", "utf8");
 
   assert.equal(manifest.name, "devflow");
@@ -57,6 +58,10 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.match(nextSkill, /devflow prompt next/);
   assert.match(nextSkill, /copy-paste/);
   assert.match(nextSkill, /latest status/);
+
+  assert.match(explainSkill, /devflow explain/);
+  assert.match(explainSkill, /plain language/);
+  assert.match(explainSkill, /project context/);
 
   assert.match(finishSkill, /devflow finish/);
   assert.match(finishSkill, /documentation needs an update/);
