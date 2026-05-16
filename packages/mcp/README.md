@@ -14,6 +14,7 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.sessions_codex`
 - `devflow.sessions_attach_plan`
 - `devflow.sessions_attach`
+- `devflow.sessions_list`
 - `devflow.finish`
 - `devflow.record_gate`
 - `devflow.next_prompt`
@@ -32,6 +33,9 @@ not write `.devflow` state.
 `devflow.sessions_attach` is the write step. It accepts `repo`, `confirm: true`,
 and a selected `proposal`, then appends a `session.attached` event to local
 `.devflow` state.
+
+`devflow.sessions_list` reads local `.devflow` state and returns attached
+sessions without probing any agent history.
 
 ## Stdio Transport
 

@@ -190,6 +190,22 @@ export function createSessionAttachPlan(input = {}) {
   };
 }
 
+export function createSessionListSummary(input = {}) {
+  const state = input.state ?? emptyDevflowState();
+  const sessions = input.sessions ?? state.sessions?.attached ?? [];
+
+  return {
+    schemaVersion: "0.1",
+    command: "session_list",
+    repo: {
+      absolutePath: input.repo?.absolutePath ?? process.cwd(),
+    },
+    sessions,
+    count: sessions.length,
+    warnings: [...(input.warnings ?? []), ...(state.warnings ?? [])],
+  };
+}
+
 export function createTermExplanation(input = {}) {
   const term = normalizeTerm(input.term);
   const entry = glossary[term] ?? createFallbackGlossaryEntry(term);

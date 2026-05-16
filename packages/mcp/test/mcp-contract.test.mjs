@@ -21,6 +21,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.sessions_codex"));
   assert.ok(names.includes("devflow.sessions_attach_plan"));
   assert.ok(names.includes("devflow.sessions_attach"));
+  assert.ok(names.includes("devflow.sessions_list"));
 });
 
 test("MCP status returns local repo state and latest handoff evidence", async () => {
@@ -316,4 +317,32 @@ test("MCP sessions_attach reports existing links without duplicate events", asyn
 
   assert.equal(second.structuredContent.event.existing, true);
   assert.equal(log.trim().split("\n").length, 1);
+});
+
+test("MCP sessions_list renders attached sessions", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-session-list-"));
+  await callTool("devflow.sessions_attach", {
+    repo: repoPath,
+    confirm: true,
+    proposal: {
+      sessionId: "high-confidence",
+      agent: "Codex",
+      recommendedWorkItemId: "phase-6-session-import",
+      action: "attach-ready",
+      requiresConfirmation: false,
+      confidence: "high",
+      changedFiles: ["packages/adapters/src/index.js"],
+      reason: "Session has high confidence.",
+      warnings: [],
+    },
+  });
+
+  const result = await callTool("devflow.sessions_list", {
+    repo: repoPath,
+  });
+
+  assert.equal(result.structuredContent.command, "session_list");
+  assert.equal(result.structuredContent.count, 1);
+  assert.equal(result.structuredContent.sessions[0].sessionId, "high-confidence");
+  assert.match(result.content[0].text, /sessions_list/);
 });

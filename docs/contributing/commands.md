@@ -23,6 +23,7 @@ devflow prompt rewrite
 devflow sessions codex
 devflow sessions attach-plan
 devflow sessions attach
+devflow sessions list
 devflow dashboard
 devflow doctor
 ```
@@ -56,7 +57,8 @@ way to avoid repeated local-environment mistakes.
 an explicit `--codex-home <path>` and should not read private agent history by
 default. `devflow sessions attach-plan` is a dry-run proposal command and does
 not write `session.attached` events. `devflow sessions attach` is the explicit
-write step and requires `--confirm`.
+write step and requires `--confirm`. `devflow sessions list` shows attached
+session evidence from local state.
 
 ## MVP State Persistence
 
@@ -497,6 +499,26 @@ Safety boundary:
   during the write step
 - low-confidence proposals should still be treated as maintainer-approved
   decisions before this command is run
+
+## `devflow sessions list`
+
+Lists attached sessions from local `.devflow` state.
+
+Example:
+
+```powershell
+devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --json
+```
+
+Outputs:
+
+- `session_list` JSON wrapper
+- attached session id, work item id, agent, confidence, changed files, and
+  observed time
+- warning entries from the local state reader
+
+This command does not read Codex, Claude, or Gemini history. It only renders
+links already recorded in `.devflow/state/events.jsonl`.
 
 ## `devflow doctor`
 
