@@ -19,6 +19,9 @@ import {
   createStatusSummary,
   createTermExplanation,
   parseGitStatusLines,
+  parseSessionListLimit,
+  parseSessionListSince,
+  parseSessionListSort,
   readDevflowConfig,
   readDevflowState,
   readMistakeMemory,
@@ -288,9 +291,9 @@ async function renderSessionAttach(argsForCommand) {
 async function renderSessionList(argsForCommand) {
   const options = parseOptions(argsForCommand);
   const repoPath = options.repo ?? cwd();
-  const limit = parsePositiveIntegerOption(options.limit, "sessions list requires --limit <positive-integer>.");
-  const since = parseIsoDateOption(options.since, "sessions list requires --since <iso-date>.");
-  const sort = parseSessionSortOption(
+  const limit = parseSessionListLimit(options.limit, "sessions list requires --limit <positive-integer>.");
+  const since = parseSessionListSince(options.since, "sessions list requires --since <iso-date>.");
+  const sort = parseSessionListSort(
     options.sort,
     "sessions list requires --sort observedAt:asc|observedAt:desc.",
   );
@@ -448,43 +451,6 @@ function renderSessionListText(summary) {
 function extractNextTask(prompt) {
   const match = prompt.match(/^Next task:\s*(.+)$/m);
   return match?.[1] ?? "Inspect devflow status and choose the next slice.";
-}
-
-function parsePositiveIntegerOption(value, message) {
-  if (value === undefined || value === null || value === "") {
-    return null;
-  }
-
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 1) {
-    throw new Error(message);
-  }
-
-  return parsed;
-}
-
-function parseIsoDateOption(value, message) {
-  if (value === undefined || value === null || value === "") {
-    return null;
-  }
-
-  if (Number.isNaN(Date.parse(value))) {
-    throw new Error(message);
-  }
-
-  return value;
-}
-
-function parseSessionSortOption(value, message) {
-  if (value === undefined || value === null || value === "") {
-    return null;
-  }
-
-  if (value !== "observedAt:asc" && value !== "observedAt:desc") {
-    throw new Error(message);
-  }
-
-  return value;
 }
 
 function parseOptions(rawArgs) {

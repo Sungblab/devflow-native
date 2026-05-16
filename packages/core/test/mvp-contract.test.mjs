@@ -14,6 +14,9 @@ import {
   createSessionListSummary,
   createSplitPlan,
   createStatusSummary,
+  parseSessionListLimit,
+  parseSessionListSince,
+  parseSessionListSort,
   parseGitStatusLines,
   readDevflowConfig,
   readDevflowState,
@@ -450,6 +453,19 @@ test("session list summary sorts by observed time before limit", async () => {
   assert.equal(descendingLimited.totalCount, 3);
   assert.equal(descendingLimited.filters.sort, "observedAt:desc");
   assert.match(descendingLimited.sessions[0].summary, /New Codex note/);
+});
+
+test("session list option parsers share CLI and MCP validation rules", () => {
+  assert.equal(parseSessionListLimit(undefined, "limit is required"), null);
+  assert.equal(parseSessionListLimit("3", "limit is invalid"), 3);
+  assert.equal(parseSessionListSince("", "since is invalid"), null);
+  assert.equal(parseSessionListSince("2026-05-16T00:00:00.000Z", "since is invalid"), "2026-05-16T00:00:00.000Z");
+  assert.equal(parseSessionListSort(null, "sort is invalid"), null);
+  assert.equal(parseSessionListSort("observedAt:desc", "sort is invalid"), "observedAt:desc");
+
+  assert.throws(() => parseSessionListLimit("0", "limit is invalid"), /limit is invalid/);
+  assert.throws(() => parseSessionListSince("not-a-date", "since is invalid"), /since is invalid/);
+  assert.throws(() => parseSessionListSort("observedAt:newest", "sort is invalid"), /sort is invalid/);
 });
 
 test("term explanation translates beginner-facing development terms", () => {
