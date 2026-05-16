@@ -8,6 +8,7 @@ import {
   createNextPrompt,
   createSplitPlan,
   createStatusSummary,
+  createTermExplanation,
   parseGitStatusLines,
   readDevflowConfig,
   readDevflowState,
@@ -21,6 +22,8 @@ const command = args[0];
 try {
   if (command === "status") {
     await renderStatus(args.slice(1));
+  } else if (command === "explain") {
+    renderExplain(args.slice(1));
   } else if (command === "split") {
     await renderSplit(args.slice(1));
   } else if (command === "finish") {
@@ -49,6 +52,16 @@ async function renderStatus(argsForCommand) {
   });
 
   render(summary, options.json);
+}
+
+function renderExplain(argsForCommand) {
+  const { options, positional } = parseOptionsAndPositionals(argsForCommand);
+  const explanation = createTermExplanation({
+    term: positional.join(" "),
+    context: options.context,
+  });
+
+  render(explanation, options.json);
 }
 
 async function renderSplit(argsForCommand) {
@@ -171,11 +184,17 @@ function render(summary, asJson) {
 }
 
 function parseOptions(rawArgs) {
+  return parseOptionsAndPositionals(rawArgs).options;
+}
+
+function parseOptionsAndPositionals(rawArgs) {
   const options = {};
+  const positional = [];
 
   for (let index = 0; index < rawArgs.length; index += 1) {
     const arg = rawArgs[index];
     if (!arg.startsWith("--")) {
+      positional.push(arg);
       continue;
     }
 
@@ -197,7 +216,7 @@ function parseOptions(rawArgs) {
     }
   }
 
-  return options;
+  return { options, positional };
 }
 
 function collectRepeated(value) {

@@ -4,6 +4,7 @@ import {
   createNextPrompt,
   createSplitPlan,
   createStatusSummary,
+  createTermExplanation,
   readDevflowConfig,
   readDevflowState,
   readMistakeMemory,
@@ -19,6 +20,10 @@ const tools = [
   {
     name: "devflow.split",
     description: "Plan safe parallel sessions with worktree commands and prompts.",
+  },
+  {
+    name: "devflow.explain_term",
+    description: "Explain development terms in plain language with project context.",
   },
   {
     name: "devflow.doctor",
@@ -49,6 +54,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.split") {
     return callSplit(args);
+  }
+
+  if (name === "devflow.explain_term") {
+    return callExplainTerm(args);
   }
 
   if (name === "devflow.doctor") {
@@ -114,6 +123,15 @@ async function callSplit(args) {
   });
 
   return toolResult(plan, `devflow split: ${plan.sessions.length} sessions`);
+}
+
+function callExplainTerm(args) {
+  const explanation = createTermExplanation({
+    term: args.term,
+    context: args.context,
+  });
+
+  return toolResult(explanation, `devflow explain_term: ${explanation.term}`);
 }
 
 async function callDoctor(args) {

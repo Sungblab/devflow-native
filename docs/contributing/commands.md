@@ -16,6 +16,7 @@ This document defines the intended CLI shape before implementation.
 devflow init
 devflow status
 devflow split
+devflow explain
 devflow finish
 devflow prompt next
 devflow dashboard
@@ -329,6 +330,31 @@ JSON output:
   "warnings": []
 }
 ```
+
+## `devflow explain`
+
+Explains beginner-facing development terms in plain language at the point of
+work.
+
+Example:
+
+```powershell
+devflow explain "toast notification" --context "The save action should show a toast notification." --json
+```
+
+Inputs:
+
+- term
+- optional project or agent-output context
+
+Outputs:
+
+- plain language explanation
+- project context
+- why it matters
+- verification steps
+- related terms
+- warnings when the term is not in the built-in glossary seed
 
 ## `devflow doctor`
 

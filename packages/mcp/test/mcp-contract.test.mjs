@@ -16,6 +16,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.next_prompt"));
   assert.ok(names.includes("devflow.record_gate"));
   assert.ok(names.includes("devflow.split"));
+  assert.ok(names.includes("devflow.explain_term"));
 });
 
 test("MCP status returns local repo state and latest handoff evidence", async () => {
@@ -166,4 +167,16 @@ test("MCP split reads project-specific tasks from devflow config", async () => {
   assert.equal(result.structuredContent.profile.name, "hermes");
   assert.equal(result.structuredContent.sessions[0].id, "configured-mcp");
   assert.deepEqual(result.structuredContent.sessions[0].ownedPaths, ["packages/mcp/**"]);
+});
+
+test("MCP explain_term returns beginner-friendly structured explanation", async () => {
+  const result = await callTool("devflow.explain_term", {
+    term: "middleware",
+    context: "The agent said to add middleware before the route handler.",
+  });
+
+  assert.equal(result.structuredContent.command, "explain");
+  assert.equal(result.structuredContent.term, "middleware");
+  assert.match(result.structuredContent.plainExplanation, /between/);
+  assert.match(result.content[0].text, /explain_term/);
 });

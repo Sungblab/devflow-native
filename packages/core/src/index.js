@@ -135,6 +135,23 @@ export function createNextPrompt(input) {
   return `${lines.join("\n")}\n`;
 }
 
+export function createTermExplanation(input = {}) {
+  const term = normalizeTerm(input.term);
+  const entry = glossary[term] ?? createFallbackGlossaryEntry(term);
+
+  return {
+    schemaVersion: "0.1",
+    command: "explain",
+    term,
+    plainExplanation: entry.plainExplanation,
+    projectContext: createProjectContext(term, input.context),
+    whyItMatters: entry.whyItMatters,
+    verifyBy: entry.verifyBy,
+    relatedTerms: entry.relatedTerms,
+    warnings: entry.known ? [] : ["Term is not in the built-in glossary seed."],
+  };
+}
+
 export function createSplitPlan(input = {}) {
   const config = input.config ?? {};
   const configuredTasks = config.split?.tasks ?? config.splitTasks;
@@ -529,6 +546,81 @@ function formatList(items) {
   }
 
   return items.map((item) => `- ${item}`);
+}
+
+const glossary = {
+  "toast notification": {
+    known: true,
+    plainExplanation:
+      "A small message that appears briefly to confirm something happened, usually without blocking the page.",
+    whyItMatters:
+      "It tells the user that an action such as saving, copying, or deleting worked or failed.",
+    verifyBy: ["Trigger the action.", "Check that the message appears and then disappears."],
+    relatedTerms: ["modal", "banner", "alert"],
+  },
+  modal: {
+    known: true,
+    plainExplanation:
+      "A focused dialog that appears above the page and usually asks the user to confirm, edit, or choose something.",
+    whyItMatters: "It interrupts the workflow, so it should be used only when the decision matters.",
+    verifyBy: ["Open the dialog.", "Check focus, cancel, confirm, and keyboard behavior."],
+    relatedTerms: ["toast notification", "popover", "dialog"],
+  },
+  middleware: {
+    known: true,
+    plainExplanation:
+      "Code that runs between a request and the final route handler, often to check auth, log, redirect, or prepare data.",
+    whyItMatters:
+      "It changes behavior before feature code runs, so it can affect many routes at once.",
+    verifyBy: ["Exercise a route that should pass.", "Exercise a route that should be blocked or redirected."],
+    relatedTerms: ["route", "handler", "auth guard"],
+  },
+  route: {
+    known: true,
+    plainExplanation: "A URL path or endpoint that maps a user request to a page or API handler.",
+    whyItMatters: "It is often the boundary between UI navigation and backend behavior.",
+    verifyBy: ["Open the URL or call the endpoint.", "Check success and error states."],
+    relatedTerms: ["middleware", "handler", "page"],
+  },
+  "state management": {
+    known: true,
+    plainExplanation:
+      "The way an app stores and updates changing information such as selected items, form values, or logged-in user data.",
+    whyItMatters: "Poor state handling causes stale UI, lost input, and inconsistent behavior.",
+    verifyBy: ["Change the value.", "Navigate or refresh if relevant.", "Check the UI still matches the data."],
+    relatedTerms: ["store", "cache", "props"],
+  },
+  "responsive layout": {
+    known: true,
+    plainExplanation:
+      "A layout that adapts to different screen sizes without overlapping, clipping, or hiding important controls.",
+    whyItMatters: "It keeps the same feature usable on mobile, tablet, and desktop.",
+    verifyBy: ["Check mobile width.", "Check desktop width.", "Confirm text and controls do not overlap."],
+    relatedTerms: ["breakpoint", "viewport", "layout"],
+  },
+};
+
+function normalizeTerm(term) {
+  return String(term ?? "unknown term").trim().toLowerCase();
+}
+
+function createFallbackGlossaryEntry(term) {
+  return {
+    known: false,
+    plainExplanation: `No built-in explanation exists for "${term}" yet.`,
+    whyItMatters:
+      "Ask for the term with the surrounding agent output or project context so Devflow can explain it at the point of work.",
+    verifyBy: ["Find where the term appeared.", "Attach the file, command output, or agent message around it."],
+    relatedTerms: [],
+  };
+}
+
+function createProjectContext(term, context) {
+  if (!context) {
+    return `Explain "${term}" in the context of the current Devflow-managed project.`;
+  }
+
+  return `In this project context: ${context}`;
 }
 
 function normalizeSplitTasks(tasks, sessionCount) {
