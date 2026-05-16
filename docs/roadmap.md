@@ -178,7 +178,8 @@ terminal inspection while `--json` keeps the agent contract stable.
 
 Build:
 
-- `devflow status --simple` (implemented as a CLI renderer)
+- `devflow status --simple` (implemented as a CLI renderer, including session
+  evidence counts)
 - `devflow finish --guided` (implemented as a CLI renderer)
 - `devflow explain <term>`
 - glossary seed for common UI, web, git, testing, deployment, and agent terms

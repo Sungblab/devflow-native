@@ -35,7 +35,47 @@ test("CLI status renders simple beginner-friendly summary", async () => {
 
   assert.match(stdout, /Project status/);
   assert.match(stdout, /Changed files: 1/);
+  assert.match(stdout, /Sessions: 0/);
   assert.match(stdout, /Next check: npm run docs:check/);
+});
+
+test("CLI status simple summary counts attached sessions", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "note",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-6-session-import",
+    "--summary",
+    "Session import note.",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "note",
+    "--repo",
+    repoPath,
+    "--work",
+    "phase-7-beginner-guidance",
+    "--summary",
+    "Beginner guidance note.",
+    "--json",
+  ]);
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--simple",
+  ]);
+
+  assert.match(stdout, /Sessions: 2/);
 });
 
 test("CLI prompt next renders a copy-paste prompt", async () => {
