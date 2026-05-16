@@ -416,6 +416,21 @@ export async function recordSessionAttachedEvent(repoPath, proposal, options = {
     throw new Error("session attach requires a proposal with recommendedWorkItemId.");
   }
 
+  const state = await readDevflowState(repoPath);
+  const existing = state.events.find(
+    (event) =>
+      event.type === "session.attached" &&
+      event.payload?.sessionId === proposal.sessionId &&
+      event.payload?.workItemId === proposal.recommendedWorkItemId,
+  );
+
+  if (existing) {
+    return {
+      ...existing,
+      existing: true,
+    };
+  }
+
   const observedAt = options.observedAt ?? new Date().toISOString();
   const event = {
     schemaVersion: "0.1",

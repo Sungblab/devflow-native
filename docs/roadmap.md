@@ -161,7 +161,8 @@ CLI exposes this dry-run planner as `devflow sessions attach-plan --input
 `devflow.sessions_attach_plan`. The CLI also exposes
 `devflow sessions attach --input <json-file> --session <id> --confirm --json`
 to append an approved `session.attached` event to local state; MCP exposes the
-same confirmed write as `devflow.sessions_attach`.
+same confirmed write as `devflow.sessions_attach`. Duplicate session/work item
+links return the existing event without appending another JSONL line.
 
 ## Phase 7: Beginner Guidance Profile
 

@@ -160,6 +160,36 @@ test("session attach persistence records approved session links", async () => {
   assert.equal(state.sessions.attached[0].workItemId, "phase-6-session-import");
 });
 
+test("session attach persistence reports existing links without duplicate events", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-attach-dedupe-"));
+  const proposal = {
+    sessionId: "high-confidence",
+    agent: "Codex",
+    recommendedWorkItemId: "phase-6-session-import",
+    action: "attach-ready",
+    requiresConfirmation: false,
+    confidence: "high",
+    changedFiles: ["packages/adapters/src/index.js"],
+    reason: "Session has high confidence.",
+    warnings: [],
+  };
+
+  await recordSessionAttachedEvent(repoPath, proposal, {
+    confirmed: true,
+    observedAt: "2026-05-16T12:00:00+09:00",
+  });
+  const second = await recordSessionAttachedEvent(repoPath, proposal, {
+    confirmed: true,
+    observedAt: "2026-05-16T12:01:00+09:00",
+  });
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+
+  assert.equal(log.trim().split("\n").length, 1);
+  assert.equal(second.existing, true);
+  assert.equal(second.observedAt, "2026-05-16T12:00:00+09:00");
+});
+
 test("session attach persistence requires explicit confirmation", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-attach-confirm-"));
 

@@ -291,3 +291,29 @@ test("MCP sessions_attach writes confirmed session attach events", async () => {
   const status = await callTool("devflow.status", { repo: repoPath });
   assert.equal(status.structuredContent.sessions.attached[0].sessionId, "high-confidence");
 });
+
+test("MCP sessions_attach reports existing links without duplicate events", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-session-attach-dedupe-"));
+  const args = {
+    repo: repoPath,
+    confirm: true,
+    proposal: {
+      sessionId: "high-confidence",
+      agent: "Codex",
+      recommendedWorkItemId: "phase-6-session-import",
+      action: "attach-ready",
+      requiresConfirmation: false,
+      confidence: "high",
+      changedFiles: ["packages/adapters/src/index.js"],
+      reason: "Session has high confidence.",
+      warnings: [],
+    },
+  };
+
+  await callTool("devflow.sessions_attach", args);
+  const second = await callTool("devflow.sessions_attach", args);
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+
+  assert.equal(second.structuredContent.event.existing, true);
+  assert.equal(log.trim().split("\n").length, 1);
+});
