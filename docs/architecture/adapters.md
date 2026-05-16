@@ -204,6 +204,12 @@ Initial emitted events:
 - `git.diff.captured` when a session references changed files
 - `handoff.generated` when a final answer contains a next-session prompt
 
+Current implementation starts with a read-only mapper in
+`packages/adapters/src/index.js`. Callers pass Codex-like session records and a
+target repo path; Devflow returns normalized discovery records with confidence,
+signals, source paths, and warnings. Direct scanning of `%USERPROFILE%\.codex`
+history is a later slice.
+
 ### Claude Code
 
 Discovery inputs:
