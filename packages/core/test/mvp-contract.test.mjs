@@ -11,6 +11,7 @@ import {
   createTermExplanation,
   createNextPrompt,
   createPromptRewrite,
+  createSessionListSummary,
   createSplitPlan,
   createStatusSummary,
   parseGitStatusLines,
@@ -203,6 +204,41 @@ test("session attach persistence requires explicit confirmation", async () => {
       }),
     /requires explicit confirmation/,
   );
+});
+
+test("session list summary renders attached session evidence", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-list-"));
+  await recordSessionAttachedEvent(
+    repoPath,
+    {
+      sessionId: "high-confidence",
+      agent: "Codex",
+      recommendedWorkItemId: "phase-6-session-import",
+      action: "attach-ready",
+      requiresConfirmation: false,
+      confidence: "high",
+      changedFiles: ["packages/adapters/src/index.js"],
+      reason: "Session has high confidence.",
+      warnings: [],
+    },
+    {
+      confirmed: true,
+      observedAt: "2026-05-16T12:00:00+09:00",
+    },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const summary = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(summary.command, "session_list");
+  assert.equal(summary.repo.absolutePath, repoPath);
+  assert.equal(summary.count, 1);
+  assert.equal(summary.sessions[0].sessionId, "high-confidence");
+  assert.equal(summary.sessions[0].workItemId, "phase-6-session-import");
+  assert.equal(summary.sessions[0].agent, "Codex");
 });
 
 test("term explanation translates beginner-facing development terms", () => {

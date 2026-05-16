@@ -11,6 +11,7 @@ import {
   createNextPrompt,
   createPromptRewrite,
   createSessionAttachPlan,
+  createSessionListSummary,
   createSplitPlan,
   createStatusSummary,
   createTermExplanation,
@@ -50,6 +51,10 @@ const tools = [
   {
     name: "devflow.sessions_attach",
     description: "Write a confirmed session-to-work-item link into local Devflow state.",
+  },
+  {
+    name: "devflow.sessions_list",
+    description: "List attached sessions from local Devflow state.",
   },
   {
     name: "devflow.doctor",
@@ -100,6 +105,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.sessions_attach") {
     return callSessionAttach(args);
+  }
+
+  if (name === "devflow.sessions_list") {
+    return callSessionList(args);
   }
 
   if (name === "devflow.doctor") {
@@ -253,6 +262,19 @@ async function callSessionAttach(args) {
     },
     `devflow sessions_attach: ${event.payload.sessionId}`,
   );
+}
+
+async function callSessionList(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const state = await readDevflowState(repoPath);
+  const summary = createSessionListSummary({
+    repo: {
+      absolutePath: repoPath,
+    },
+    state,
+  });
+
+  return toolResult(summary, `devflow sessions_list: ${summary.count} sessions`);
 }
 
 async function callDoctor(args) {

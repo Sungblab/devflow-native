@@ -14,6 +14,7 @@ import {
   createNextPrompt,
   createPromptRewrite,
   createSessionAttachPlan,
+  createSessionListSummary,
   createSplitPlan,
   createStatusSummary,
   createTermExplanation,
@@ -49,6 +50,8 @@ try {
     await renderSessionAttachPlan(args.slice(2));
   } else if (command === "sessions" && args[1] === "attach") {
     await renderSessionAttach(args.slice(2));
+  } else if (command === "sessions" && args[1] === "list") {
+    await renderSessionList(args.slice(2));
   } else {
     throw new Error(`Unknown command: ${args.join(" ") || "<none>"}`);
   }
@@ -277,6 +280,20 @@ async function renderSessionAttach(argsForCommand) {
     },
     options.json,
   );
+}
+
+async function renderSessionList(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const state = await readDevflowState(repoPath);
+  const summary = createSessionListSummary({
+    repo: {
+      absolutePath: repoPath,
+    },
+    state,
+  });
+
+  render(summary, options.json);
 }
 
 function defaultPlatformName() {
