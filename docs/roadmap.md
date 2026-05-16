@@ -115,9 +115,9 @@ Current implementation note: `packages/mcp` has testable handler functions for
 `devflow.status`, `devflow.split`, `devflow.doctor`, `devflow.finish`,
 `devflow.record_gate`, and `devflow.next_prompt`, plus a minimal stdio JSON-RPC
 transport. The CLI also has a thin `devflow split --json` renderer. Host-specific
-MCP config templates remain a follow-up slice. Project-specific split discovery
-can now read `.devflow/config.json` `split.tasks`; richer docs/code map
-inference remains later work.
+Codex and Gemini MCP config templates are present. Project-specific split
+discovery can now read `.devflow/config.json` `split.tasks`; richer docs/code
+map inference remains later work.
 
 ## Phase 6: Session Import
 

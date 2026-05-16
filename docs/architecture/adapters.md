@@ -151,6 +151,11 @@ Preferred integration:
 Gemini can be a strong secondary reviewer. Devflow should preserve that as a
 session role rather than forcing every session to be an implementation session.
 
+Initial project-scoped MCP settings live at
+[`../../templates/gemini/settings.json`](../../templates/gemini/settings.json).
+Copy them to `.gemini/settings.json` in a target repo to point Gemini CLI at the
+local Devflow stdio server.
+
 ### Hermes Agent
 
 Preferred integration:
