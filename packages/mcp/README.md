@@ -12,6 +12,7 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.explain_term`
 - `devflow.rewrite_prompt`
 - `devflow.sessions_codex`
+- `devflow.sessions_attach_plan`
 - `devflow.finish`
 - `devflow.record_gate`
 - `devflow.next_prompt`
@@ -21,6 +22,11 @@ content plus a short text summary for agent hosts.
 
 `devflow.sessions_codex` is read-only and requires an explicit `codexHome`
 argument before it reads local Codex session candidates.
+
+`devflow.sessions_attach_plan` is also read-only. It accepts explicit
+`workItems`, `sessions`, and optional `warnings` JSON arguments, then returns a
+dry-run plan for which sessions are attach-ready or confirmation-gated. It does
+not write `.devflow` state.
 
 ## Stdio Transport
 

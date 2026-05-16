@@ -19,6 +19,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.explain_term"));
   assert.ok(names.includes("devflow.rewrite_prompt"));
   assert.ok(names.includes("devflow.sessions_codex"));
+  assert.ok(names.includes("devflow.sessions_attach_plan"));
 });
 
 test("MCP status returns local repo state and latest handoff evidence", async () => {
@@ -230,4 +231,35 @@ test("MCP sessions_codex renders explicit read-only Codex discovery JSON", async
   assert.equal(result.structuredContent.discovery.sessions[0].project.confidence, "high");
   assert.equal(result.structuredContent.discovery.sessions[0].signals.hasFileEdits, true);
   assert.match(result.content[0].text, /sessions_codex/);
+});
+
+test("MCP sessions_attach_plan renders dry-run attach proposals", async () => {
+  const result = await callTool("devflow.sessions_attach_plan", {
+    workItems: [
+      {
+        id: "phase-6-session-import",
+        title: "Phase 6 session import",
+        ownedPaths: ["packages/adapters/**"],
+      },
+    ],
+    sessions: [
+      {
+        sessionId: "high-confidence",
+        agent: "Codex",
+        project: { confidence: "high" },
+        events: [
+          {
+            type: "git.diff.captured",
+            changedFiles: ["packages/adapters/src/index.js"],
+          },
+        ],
+      },
+    ],
+  });
+
+  assert.equal(result.structuredContent.command, "session_attach_plan");
+  assert.equal(result.structuredContent.proposals[0].sessionId, "high-confidence");
+  assert.equal(result.structuredContent.proposals[0].recommendedWorkItemId, "phase-6-session-import");
+  assert.equal(result.structuredContent.proposals[0].action, "attach-ready");
+  assert.match(result.content[0].text, /sessions_attach_plan/);
 });

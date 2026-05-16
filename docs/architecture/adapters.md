@@ -115,6 +115,7 @@ devflow.next_prompt
 devflow.explain_term
 devflow.rewrite_prompt
 devflow.sessions_codex
+devflow.sessions_attach_plan
 ```
 
 Codex may support ChatGPT account login or API key login in its own CLI. Devflow
@@ -214,6 +215,11 @@ caller-provided JSONL content without auto-reading private histories.
 path, then returns normalized discovery records with confidence, signals,
 source paths, and warnings. Automatic import from `%USERPROFILE%\.codex`
 history contents is a later slice.
+
+Session-to-work linking remains confirmation-gated. The CLI
+`devflow sessions attach-plan` command and MCP `devflow.sessions_attach_plan`
+tool both return a dry-run proposal from explicit work item and session inputs;
+neither path writes `session.attached` events yet.
 
 ### Claude Code
 
