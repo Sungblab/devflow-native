@@ -140,6 +140,12 @@ Exit criteria:
 - active and historical agent sessions can be attached to a task
 - dashboard can show what each session did and where it stopped
 
+Current implementation note: `packages/adapters` has a first read-only Codex
+session discovery mapper. It accepts caller-supplied Codex-like records and
+normalizes them into discovery events with confidence, source, and warning
+fields. It does not scan private Codex history directories or attach sessions
+to work items yet.
+
 ## Phase 7: Beginner Guidance Profile
 
 Build:

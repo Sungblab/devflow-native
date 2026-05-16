@@ -9,7 +9,7 @@ into platform-specific shell commands.
 ```text
 packages/adapters/
   src/
-    index.ts
+    index.js
     agents/
       codex.ts
       claude-code.ts
@@ -33,6 +33,12 @@ packages/adapters/
     platforms/
     fixtures/
 ```
+
+Current implementation starts with `src/index.js` and a read-only
+`discoverCodexSessions` contract. It maps Codex-like session metadata supplied
+by callers into normalized `session.discovered` events, confidence levels,
+source paths, and warnings. It does not scan private history directories or
+write Devflow state yet.
 
 ## Agent Adapter Rules
 
