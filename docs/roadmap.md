@@ -122,7 +122,7 @@ vague maintainer intent into agent-ready requirements. Host-specific Codex and
 Gemini MCP config templates are present. Project-specific split discovery can now read
 `.devflow/config.json` `split.tasks`; richer docs/code map inference remains
 later work. The repo-local plugin ships shared `start`, `split`, `next`,
-`explain`, and `finish` skills for Codex and Claude Code style plugin
+`explain`, `rewrite`, and `finish` skills for Codex and Claude Code style plugin
 workflows.
 
 ## Phase 6: Session Import
