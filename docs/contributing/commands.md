@@ -534,7 +534,8 @@ count.
 This command does not read Codex, Claude, or Gemini history. It only renders
 links already recorded in `.devflow/state/events.jsonl`. Use `--work <id>` to
 limit the list to one work item. Use `--limit <n>` to show only the most recent
-matching sessions after the work item filter is applied.
+matching sessions after the work item filter is applied. Limit values must be
+positive integers.
 
 ## `devflow sessions note`
 

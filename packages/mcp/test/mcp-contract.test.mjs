@@ -418,3 +418,23 @@ test("MCP sessions_list limits after work item filtering", async () => {
   assert.equal(result.structuredContent.filters.limit, 1);
   assert.match(result.structuredContent.sessions[0].summary, /Second import note/);
 });
+
+test("MCP sessions_list rejects invalid limit values", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-session-list-invalid-limit-"));
+
+  await assert.rejects(
+    callTool("devflow.sessions_list", {
+      repo: repoPath,
+      limit: 0,
+    }),
+    /devflow.sessions_list requires limit to be a positive integer/,
+  );
+
+  await assert.rejects(
+    callTool("devflow.sessions_list", {
+      repo: repoPath,
+      limit: "abc",
+    }),
+    /devflow.sessions_list requires limit to be a positive integer/,
+  );
+});

@@ -275,6 +275,10 @@ async function callSessionAttach(args) {
 
 async function callSessionList(args) {
   const repoPath = args.repo ?? process.cwd();
+  const limit = parsePositiveIntegerArg(
+    args.limit,
+    "devflow.sessions_list requires limit to be a positive integer.",
+  );
   const state = await readDevflowState(repoPath);
   const summary = createSessionListSummary({
     repo: {
@@ -282,7 +286,7 @@ async function callSessionList(args) {
     },
     state,
     workItemId: args.workItemId ?? args.work,
-    limit: args.limit,
+    limit,
   });
 
   return toolResult(summary, `devflow sessions_list: ${summary.count} sessions`);
@@ -397,4 +401,17 @@ function toolResult(structuredContent, text) {
     content: [{ type: "text", text }],
     structuredContent,
   };
+}
+
+function parsePositiveIntegerArg(value, message) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(message);
+  }
+
+  return parsed;
 }

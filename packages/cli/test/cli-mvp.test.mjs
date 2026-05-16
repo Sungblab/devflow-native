@@ -723,6 +723,36 @@ test("CLI sessions list limits after work item filtering", async () => {
   assert.doesNotMatch(text.stdout, /First import note/);
 });
 
+test("CLI sessions list rejects invalid limit values", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await assert.rejects(
+    execFileAsync("node", [
+      "packages/cli/src/index.js",
+      "sessions",
+      "list",
+      "--repo",
+      repoPath,
+      "--limit",
+      "0",
+    ]),
+    /sessions list requires --limit <positive-integer>/,
+  );
+
+  await assert.rejects(
+    execFileAsync("node", [
+      "packages/cli/src/index.js",
+      "sessions",
+      "list",
+      "--repo",
+      repoPath,
+      "--limit",
+      "abc",
+    ]),
+    /sessions list requires --limit <positive-integer>/,
+  );
+});
+
 test("CLI sessions list renders filtered text output", async () => {
   const repoPath = await createTempGitRepo();
 
