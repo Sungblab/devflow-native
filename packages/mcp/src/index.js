@@ -2,11 +2,17 @@ import {
   createDoctorSummary,
   createFinishSummary,
   createNextPrompt,
+  createStatusSummary,
+  readDevflowState,
   readMistakeMemory,
   recordFinishEvent,
 } from "../../core/src/index.js";
 
 const tools = [
+  {
+    name: "devflow.status",
+    description: "Read local repo state, handoffs, gate evidence, and recommendations.",
+  },
   {
     name: "devflow.doctor",
     description: "Inspect local execution rules and repeated-mistake memory.",
@@ -26,6 +32,10 @@ export function listTools() {
 }
 
 export async function callTool(name, args = {}) {
+  if (name === "devflow.status") {
+    return callStatus(args);
+  }
+
   if (name === "devflow.doctor") {
     return callDoctor(args);
   }
@@ -39,6 +49,33 @@ export async function callTool(name, args = {}) {
   }
 
   throw new Error(`Unknown devflow MCP tool: ${name}`);
+}
+
+async function callStatus(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const state = await readDevflowState(repoPath);
+  const summary = createStatusSummary({
+    repo: {
+      absolutePath: repoPath,
+      root: ".",
+      branch: args.branch ?? null,
+      head: args.head ?? null,
+    },
+    changedFiles: args.changedFiles ?? [],
+    state,
+    gates: args.gates ?? [{ id: "docs-check", command: "npm run docs:check", recommended: true }],
+    profile: {
+      name: args.profile ?? "standard",
+      source: "mcp",
+    },
+    platform: {
+      name: args.platform ?? "windows-powershell",
+      shell: args.shell ?? "pwsh",
+      pathStyle: args.pathStyle ?? "windows",
+    },
+  });
+
+  return toolResult(summary, `devflow status: ${summary.repo.absolutePath}`);
 }
 
 async function callDoctor(args) {
