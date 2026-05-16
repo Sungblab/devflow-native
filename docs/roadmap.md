@@ -151,7 +151,9 @@ fields. The CLI exposes this as `devflow sessions codex --codex-home <path>
 --json`; MCP exposes the same read-only probe as `devflow.sessions_codex`. It
 does not attach sessions to work items yet. Core has a pure
 `createSessionAttachPlan` contract that proposes attach candidates and keeps
-low-confidence sessions confirmation-gated before any future state write.
+low-confidence sessions confirmation-gated before any future state write. The
+CLI exposes this dry-run planner as `devflow sessions attach-plan --input
+<json-file> --json`.
 
 ## Phase 7: Beginner Guidance Profile
 

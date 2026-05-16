@@ -21,6 +21,7 @@ devflow finish
 devflow prompt next
 devflow prompt rewrite
 devflow sessions codex
+devflow sessions attach-plan
 devflow dashboard
 devflow doctor
 ```
@@ -52,7 +53,8 @@ slices. `devflow init` and `devflow dashboard` stay in the broad contract.
 way to avoid repeated local-environment mistakes.
 `devflow sessions codex` is included as a read-only adapter probe. It requires
 an explicit `--codex-home <path>` and should not read private agent history by
-default.
+default. `devflow sessions attach-plan` is a dry-run proposal command and does
+not write `session.attached` events.
 
 ## MVP State Persistence
 
@@ -413,6 +415,53 @@ Privacy boundary:
 - it returns metadata, confidence, signals, source paths, and warnings
 - it does not attach sessions to work items
 - it should not become a Codex authentication or credential reader
+
+## `devflow sessions attach-plan`
+
+Builds dry-run proposals for linking discovered sessions to work items.
+
+Example:
+
+```powershell
+devflow sessions attach-plan --input .devflow/attach-plan-input.json --json
+```
+
+Input JSON:
+
+```json
+{
+  "workItems": [
+    {
+      "id": "phase-6-session-import",
+      "title": "Phase 6 session import",
+      "ownedPaths": ["packages/adapters/**"]
+    }
+  ],
+  "sessions": [
+    {
+      "sessionId": "example",
+      "agent": "Codex",
+      "project": { "confidence": "high" },
+      "events": [
+        {
+          "type": "git.diff.captured",
+          "changedFiles": ["packages/adapters/src/index.js"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Outputs:
+
+- attach-ready or confirmation-required proposals
+- recommended work item id when path ownership matches
+- confidence and changed-file evidence
+- warnings copied from discovered sessions
+
+This command does not write state. A later command should create
+`session.attached` events only after confirmation rules are satisfied.
 
 ## `devflow doctor`
 
