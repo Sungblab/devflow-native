@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "devflow": {
+      "command": "node",
+      "args": ["packages/mcp/src/stdio.js"]
+    }
+  }
+}

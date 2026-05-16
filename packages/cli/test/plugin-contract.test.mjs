@@ -9,12 +9,16 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   const marketplace = JSON.parse(
     await readFile(".agents/plugins/marketplace.json", "utf8"),
   );
+  const mcpConfig = JSON.parse(await readFile("plugins/devflow/.mcp.json", "utf8"));
   const startSkill = await readFile("plugins/devflow/skills/start/SKILL.md", "utf8");
   const finishSkill = await readFile("plugins/devflow/skills/finish/SKILL.md", "utf8");
 
   assert.equal(manifest.name, "devflow");
   assert.equal(manifest.skills, "./skills/");
+  assert.equal(manifest.mcpServers, "./.mcp.json");
   assert.match(manifest.interface.shortDescription, /project truth/i);
+  assert.deepEqual(mcpConfig.mcpServers.devflow.command, "node");
+  assert.deepEqual(mcpConfig.mcpServers.devflow.args, ["packages/mcp/src/stdio.js"]);
 
   assert.deepEqual(marketplace.plugins[0], {
     name: "devflow",
