@@ -46,6 +46,7 @@ node packages/cli/src/index.js status --json
 node packages/cli/src/index.js doctor --platform windows-powershell --json
 node packages/cli/src/index.js finish --json
 node packages/cli/src/index.js prompt next
+npm run mcp:stdio
 ```
 
 The repo also contains a local Codex plugin draft at `plugins/devflow`. Its
@@ -53,6 +54,10 @@ start skill loads `devflow doctor` and `devflow status` before command-heavy
 work. Its finish skill records evidence, checks documentation impact, respects
 Codex goal state when available, and asks whether to commit, PR, continue, or
 generate a next-session prompt.
+
+The MCP package exposes the same core contracts through `devflow.doctor`,
+`devflow.finish`, and `devflow.next_prompt` handlers, plus a minimal stdio
+JSON-RPC transport for host integration experiments.
 
 ## Initial Positioning
 
