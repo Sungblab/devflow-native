@@ -36,6 +36,7 @@ test("CLI status renders simple beginner-friendly summary", async () => {
   assert.match(stdout, /Project status/);
   assert.match(stdout, /Changed files: 1/);
   assert.match(stdout, /Sessions: 0/);
+  assert.match(stdout, /Latest session: none/);
   assert.match(stdout, /Next check: npm run docs:check/);
 });
 
@@ -76,6 +77,7 @@ test("CLI status simple summary counts attached sessions", async () => {
   ]);
 
   assert.match(stdout, /Sessions: 2/);
+  assert.match(stdout, /Latest session: phase-7-beginner-guidance/);
 });
 
 test("CLI prompt next renders a copy-paste prompt", async () => {
