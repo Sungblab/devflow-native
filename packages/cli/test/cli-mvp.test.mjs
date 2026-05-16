@@ -189,6 +189,38 @@ test("CLI status simple summary shows latest session id", async () => {
   assert.match(stdout, /Latest session id: codex-session-123/);
 });
 
+test("CLI status simple summary shows latest session summary", async () => {
+  const repoPath = await createTempGitRepo();
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await writeFile(
+    join(stateDir, "events.jsonl"),
+    `${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-16T11:00:00.000Z",
+      payload: {
+        sessionId: "codex-session-123",
+        workItemId: "phase-6-session-import",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "Imported Codex context.",
+      },
+    })}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--simple",
+  ]);
+
+  assert.match(stdout, /Latest session summary: Imported Codex context\./);
+});
+
 test("CLI prompt next renders a copy-paste prompt", async () => {
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",
