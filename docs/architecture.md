@@ -47,7 +47,7 @@ packages/cli
   devflow init/status/split/finish/doctor/gates/dashboard/session/review
 
 packages/mcp
-  devflow.status/devflow.split/devflow.finish/devflow.doctor/devflow.next_prompt/devflow.rewrite_prompt tools
+  devflow.status/devflow.split/devflow.finish/devflow.doctor/devflow.next_prompt/devflow.rewrite_prompt/devflow.sessions_codex tools
 
 packages/integrations
   Claude Code plugin, Codex MCP config, Gemini MCP config, editor hooks
@@ -139,6 +139,7 @@ devflow.next_prompt
 devflow.record_gate
 devflow.explain_term
 devflow.rewrite_prompt
+devflow.sessions_codex
 ```
 
 Rules:

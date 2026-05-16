@@ -11,12 +11,16 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.split`
 - `devflow.explain_term`
 - `devflow.rewrite_prompt`
+- `devflow.sessions_codex`
 - `devflow.finish`
 - `devflow.record_gate`
 - `devflow.next_prompt`
 
-Handlers call `packages/core` and return structured content plus a short text
-summary for agent hosts.
+Handlers call `packages/core` or `packages/adapters` and return structured
+content plus a short text summary for agent hosts.
+
+`devflow.sessions_codex` is read-only and requires an explicit `codexHome`
+argument before it reads local Codex session candidates.
 
 ## Stdio Transport
 
