@@ -184,8 +184,8 @@ keeps the agent contract stable.
 Build:
 
 - `devflow status --simple` (implemented as a CLI renderer, including work
-  filter, session evidence counts, latest session work item, session id,
-  observed time, agent, kind, summary, and changed-file count)
+  filter, agent filter, session evidence counts, latest session work item,
+  session id, observed time, agent, kind, summary, and changed-file count)
 - `devflow finish --guided` (implemented as a CLI renderer)
 - `devflow explain <term>`
 - glossary seed for common UI, web, git, testing, deployment, and agent terms

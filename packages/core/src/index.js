@@ -7,9 +7,10 @@ export function createStatusSummary(input = {}) {
   const gates = mergeGateEvidence(input.gates ?? [], state.gates.latestById);
   const repo = input.repo ?? {};
   const workItemId = input.workItemId ?? input.filters?.workItemId ?? null;
-  const attachedSessions = filterSessionsByWorkItem(
+  const agent = input.agent ?? input.filters?.agent ?? null;
+  const attachedSessions = filterStatusSessions(
     input.sessions?.attached ?? state.sessions?.attached ?? [],
-    workItemId,
+    { workItemId, agent },
   );
 
   return {
@@ -17,6 +18,7 @@ export function createStatusSummary(input = {}) {
     command: "status",
     filters: {
       workItemId,
+      agent,
     },
     repo: {
       absolutePath: repo.absolutePath ?? process.cwd(),
@@ -298,12 +300,18 @@ function sortSessionsByObservedAt(sessions, sort) {
     .map(({ session }) => session);
 }
 
-function filterSessionsByWorkItem(sessions, workItemId) {
-  if (!workItemId) {
-    return sessions;
-  }
+function filterStatusSessions(sessions, filters) {
+  return sessions.filter((session) => {
+    if (filters.workItemId && session.workItemId !== filters.workItemId) {
+      return false;
+    }
 
-  return sessions.filter((session) => session.workItemId === workItemId);
+    if (filters.agent && session.agent !== filters.agent) {
+      return false;
+    }
+
+    return true;
+  });
 }
 
 function normalizeSessionSort(value) {

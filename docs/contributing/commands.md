@@ -152,6 +152,7 @@ Beginner-friendly renderer:
 ```powershell
 devflow status --simple
 devflow status --work phase-6-session-import --simple
+devflow status --agent Codex --simple
 ```
 
 For a sample renderer output and field guide, see
@@ -164,11 +165,12 @@ Inputs:
 - platform
 - optional agents to probe
 - optional work item id through `--work <id>` to focus attached session evidence
+- optional agent name through `--agent <name>` to focus attached session evidence
 
 Outputs:
 
 - branch and dirty files
-- active work filter in `--simple` output and JSON `filters.workItemId`
+- active work and agent filters in `--simple` output and JSON `filters`
 - attached/manual session count, latest session work item, session id, observed
   time, agent, kind, summary, and changed-file count in `--simple` output
 - active work items
@@ -185,7 +187,8 @@ JSON output:
   "schemaVersion": "0.1",
   "command": "status",
   "filters": {
-    "workItemId": "phase-6-session-import"
+    "workItemId": "phase-6-session-import",
+    "agent": "Codex"
   },
   "repo": {
     "absolutePath": "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os",
