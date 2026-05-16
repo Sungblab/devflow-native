@@ -135,6 +135,49 @@ export function createNextPrompt(input) {
   return `${lines.join("\n")}\n`;
 }
 
+export function createPromptRewrite(input = {}) {
+  const request = input.request ?? "";
+  const context = input.context ?? "No project context provided.";
+  const inferredIntent = inferPromptIntent(request, context);
+  const requirements = [
+    "Infer the broader user intent from repository context instead of taking examples as exhaustive.",
+    "Identify missing requirements and make conservative assumptions when safe.",
+    "Inspect relevant docs, code, git state, and verification gates before implementing.",
+    "Update docs when product behavior, workflow policy, plugin behavior, or repeated agent rules change.",
+    "Run verification and report known gaps before claiming completion.",
+  ];
+  const missingDetails = [
+    "target repository or feature area",
+    "required verification commands",
+    "acceptable scope boundaries",
+  ];
+  const agentReadyPrompt = [
+    `Objective: ${inferredIntent}`,
+    "",
+    `Original request: ${request || "No raw request provided."}`,
+    `Project context: ${context}`,
+    "",
+    "Requirements:",
+    ...formatList(requirements),
+    "",
+    "Missing details to resolve from local context:",
+    ...formatList(missingDetails),
+    "",
+    "Deliverable: implement the next safe slice, verify it, update docs if needed, and provide a concise handoff.",
+  ].join("\n");
+
+  return {
+    schemaVersion: "0.1",
+    command: "prompt_rewrite",
+    originalRequest: request,
+    inferredIntent,
+    context,
+    requirements,
+    missingDetails,
+    agentReadyPrompt: `${agentReadyPrompt}\n`,
+  };
+}
+
 export function createTermExplanation(input = {}) {
   const term = normalizeTerm(input.term);
   const entry = glossary[term] ?? createFallbackGlossaryEntry(term);
@@ -546,6 +589,24 @@ function formatList(items) {
   }
 
   return items.map((item) => `- ${item}`);
+}
+
+function inferPromptIntent(request, context) {
+  const normalized = `${request} ${context}`.toLowerCase();
+
+  if (normalized.includes("phase 7") || normalized.includes("beginner")) {
+    return "Continue the beginner guidance profile with the next small, verifiable implementation slice.";
+  }
+
+  if (normalized.includes("split") || normalized.includes("parallel")) {
+    return "Prepare safe parallel development sessions with clear ownership and verification.";
+  }
+
+  if (normalized.includes("finish") || normalized.includes("handoff")) {
+    return "Close the current work with evidence, risks, and a next-session handoff.";
+  }
+
+  return "Continue the next safe Solo Devflow OS implementation slice from current repo state.";
 }
 
 const glossary = {

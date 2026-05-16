@@ -9,6 +9,7 @@ import {
   createDoctorSummary,
   createTermExplanation,
   createNextPrompt,
+  createPromptRewrite,
   createSplitPlan,
   createStatusSummary,
   parseGitStatusLines,
@@ -73,6 +74,20 @@ test("next prompt includes objective, changed files, evidence, risks, and next t
   assert.match(prompt, /npm test/);
   assert.match(prompt, /No SQLite persistence yet/);
   assert.match(prompt, /Add CLI rendering for status/);
+});
+
+test("prompt rewrite turns vague intent into agent-ready requirements", () => {
+  const rewrite = createPromptRewrite({
+    request: "알아서 다음 구현 계속해",
+    context: "Solo Devflow OS roadmap has Phase 7 remaining prompt rewrite helper.",
+  });
+
+  assert.equal(rewrite.schemaVersion, "0.1");
+  assert.equal(rewrite.command, "prompt_rewrite");
+  assert.match(rewrite.agentReadyPrompt, /Objective:/);
+  assert.match(rewrite.agentReadyPrompt, /Phase 7/);
+  assert.ok(rewrite.requirements.some((item) => item.includes("Infer")));
+  assert.ok(rewrite.missingDetails.includes("target repository or feature area"));
 });
 
 test("term explanation translates beginner-facing development terms", () => {

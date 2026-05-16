@@ -6,6 +6,7 @@ import {
   createFinishSummary,
   createDoctorSummary,
   createNextPrompt,
+  createPromptRewrite,
   createSplitPlan,
   createStatusSummary,
   createTermExplanation,
@@ -32,6 +33,8 @@ try {
     await renderDoctor(args.slice(1));
   } else if (command === "prompt" && args[1] === "next") {
     renderNextPrompt(args.slice(2));
+  } else if (command === "prompt" && args[1] === "rewrite") {
+    renderPromptRewrite(args.slice(2));
   } else {
     throw new Error(`Unknown command: ${args.join(" ") || "<none>"}`);
   }
@@ -158,6 +161,16 @@ function renderNextPrompt(argsForCommand) {
   });
 
   process.stdout.write(prompt);
+}
+
+function renderPromptRewrite(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const rewrite = createPromptRewrite({
+    request: options.request,
+    context: options.context,
+  });
+
+  render(rewrite, options.json);
 }
 
 function defaultPlatformName() {
