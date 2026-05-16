@@ -398,6 +398,60 @@ test("session list summary filters by observed time before limit", async () => {
   assert.match(summary.sessions[0].summary, /New Codex note/);
 });
 
+test("session list summary sorts by observed time before limit", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-list-sort-"));
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "Codex",
+      summary: "Middle Codex note.",
+    },
+    { observedAt: "2026-05-16T00:00:00.000Z" },
+  );
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "Codex",
+      summary: "Old Codex note.",
+    },
+    { observedAt: "2026-05-15T00:00:00.000Z" },
+  );
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "Codex",
+      summary: "New Codex note.",
+    },
+    { observedAt: "2026-05-17T00:00:00.000Z" },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const ascending = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    sort: "observedAt:asc",
+  });
+  const descendingLimited = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    sort: "observedAt:desc",
+    limit: 1,
+  });
+
+  assert.deepEqual(
+    ascending.sessions.map((session) => session.summary),
+    ["Old Codex note.", "Middle Codex note.", "New Codex note."],
+  );
+  assert.equal(ascending.filters.sort, "observedAt:asc");
+  assert.equal(descendingLimited.count, 1);
+  assert.equal(descendingLimited.totalCount, 3);
+  assert.equal(descendingLimited.filters.sort, "observedAt:desc");
+  assert.match(descendingLimited.sessions[0].summary, /New Codex note/);
+});
+
 test("term explanation translates beginner-facing development terms", () => {
   const explanation = createTermExplanation({
     term: "toast notification",

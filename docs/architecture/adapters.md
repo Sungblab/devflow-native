@@ -236,7 +236,9 @@ same session list. Session list calls can be filtered by work item through CLI
 `--work <id>` or MCP `work` / `workItemId`, filtered by agent through CLI
 `--agent <name>` or MCP `agent`, filtered by observation timestamp through CLI
 `--since <iso-date>` or MCP `since`, and limited to recent matches through CLI
-`--limit <n>` or MCP `limit`.
+`--limit <n>` or MCP `limit`. Callers that need deterministic chronology can
+also sort matches before limiting with CLI
+`--sort observedAt:asc|observedAt:desc` or MCP `sort`.
 
 ### Claude Code
 

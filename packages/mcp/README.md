@@ -38,9 +38,12 @@ and a selected `proposal`, then appends a `session.attached` event to local
 `devflow.sessions_list` reads local `.devflow` state and returns attached
 sessions without probing any agent history. Pass `work` or `workItemId` to
 limit the list to one work item, `agent` to limit by agent name, `since` to
-limit by observation timestamp, and `limit` to return only the most recent
-matching sessions. `limit` must be a positive integer, and `since` must parse as
-a date.
+limit by observation timestamp, `sort` with `observedAt:asc` or
+`observedAt:desc` to order matches by observation time before limiting, and
+`limit` to return only matching sessions after filtering or sorting. Without
+`sort`, the default recorded order and recent-match limit behavior stay
+unchanged. `limit` must be a positive integer, `since` must parse as a date, and
+`sort` must be one of the two supported observed-time values.
 
 `devflow.sessions_note` writes a manual session note as a local
 `session.message` event so external work can appear beside agent sessions.

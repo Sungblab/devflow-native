@@ -173,9 +173,11 @@ session links are visible through `devflow sessions list --json` and MCP
 supports work item filtering through CLI `--work <id>` and MCP `work` or
 `workItemId`, agent filtering through CLI `--agent <name>` and MCP `agent`, plus
 timestamp filtering through CLI `--since <iso-date>` and MCP `since`, and
-recent-match limiting through CLI `--limit <n>` and MCP `limit`. The CLI also
-has a human-readable default renderer for quick terminal inspection while
-`--json` keeps the agent contract stable.
+recent-match limiting through CLI `--limit <n>` and MCP `limit`. Explicit
+chronological ordering is available before limiting through CLI
+`--sort observedAt:asc|observedAt:desc` and MCP `sort`. The CLI also has a
+human-readable default renderer for quick terminal inspection while `--json`
+keeps the agent contract stable.
 
 ## Phase 7: Beginner Guidance Profile
 

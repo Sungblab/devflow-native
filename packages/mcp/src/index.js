@@ -55,7 +55,7 @@ const tools = [
   },
   {
     name: "devflow.sessions_list",
-    description: "List attached sessions from local Devflow state, optionally filtered by agent/work item/time and limited to recent matches.",
+    description: "List attached sessions from local Devflow state, optionally filtered by agent/work item/time, sorted by observed time, and limited to recent matches.",
   },
   {
     name: "devflow.sessions_note",
@@ -283,6 +283,10 @@ async function callSessionList(args) {
     args.since,
     "devflow.sessions_list requires since to be an ISO date.",
   );
+  const sort = parseSessionSortArg(
+    args.sort,
+    "devflow.sessions_list requires sort to be observedAt:asc or observedAt:desc.",
+  );
   const state = await readDevflowState(repoPath);
   const summary = createSessionListSummary({
     repo: {
@@ -292,6 +296,7 @@ async function callSessionList(args) {
     agent: args.agent,
     workItemId: args.workItemId ?? args.work,
     since,
+    sort,
     limit,
   });
 
@@ -428,6 +433,18 @@ function parseIsoDateArg(value, message) {
   }
 
   if (Number.isNaN(Date.parse(value))) {
+    throw new Error(message);
+  }
+
+  return value;
+}
+
+function parseSessionSortArg(value, message) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (value !== "observedAt:asc" && value !== "observedAt:desc") {
     throw new Error(message);
   }
 

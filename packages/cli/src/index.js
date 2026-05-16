@@ -290,6 +290,10 @@ async function renderSessionList(argsForCommand) {
   const repoPath = options.repo ?? cwd();
   const limit = parsePositiveIntegerOption(options.limit, "sessions list requires --limit <positive-integer>.");
   const since = parseIsoDateOption(options.since, "sessions list requires --since <iso-date>.");
+  const sort = parseSessionSortOption(
+    options.sort,
+    "sessions list requires --sort observedAt:asc|observedAt:desc.",
+  );
   const state = await readDevflowState(repoPath);
   const summary = createSessionListSummary({
     repo: {
@@ -299,6 +303,7 @@ async function renderSessionList(argsForCommand) {
     agent: options.agent,
     workItemId: options.work,
     since,
+    sort,
     limit,
   });
 
@@ -418,6 +423,9 @@ function renderSessionListText(summary) {
   if (summary.filters.since) {
     lines.push(`Since: ${summary.filters.since}`);
   }
+  if (summary.filters.sort) {
+    lines.push(`Sort: ${summary.filters.sort}`);
+  }
   if (summary.filters.limit) {
     lines.push(`Limit: ${summary.filters.limit}`);
     lines.push(`Total: ${summary.totalCount}`);
@@ -461,6 +469,18 @@ function parseIsoDateOption(value, message) {
   }
 
   if (Number.isNaN(Date.parse(value))) {
+    throw new Error(message);
+  }
+
+  return value;
+}
+
+function parseSessionSortOption(value, message) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (value !== "observedAt:asc" && value !== "observedAt:desc") {
     throw new Error(message);
   }
 
