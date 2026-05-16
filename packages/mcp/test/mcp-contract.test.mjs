@@ -519,3 +519,79 @@ test("MCP sessions_list rejects invalid since values", async () => {
     /devflow.sessions_list requires since to be an ISO date/,
   );
 });
+
+test("MCP sessions_list sorts by observed time before limit", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-session-list-sort-"));
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await writeFile(
+    join(stateDir, "events.jsonl"),
+    `${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-16T00:00:00.000Z",
+      payload: {
+        sessionId: "middle",
+        workItemId: "phase-6-session-import",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "Middle Codex note.",
+      },
+    })}\n${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-15T00:00:00.000Z",
+      payload: {
+        sessionId: "old",
+        workItemId: "phase-6-session-import",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "Old Codex note.",
+      },
+    })}\n${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-17T00:00:00.000Z",
+      payload: {
+        sessionId: "new",
+        workItemId: "phase-6-session-import",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "New Codex note.",
+      },
+    })}\n`,
+    "utf8",
+  );
+
+  const ascending = await callTool("devflow.sessions_list", {
+    repo: repoPath,
+    sort: "observedAt:asc",
+  });
+  const descendingLimited = await callTool("devflow.sessions_list", {
+    repo: repoPath,
+    sort: "observedAt:desc",
+    limit: 1,
+  });
+
+  assert.deepEqual(
+    ascending.structuredContent.sessions.map((session) => session.summary),
+    ["Old Codex note.", "Middle Codex note.", "New Codex note."],
+  );
+  assert.equal(ascending.structuredContent.filters.sort, "observedAt:asc");
+  assert.equal(descendingLimited.structuredContent.count, 1);
+  assert.equal(descendingLimited.structuredContent.totalCount, 3);
+  assert.equal(descendingLimited.structuredContent.filters.sort, "observedAt:desc");
+  assert.match(descendingLimited.structuredContent.sessions[0].summary, /New Codex note/);
+});
+
+test("MCP sessions_list rejects invalid sort values", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-session-list-invalid-sort-"));
+
+  await assert.rejects(
+    callTool("devflow.sessions_list", {
+      repo: repoPath,
+      sort: "observedAt:newest",
+    }),
+    /devflow.sessions_list requires sort to be observedAt:asc or observedAt:desc/,
+  );
+});

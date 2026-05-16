@@ -753,6 +753,104 @@ test("CLI sessions list rejects invalid limit values", async () => {
   );
 });
 
+test("CLI sessions list sorts by observed time before limit", async () => {
+  const repoPath = await createTempGitRepo();
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await writeFile(
+    join(stateDir, "events.jsonl"),
+    `${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-16T00:00:00.000Z",
+      payload: {
+        sessionId: "middle",
+        workItemId: "phase-6-session-import",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "Middle Codex note.",
+      },
+    })}\n${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-15T00:00:00.000Z",
+      payload: {
+        sessionId: "old",
+        workItemId: "phase-6-session-import",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "Old Codex note.",
+      },
+    })}\n${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-17T00:00:00.000Z",
+      payload: {
+        sessionId: "new",
+        workItemId: "phase-6-session-import",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "New Codex note.",
+      },
+    })}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "list",
+    "--repo",
+    repoPath,
+    "--sort",
+    "observedAt:asc",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.deepEqual(
+    parsed.sessions.map((session) => session.summary),
+    ["Old Codex note.", "Middle Codex note.", "New Codex note."],
+  );
+  assert.equal(parsed.filters.sort, "observedAt:asc");
+
+  const text = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "list",
+    "--repo",
+    repoPath,
+    "--sort",
+    "observedAt:desc",
+    "--limit",
+    "1",
+  ]);
+
+  assert.match(text.stdout, /^Sort: observedAt:desc$/m);
+  assert.match(text.stdout, /^Limit: 1$/m);
+  assert.match(text.stdout, /^Total: 3$/m);
+  assert.match(text.stdout, /New Codex note/);
+  assert.doesNotMatch(text.stdout, /Middle Codex note/);
+  assert.doesNotMatch(text.stdout, /Old Codex note/);
+});
+
+test("CLI sessions list rejects invalid sort values", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await assert.rejects(
+    execFileAsync("node", [
+      "packages/cli/src/index.js",
+      "sessions",
+      "list",
+      "--repo",
+      repoPath,
+      "--sort",
+      "observedAt:newest",
+    ]),
+    /sessions list requires --sort observedAt:asc\|observedAt:desc/,
+  );
+});
+
 test("CLI sessions list filters by agent", async () => {
   const repoPath = await createTempGitRepo();
 

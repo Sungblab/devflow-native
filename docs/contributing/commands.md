@@ -515,6 +515,7 @@ Example:
 devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --json
 devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --agent Codex --work phase-6-session-import --json
 devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --work phase-6-session-import --since 2026-05-15T12:00:00.000Z --limit 1
+devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --sort observedAt:desc --limit 5
 ```
 
 Outputs:
@@ -524,6 +525,7 @@ Outputs:
   observed time
 - `filters.agent` when `--agent <name>` is used
 - `filters.since` when `--since <iso-date>` is used
+- `filters.sort` when `--sort observedAt:asc|observedAt:desc` is used
 - `filters.limit`, `totalCount`, and limited `count` when `--limit <n>` is used
 - warning entries from the local state reader
 
@@ -539,7 +541,10 @@ limit the list to one work item. Use `--agent <name>` to limit the list to one
 agent before the work item filter is applied. Use `--limit <n>` to show only the
 most recent matching sessions after the filters are applied. Use
 `--since <iso-date>` to show sessions observed at or after that timestamp. Limit
-values must be positive integers, and since values must parse as dates.
+values must be positive integers, and since values must parse as dates. Use
+`--sort observedAt:asc|observedAt:desc` to order matching sessions by
+observation time before applying `--limit`. Without `--sort`, the default
+recorded order and recent-match limit behavior remain unchanged.
 
 ## `devflow sessions note`
 

@@ -195,6 +195,7 @@ export function createSessionListSummary(input = {}) {
   const agent = input.agent ?? null;
   const workItemId = input.workItemId ?? null;
   const since = input.since ?? null;
+  const sort = normalizeSessionSort(input.sort);
   const sinceTime = since ? Date.parse(since) : null;
   const limit = normalizePositiveInteger(input.limit);
   const allSessions = input.sessions ?? state.sessions?.attached ?? [];
@@ -207,7 +208,12 @@ export function createSessionListSummary(input = {}) {
   const filteredSessions = since
     ? workFilteredSessions.filter((session) => Date.parse(session.observedAt) >= sinceTime)
     : workFilteredSessions;
-  const sessions = limit ? filteredSessions.slice(-limit) : filteredSessions;
+  const orderedSessions = sort ? sortSessionsByObservedAt(filteredSessions, sort) : filteredSessions;
+  const sessions = limit
+    ? sort
+      ? orderedSessions.slice(0, limit)
+      : orderedSessions.slice(-limit)
+    : orderedSessions;
 
   return {
     schemaVersion: "0.1",
@@ -219,6 +225,7 @@ export function createSessionListSummary(input = {}) {
       agent,
       workItemId,
       since,
+      sort,
       limit,
     },
     sessions,
@@ -226,6 +233,32 @@ export function createSessionListSummary(input = {}) {
     totalCount: filteredSessions.length,
     warnings: [...(input.warnings ?? []), ...(state.warnings ?? [])],
   };
+}
+
+function sortSessionsByObservedAt(sessions, sort) {
+  const direction = sort === "observedAt:asc" ? 1 : -1;
+
+  return sessions
+    .map((session, index) => ({ session, index }))
+    .sort((left, right) => {
+      const leftTime = Date.parse(left.session.observedAt);
+      const rightTime = Date.parse(right.session.observedAt);
+
+      if (leftTime === rightTime) {
+        return left.index - right.index;
+      }
+
+      return (leftTime - rightTime) * direction;
+    })
+    .map(({ session }) => session);
+}
+
+function normalizeSessionSort(value) {
+  if (value !== "observedAt:asc" && value !== "observedAt:desc") {
+    return null;
+  }
+
+  return value;
 }
 
 export function createTermExplanation(input = {}) {
