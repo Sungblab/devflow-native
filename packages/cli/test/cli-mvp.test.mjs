@@ -21,6 +21,23 @@ test("CLI status renders JSON contract", async () => {
   assert.ok(Array.isArray(parsed.git.changedFiles));
 });
 
+test("CLI status renders simple beginner-friendly summary", async () => {
+  const repoPath = await createTempGitRepo();
+  await writeFile(join(repoPath, "README.md"), "changed\n");
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--simple",
+  ]);
+
+  assert.match(stdout, /Project status/);
+  assert.match(stdout, /Changed files: 1/);
+  assert.match(stdout, /Next check: npm run docs:check/);
+});
+
 test("CLI prompt next renders a copy-paste prompt", async () => {
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",

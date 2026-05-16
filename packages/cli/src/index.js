@@ -51,6 +51,11 @@ async function renderStatus(argsForCommand) {
     gates: [{ id: "docs-check", command: "npm run docs:check", recommended: true }],
   });
 
+  if (options.simple) {
+    renderSimpleStatus(summary);
+    return;
+  }
+
   render(summary, options.json);
 }
 
@@ -183,6 +188,22 @@ function render(summary, asJson) {
   process.stdout.write(`${summary.command}: ${summary.schemaVersion}\n`);
 }
 
+function renderSimpleStatus(summary) {
+  const changedCount = summary.git.changedFiles.length;
+  const nextGate = summary.gates.find((gate) => gate.recommended) ?? summary.gates[0];
+  const handoff = summary.handoffs.latest;
+  const lines = [
+    "Project status",
+    `Branch: ${summary.repo.branch ?? "unknown"}`,
+    `Changed files: ${changedCount}`,
+    `Latest handoff: ${handoff ? handoff.workItemId : "none"}`,
+    `Next check: ${nextGate ? nextGate.command : "none"}`,
+    `Next step: ${summary.recommendations[0]?.message ?? "Pick the next crisp work item."}`,
+  ];
+
+  process.stdout.write(`${lines.join("\n")}\n`);
+}
+
 function parseOptions(rawArgs) {
   return parseOptionsAndPositionals(rawArgs).options;
 }
@@ -199,8 +220,8 @@ function parseOptionsAndPositionals(rawArgs) {
     }
 
     const key = arg.slice(2);
-    if (key === "json") {
-      options.json = true;
+    if (key === "json" || key === "simple") {
+      options[key] = true;
       continue;
     }
 
