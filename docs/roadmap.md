@@ -98,6 +98,7 @@ Build:
 - `devflow.finish` MCP tool
 - `devflow.record_gate` MCP tool
 - `devflow.next_prompt` MCP tool
+- `devflow.rewrite_prompt` MCP tool
 - Claude Code plugin draft with slash commands
 - Codex MCP config template
 - Gemini MCP config template
@@ -113,10 +114,12 @@ Exit criteria:
 
 Current implementation note: `packages/mcp` has testable handler functions for
 `devflow.status`, `devflow.split`, `devflow.explain_term`, `devflow.doctor`,
-`devflow.finish`, `devflow.record_gate`, and `devflow.next_prompt`, plus a
+`devflow.finish`, `devflow.record_gate`, `devflow.next_prompt`, and
+`devflow.rewrite_prompt`, plus a
 minimal stdio JSON-RPC transport. The CLI also has thin `devflow split --json`
-and `devflow explain` renderers. Host-specific Codex and Gemini MCP config
-templates are present. Project-specific split discovery can now read
+and `devflow explain` renderers, plus `devflow prompt rewrite` for converting
+vague maintainer intent into agent-ready requirements. Host-specific Codex and
+Gemini MCP config templates are present. Project-specific split discovery can now read
 `.devflow/config.json` `split.tasks`; richer docs/code map inference remains
 later work. The repo-local plugin ships shared `start`, `split`, `next`,
 `explain`, and `finish` skills for Codex and Claude Code style plugin
