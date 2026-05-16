@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "docs:check": "node scripts/check-doc-links.mjs",
+    "mcp:stdio": "node packages/mcp/src/stdio.js",
     "test": "node --test"
   }
 }

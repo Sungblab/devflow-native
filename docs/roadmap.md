@@ -111,8 +111,9 @@ Exit criteria:
 - plugin/slash-command UX calls the same core contracts as the CLI
 
 Current implementation note: `packages/mcp` has testable handler functions for
-`devflow.doctor`, `devflow.finish`, and `devflow.next_prompt`. A real stdio or
-HTTP transport is still a follow-up slice.
+`devflow.doctor`, `devflow.finish`, and `devflow.next_prompt`, plus a minimal
+stdio JSON-RPC transport. Host-specific MCP config templates remain a follow-up
+slice.
 
 ## Phase 6: Session Import
 
