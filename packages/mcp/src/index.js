@@ -10,6 +10,7 @@ import {
   createFinishSummary,
   createNextPrompt,
   createPromptRewrite,
+  createSessionAttachPlan,
   createSplitPlan,
   createStatusSummary,
   createTermExplanation,
@@ -40,6 +41,10 @@ const tools = [
   {
     name: "devflow.sessions_codex",
     description: "Read explicit Codex session metadata through the Devflow adapter contract.",
+  },
+  {
+    name: "devflow.sessions_attach_plan",
+    description: "Plan session-to-work-item links without writing Devflow state.",
   },
   {
     name: "devflow.doctor",
@@ -82,6 +87,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.sessions_codex") {
     return callCodexSessions(args);
+  }
+
+  if (name === "devflow.sessions_attach_plan") {
+    return callSessionAttachPlan(args);
   }
 
   if (name === "devflow.doctor") {
@@ -203,6 +212,16 @@ async function callCodexSessions(args) {
   };
 
   return toolResult(summary, `devflow sessions_codex: ${summary.files.length} files`);
+}
+
+function callSessionAttachPlan(args) {
+  const plan = createSessionAttachPlan({
+    workItems: args.workItems ?? [],
+    sessions: args.sessions ?? [],
+    warnings: args.warnings ?? [],
+  });
+
+  return toolResult(plan, `devflow sessions_attach_plan: ${plan.proposals.length} proposals`);
 }
 
 async function callDoctor(args) {
