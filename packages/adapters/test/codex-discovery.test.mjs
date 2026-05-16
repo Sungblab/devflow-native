@@ -4,7 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { discoverCodexSessions, findCodexSessionFiles } from "../src/index.js";
+import {
+  discoverCodexSessions,
+  findCodexSessionFiles,
+  parseCodexSessionJsonl,
+} from "../src/index.js";
 
 test("Codex discovery maps matching session metadata into normalized events", () => {
   const result = discoverCodexSessions({
@@ -74,4 +78,39 @@ test("Codex file discovery finds JSONL candidates under an explicit codex home",
   assert.equal(result.files[0].kind, "session-jsonl");
   assert.equal(result.files[0].sourceKind, "local-history");
   assert.equal(result.files[0].sizeBytes, 3);
+});
+
+test("Codex JSONL parser extracts safe metadata from a synthetic fixture", () => {
+  const content = [
+    JSON.stringify({
+      type: "session_meta",
+      payload: {
+        id: "019c7714-3b77-74d1-9866-e1f484aae2ab",
+        cwd: "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os",
+        timestamp: "2026-05-16T11:00:00+09:00",
+      },
+    }),
+    JSON.stringify({
+      type: "response_item",
+      payload: { type: "function_call", name: "shell_command" },
+    }),
+    JSON.stringify({
+      type: "response_item",
+      payload: { type: "function_call", name: "apply_patch" },
+    }),
+    "{not json",
+  ].join("\n");
+
+  const record = parseCodexSessionJsonl(content, {
+    sourcePath: "C:\\Users\\Sungbin\\.codex\\sessions\\fixture.jsonl",
+  });
+
+  assert.equal(record.id, "019c7714-3b77-74d1-9866-e1f484aae2ab");
+  assert.equal(record.cwd, "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os");
+  assert.equal(record.startedAt, "2026-05-16T11:00:00+09:00");
+  assert.equal(record.updatedAt, "2026-05-16T11:00:00+09:00");
+  assert.equal(record.hasToolCalls, true);
+  assert.equal(record.hasFileEdits, true);
+  assert.equal(record.sourceKind, "local-history");
+  assert.match(record.warnings[0], /Invalid JSONL/);
 });

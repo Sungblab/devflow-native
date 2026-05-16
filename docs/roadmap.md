@@ -143,7 +143,8 @@ Exit criteria:
 Current implementation note: `packages/adapters` has first read-only Codex
 session discovery helpers. `findCodexSessionFiles` locates candidate JSONL
 files under an explicit `codexHome/sessions` directory without parsing private
-contents. `discoverCodexSessions` accepts caller-supplied Codex-like records and
+contents. `parseCodexSessionJsonl` extracts safe metadata from caller-provided
+JSONL content. `discoverCodexSessions` accepts caller-supplied Codex-like records and
 normalizes them into discovery events with confidence, source, and warning
 fields. It does not attach sessions to work items yet.
 
