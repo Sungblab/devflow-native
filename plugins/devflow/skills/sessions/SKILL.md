@@ -37,7 +37,10 @@ work.
    response as a no-op success.
 8. To inspect recorded links later, use `devflow sessions list --repo "<repo>" --json`.
    In MCP hosts, use `devflow.sessions_list` with the same `repo` argument.
-9. Treat low-confidence sessions as visible evidence only. Attach proposals must
+9. When useful work happened outside a supported adapter, record it with
+   `devflow sessions note --repo "<repo>" --work "<workId>" --agent manual --summary "<text>" --json`.
+   In MCP hosts, use `devflow.sessions_note` with `work`, `agent`, and `summary`.
+10. Treat low-confidence sessions as visible evidence only. Attach proposals must
    remain confirmation-gated unless the planner marks them attach-ready and the
    maintainer accepts the link.
 
@@ -54,6 +57,7 @@ Return:
 - existing attachment response when the link was already recorded
 - attached session list with session id, work item id, agent, confidence, and
   observed time
+- manual note evidence when no adapter transcript exists
 - recommended next action, such as inspect one session, accept an attach-ready
   proposal, request confirmation for a low-confidence proposal, or ignore stale
   records

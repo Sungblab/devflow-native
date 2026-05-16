@@ -471,6 +471,36 @@ export async function recordSessionAttachedEvent(repoPath, proposal, options = {
   return event;
 }
 
+export async function recordManualSessionNoteEvent(repoPath, note, options = {}) {
+  if (!note?.workItemId) {
+    throw new Error("session note requires workItemId.");
+  }
+
+  if (!note.summary) {
+    throw new Error("session note requires summary.");
+  }
+
+  const observedAt = options.observedAt ?? new Date().toISOString();
+  const event = {
+    schemaVersion: "0.1",
+    type: "session.message",
+    observedAt,
+    payload: {
+      sessionId: note.sessionId ?? `manual:${note.workItemId}:${observedAt}`,
+      workItemId: note.workItemId,
+      agent: note.agent ?? "manual",
+      kind: "manual-note",
+      summary: note.summary,
+    },
+  };
+
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await appendFile(join(stateDir, "events.jsonl"), `${JSON.stringify(event)}\n`, "utf8");
+
+  return event;
+}
+
 export async function readDevflowState(repoPath) {
   let raw;
   try {
@@ -649,17 +679,33 @@ function createLatestGateEvidence(events) {
 }
 
 function createAttachedSessionEvidence(events) {
-  return events
+  const attached = events
     .filter((event) => event.type === "session.attached")
     .map((event) => ({
       sessionId: event.payload.sessionId,
       workItemId: event.payload.workItemId,
       agent: event.payload.agent,
+      kind: "attached",
       confidence: event.payload.confidence,
       changedFiles: event.payload.changedFiles ?? [],
       observedAt: event.observedAt,
       warnings: event.payload.warnings ?? [],
     }));
+  const notes = events
+    .filter((event) => event.type === "session.message" && event.payload?.kind === "manual-note")
+    .map((event) => ({
+      sessionId: event.payload.sessionId,
+      workItemId: event.payload.workItemId,
+      agent: event.payload.agent,
+      kind: "manual-note",
+      confidence: "manual",
+      changedFiles: [],
+      observedAt: event.observedAt,
+      summary: event.payload.summary,
+      warnings: [],
+    }));
+
+  return [...attached, ...notes];
 }
 
 function mergeGateEvidence(configuredGates, latestById) {

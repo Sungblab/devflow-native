@@ -20,6 +20,7 @@ import {
   readMistakeMemory,
   recordFinishEvent,
   recordGateEvent,
+  recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
 } from "../../core/src/index.js";
 
@@ -55,6 +56,10 @@ const tools = [
   {
     name: "devflow.sessions_list",
     description: "List attached sessions from local Devflow state.",
+  },
+  {
+    name: "devflow.sessions_note",
+    description: "Record a manual session note into local Devflow state.",
   },
   {
     name: "devflow.doctor",
@@ -109,6 +114,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.sessions_list") {
     return callSessionList(args);
+  }
+
+  if (name === "devflow.sessions_note") {
+    return callSessionNote(args);
   }
 
   if (name === "devflow.doctor") {
@@ -275,6 +284,24 @@ async function callSessionList(args) {
   });
 
   return toolResult(summary, `devflow sessions_list: ${summary.count} sessions`);
+}
+
+async function callSessionNote(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const event = await recordManualSessionNoteEvent(repoPath, {
+    workItemId: args.workItemId ?? args.work,
+    agent: args.agent ?? "manual",
+    summary: args.summary,
+  });
+
+  return toolResult(
+    {
+      schemaVersion: "0.1",
+      command: "session_note",
+      event,
+    },
+    `devflow sessions_note: ${event.payload.sessionId}`,
+  );
 }
 
 async function callDoctor(args) {

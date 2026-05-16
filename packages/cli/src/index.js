@@ -23,6 +23,7 @@ import {
   readDevflowState,
   readMistakeMemory,
   recordFinishEvent,
+  recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
 } from "../../core/src/index.js";
 
@@ -52,6 +53,8 @@ try {
     await renderSessionAttach(args.slice(2));
   } else if (command === "sessions" && args[1] === "list") {
     await renderSessionList(args.slice(2));
+  } else if (command === "sessions" && args[1] === "note") {
+    await renderSessionNote(args.slice(2));
   } else {
     throw new Error(`Unknown command: ${args.join(" ") || "<none>"}`);
   }
@@ -294,6 +297,34 @@ async function renderSessionList(argsForCommand) {
   });
 
   render(summary, options.json);
+}
+
+async function renderSessionNote(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+
+  if (!options.work) {
+    throw new Error("sessions note requires --work <work-item-id>.");
+  }
+
+  if (!options.summary) {
+    throw new Error("sessions note requires --summary <text>.");
+  }
+
+  const event = await recordManualSessionNoteEvent(repoPath, {
+    workItemId: options.work,
+    agent: options.agent ?? "manual",
+    summary: options.summary,
+  });
+
+  render(
+    {
+      schemaVersion: "0.1",
+      command: "session_note",
+      event,
+    },
+    options.json,
+  );
 }
 
 function defaultPlatformName() {

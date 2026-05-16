@@ -103,6 +103,7 @@ Build:
 - `devflow.sessions_attach_plan` MCP tool
 - `devflow.sessions_attach` MCP tool
 - `devflow.sessions_list` MCP tool
+- `devflow.sessions_note` MCP tool
 - Claude Code plugin draft with slash commands
 - Codex MCP config template
 - Gemini MCP config template
@@ -121,7 +122,8 @@ Current implementation note: `packages/mcp` has testable handler functions for
 `devflow.finish`, `devflow.record_gate`, `devflow.next_prompt`, and
 `devflow.rewrite_prompt`, plus adapter-backed `devflow.sessions_codex` and
 dry-run `devflow.sessions_attach_plan`, confirmed-write
-`devflow.sessions_attach`, read-only `devflow.sessions_list`, and a
+`devflow.sessions_attach`, read-only `devflow.sessions_list`, manual
+`devflow.sessions_note`, and a
 minimal stdio JSON-RPC transport. The CLI also has thin `devflow split --json`
 and `devflow explain` renderers, plus `devflow prompt rewrite` for converting
 vague maintainer intent into agent-ready requirements. Host-specific Codex and
@@ -165,7 +167,9 @@ to append an approved `session.attached` event to local state; MCP exposes the
 same confirmed write as `devflow.sessions_attach`. Duplicate session/work item
 links return the existing event without appending another JSONL line. Attached
 session links are visible through `devflow sessions list --json` and MCP
-`devflow.sessions_list`.
+`devflow.sessions_list`. Manual or external session context can be recorded via
+`devflow sessions note --work <id> --summary <text> --json` or MCP
+`devflow.sessions_note`, and appears in the same session list.
 
 ## Phase 7: Beginner Guidance Profile
 

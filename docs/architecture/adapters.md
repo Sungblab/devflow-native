@@ -118,6 +118,7 @@ devflow.sessions_codex
 devflow.sessions_attach_plan
 devflow.sessions_attach
 devflow.sessions_list
+devflow.sessions_note
 ```
 
 Codex may support ChatGPT account login or API key login in its own CLI. Devflow
@@ -229,7 +230,9 @@ tool consume one approved proposal and persist the actual `session.attached`
 event. Duplicate session/work item links are reported as existing attachments
 instead of being appended again. Recorded attachments can be listed through
 `devflow sessions list` or MCP `devflow.sessions_list` without re-reading agent
-history.
+history. Manual or external work can be captured as a session note through
+`devflow sessions note` or MCP `devflow.sessions_note`, then appears in the
+same session list.
 
 ### Claude Code
 

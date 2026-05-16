@@ -22,6 +22,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.sessions_attach_plan"));
   assert.ok(names.includes("devflow.sessions_attach"));
   assert.ok(names.includes("devflow.sessions_list"));
+  assert.ok(names.includes("devflow.sessions_note"));
 });
 
 test("MCP status returns local repo state and latest handoff evidence", async () => {
@@ -345,4 +346,22 @@ test("MCP sessions_list renders attached sessions", async () => {
   assert.equal(result.structuredContent.count, 1);
   assert.equal(result.structuredContent.sessions[0].sessionId, "high-confidence");
   assert.match(result.content[0].text, /sessions_list/);
+});
+
+test("MCP sessions_note records a manual session note", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-session-note-"));
+  const result = await callTool("devflow.sessions_note", {
+    repo: repoPath,
+    work: "phase-6-session-import",
+    agent: "manual",
+    summary: "Reviewed local session context outside an agent transcript.",
+  });
+
+  assert.equal(result.structuredContent.command, "session_note");
+  assert.equal(result.structuredContent.event.type, "session.message");
+  assert.equal(result.structuredContent.event.payload.workItemId, "phase-6-session-import");
+
+  const list = await callTool("devflow.sessions_list", { repo: repoPath });
+  assert.equal(list.structuredContent.sessions[0].kind, "manual-note");
+  assert.match(list.structuredContent.sessions[0].summary, /Reviewed local session context/);
 });
