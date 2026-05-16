@@ -361,6 +361,43 @@ test("session list summary filters by agent before work item and limit", async (
   assert.match(summary.sessions[0].summary, /Second Codex import note/);
 });
 
+test("session list summary filters by observed time before limit", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-list-since-"));
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "Codex",
+      summary: "Old Codex note.",
+    },
+    { observedAt: "2026-05-15T00:00:00.000Z" },
+  );
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "Codex",
+      summary: "New Codex note.",
+    },
+    { observedAt: "2026-05-16T00:00:00.000Z" },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const summary = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    agent: "Codex",
+    workItemId: "phase-6-session-import",
+    since: "2026-05-15T12:00:00.000Z",
+    limit: 1,
+  });
+
+  assert.equal(summary.count, 1);
+  assert.equal(summary.totalCount, 1);
+  assert.equal(summary.filters.since, "2026-05-15T12:00:00.000Z");
+  assert.match(summary.sessions[0].summary, /New Codex note/);
+});
+
 test("term explanation translates beginner-facing development terms", () => {
   const explanation = createTermExplanation({
     term: "toast notification",

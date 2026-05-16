@@ -194,14 +194,19 @@ export function createSessionListSummary(input = {}) {
   const state = input.state ?? emptyDevflowState();
   const agent = input.agent ?? null;
   const workItemId = input.workItemId ?? null;
+  const since = input.since ?? null;
+  const sinceTime = since ? Date.parse(since) : null;
   const limit = normalizePositiveInteger(input.limit);
   const allSessions = input.sessions ?? state.sessions?.attached ?? [];
   const agentFilteredSessions = agent
     ? allSessions.filter((session) => session.agent === agent)
     : allSessions;
-  const filteredSessions = workItemId
+  const workFilteredSessions = workItemId
     ? agentFilteredSessions.filter((session) => session.workItemId === workItemId)
     : agentFilteredSessions;
+  const filteredSessions = since
+    ? workFilteredSessions.filter((session) => Date.parse(session.observedAt) >= sinceTime)
+    : workFilteredSessions;
   const sessions = limit ? filteredSessions.slice(-limit) : filteredSessions;
 
   return {
@@ -213,6 +218,7 @@ export function createSessionListSummary(input = {}) {
     filters: {
       agent,
       workItemId,
+      since,
       limit,
     },
     sessions,

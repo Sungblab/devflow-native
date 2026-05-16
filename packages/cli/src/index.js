@@ -289,6 +289,7 @@ async function renderSessionList(argsForCommand) {
   const options = parseOptions(argsForCommand);
   const repoPath = options.repo ?? cwd();
   const limit = parsePositiveIntegerOption(options.limit, "sessions list requires --limit <positive-integer>.");
+  const since = parseIsoDateOption(options.since, "sessions list requires --since <iso-date>.");
   const state = await readDevflowState(repoPath);
   const summary = createSessionListSummary({
     repo: {
@@ -297,6 +298,7 @@ async function renderSessionList(argsForCommand) {
     state,
     agent: options.agent,
     workItemId: options.work,
+    since,
     limit,
   });
 
@@ -413,6 +415,9 @@ function renderSessionListText(summary) {
   if (summary.filters.agent) {
     lines.push(`Agent: ${summary.filters.agent}`);
   }
+  if (summary.filters.since) {
+    lines.push(`Since: ${summary.filters.since}`);
+  }
   if (summary.filters.limit) {
     lines.push(`Limit: ${summary.filters.limit}`);
     lines.push(`Total: ${summary.totalCount}`);
@@ -448,6 +453,18 @@ function parsePositiveIntegerOption(value, message) {
   }
 
   return parsed;
+}
+
+function parseIsoDateOption(value, message) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (Number.isNaN(Date.parse(value))) {
+    throw new Error(message);
+  }
+
+  return value;
 }
 
 function parseOptions(rawArgs) {

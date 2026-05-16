@@ -817,6 +817,87 @@ test("CLI sessions list filters by agent", async () => {
   assert.doesNotMatch(text.stdout, /Manual import note/);
 });
 
+test("CLI sessions list filters by observed time", async () => {
+  const repoPath = await createTempGitRepo();
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await writeFile(
+    join(stateDir, "events.jsonl"),
+    `${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-15T00:00:00.000Z",
+      payload: {
+        sessionId: "old",
+        workItemId: "phase-6-session-import",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "Old Codex note.",
+      },
+    })}\n${JSON.stringify({
+      schemaVersion: "0.1",
+      type: "session.message",
+      observedAt: "2026-05-16T00:00:00.000Z",
+      payload: {
+        sessionId: "new",
+        workItemId: "phase-6-session-import",
+        agent: "Codex",
+        kind: "manual-note",
+        summary: "New Codex note.",
+      },
+    })}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "list",
+    "--repo",
+    repoPath,
+    "--since",
+    "2026-05-15T12:00:00.000Z",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.count, 1);
+  assert.equal(parsed.totalCount, 1);
+  assert.equal(parsed.filters.since, "2026-05-15T12:00:00.000Z");
+  assert.match(parsed.sessions[0].summary, /New Codex note/);
+
+  const text = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "list",
+    "--repo",
+    repoPath,
+    "--since",
+    "2026-05-15T12:00:00.000Z",
+  ]);
+
+  assert.match(text.stdout, /^Since: 2026-05-15T12:00:00.000Z$/m);
+  assert.match(text.stdout, /New Codex note/);
+  assert.doesNotMatch(text.stdout, /Old Codex note/);
+});
+
+test("CLI sessions list rejects invalid since values", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await assert.rejects(
+    execFileAsync("node", [
+      "packages/cli/src/index.js",
+      "sessions",
+      "list",
+      "--repo",
+      repoPath,
+      "--since",
+      "not-a-date",
+    ]),
+    /sessions list requires --since <iso-date>/,
+  );
+});
+
 test("CLI sessions list renders filtered text output", async () => {
   const repoPath = await createTempGitRepo();
 
