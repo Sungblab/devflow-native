@@ -727,6 +727,23 @@ test("CLI sessions list text output shows attached session details", async () =>
   assert.match(stdout, /attached\s+phase-6-session-import\s+Codex\s+high-confidence\s+files:1/);
 });
 
+test("CLI sessions list text output surfaces state warnings", async () => {
+  const repoPath = await createTempGitRepo();
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await writeFile(join(stateDir, "events.jsonl"), "{not-json}\n", "utf8");
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "list",
+    "--repo",
+    repoPath,
+  ]);
+
+  assert.match(stdout, /^Warnings: 1$/m);
+});
+
 async function createTempGitRepo() {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-cli-"));
   await execFileAsync("git", ["init"], { cwd: repoPath });

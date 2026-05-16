@@ -407,6 +407,9 @@ function renderSessionListText(summary) {
     `Filter: ${summary.filters.workItemId ?? "all"}`,
     `Count: ${summary.count}`,
   ];
+  if (summary.warnings.length > 0) {
+    lines.push(`Warnings: ${summary.warnings.length}`);
+  }
 
   for (const session of summary.sessions) {
     const changedFileCount = session.changedFiles?.length;
