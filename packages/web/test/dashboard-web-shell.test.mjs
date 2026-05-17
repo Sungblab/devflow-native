@@ -8,6 +8,7 @@ import {
   renderDashboardLiveSection,
   renderDashboardRouteLinks,
   renderDashboardGatesPage,
+  renderDashboardSessionsPage,
 } from "../src/index.js";
 
 test("web package owns the no-build dashboard shell assets", () => {
@@ -110,4 +111,36 @@ test("web package renders the gates slice page", () => {
   assert.match(html, /npm run docs:check/);
   assert.match(html, /unit/);
   assert.match(html, /failed/);
+});
+
+test("web package renders the sessions slice page", () => {
+  const html = renderDashboardSessionsPage({
+    sessions: {
+      counts: { total: 2, manualNotes: 1, attached: 1 },
+      recent: [
+        {
+          agent: "Codex",
+          kind: "manual-note",
+          workItemId: "dashboard-sessions",
+          summary: "Moved session rendering into the web package.",
+          sessionId: "manual:dashboard-sessions",
+        },
+        {
+          agent: "Claude",
+          kind: "attached",
+          workItemId: null,
+          summary: null,
+          sessionId: "session-2",
+        },
+      ],
+    },
+  });
+
+  assert.match(html, /Devflow Sessions/);
+  assert.match(html, /2 total \/ 1 manual \/ 1 attached/);
+  assert.match(html, /Codex/);
+  assert.match(html, /dashboard-sessions/);
+  assert.match(html, /Moved session rendering into the web package/);
+  assert.match(html, /Claude/);
+  assert.match(html, /session-2/);
 });

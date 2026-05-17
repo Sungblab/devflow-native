@@ -170,6 +170,47 @@ export function renderDashboardGatesPage(summary) {
 `;
 }
 
+export function renderDashboardSessionsPage(summary) {
+  const sessionRows = (summary.sessions?.recent ?? [])
+    .map(
+      (session) =>
+        `<tr><td>${escapeHtml(session.agent)}</td><td>${escapeHtml(session.kind)}</td><td>${escapeHtml(session.workItemId ?? "none")}</td><td>${escapeHtml(session.summary ?? session.sessionId ?? "none")}</td></tr>`,
+    )
+    .join("");
+  const rows = sessionRows || '<tr><td colspan="4">No session evidence.</td></tr>';
+  const counts = summary.sessions?.counts ?? {};
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devflow Sessions</title>
+  <style>
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f7f9; color: #171a1f; }
+    main { max-width: 960px; margin: 0 auto; padding: 32px 20px 48px; }
+    h1 { margin: 0 0 8px; font-size: 32px; }
+    p { margin: 0 0 20px; color: #5b6270; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #d9dde5; border-radius: 8px; overflow: hidden; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eceff3; vertical-align: top; }
+    th { font-size: 13px; color: #5b6270; text-transform: uppercase; }
+    td { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Devflow Sessions</h1>
+    <p>${escapeHtml(counts.total ?? 0)} total / ${escapeHtml(counts.manualNotes ?? 0)} manual / ${escapeHtml(counts.attached ?? 0)} attached</p>
+    <table>
+      <thead><tr><th>Agent</th><th>Kind</th><th>Work</th><th>Summary</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </main>
+</body>
+</html>
+`;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
