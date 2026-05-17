@@ -276,6 +276,39 @@ test("MCP work_create is idempotent for existing ids", async () => {
   assert.equal(log.trim().split("\n").length, 1);
 });
 
+test("MCP work lifecycle tools mark items ready and blocked", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-work-lifecycle-"));
+  await callTool("devflow.work_create", {
+    repo: repoPath,
+    id: "ready-work",
+    title: "Ready work",
+  });
+  await callTool("devflow.work_create", {
+    repo: repoPath,
+    id: "blocked-work",
+    title: "Blocked work",
+  });
+
+  const ready = await callTool("devflow.work_ready", {
+    repo: repoPath,
+    id: "ready-work",
+  });
+  const blocked = await callTool("devflow.work_block", {
+    repo: repoPath,
+    id: "blocked-work",
+    reason: "Waiting for review.",
+  });
+  const status = await callTool("devflow.status", {
+    repo: repoPath,
+  });
+
+  assert.equal(ready.structuredContent.command, "work_ready");
+  assert.equal(blocked.structuredContent.command, "work_block");
+  assert.equal(status.structuredContent.work.readyToFinish[0].id, "ready-work");
+  assert.equal(status.structuredContent.work.blocked[0].id, "blocked-work");
+  assert.equal(status.structuredContent.work.blocked[0].blockedReason, "Waiting for review.");
+});
+
 test("MCP gates_run executes configured gate and records evidence", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-gates-run-"));
   const scriptPath = join(repoPath, "gate-script.mjs");

@@ -28,7 +28,9 @@ import {
   recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
   recordSplitWorkEvents,
+  recordWorkBlockedEvent,
   recordWorkCreatedEvent,
+  recordWorkReadyEvent,
   recordWorkStartedEvent,
   runConfiguredGate,
 } from "../../core/src/index.js";
@@ -81,6 +83,14 @@ const tools = [
   {
     name: "devflow.work_start",
     description: "Mark a local Devflow work item as active.",
+  },
+  {
+    name: "devflow.work_ready",
+    description: "Mark a local Devflow work item as ready to finish.",
+  },
+  {
+    name: "devflow.work_block",
+    description: "Mark a local Devflow work item as blocked.",
   },
   {
     name: "devflow.work_list",
@@ -159,6 +169,14 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.work_start") {
     return callWorkStart(args);
+  }
+
+  if (name === "devflow.work_ready") {
+    return callWorkReady(args);
+  }
+
+  if (name === "devflow.work_block") {
+    return callWorkBlock(args);
   }
 
   if (name === "devflow.work_list") {
@@ -422,6 +440,41 @@ async function callWorkStart(args) {
       event,
     },
     `devflow work_start: ${event.payload.id}`,
+  );
+}
+
+async function callWorkReady(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const event = await recordWorkReadyEvent(repoPath, {
+    id: args.id,
+  });
+
+  return toolResult(
+    {
+      schemaVersion: "0.1",
+      command: "work_ready",
+      workItem: event.payload,
+      event,
+    },
+    `devflow work_ready: ${event.payload.id}`,
+  );
+}
+
+async function callWorkBlock(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const event = await recordWorkBlockedEvent(repoPath, {
+    id: args.id,
+    reason: args.reason,
+  });
+
+  return toolResult(
+    {
+      schemaVersion: "0.1",
+      command: "work_block",
+      workItem: event.payload,
+      event,
+    },
+    `devflow work_block: ${event.payload.id}`,
   );
 }
 

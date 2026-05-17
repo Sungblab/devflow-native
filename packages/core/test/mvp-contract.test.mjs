@@ -31,7 +31,9 @@ import {
   recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
   recordSplitWorkEvents,
+  recordWorkBlockedEvent,
   recordWorkCreatedEvent,
+  recordWorkReadyEvent,
   recordWorkStartedEvent,
 } from "../src/index.js";
 
@@ -279,6 +281,47 @@ test("work create is idempotent for an existing work item id", async () => {
 
   const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
   assert.equal(log.trim().split("\n").length, 1);
+});
+
+test("work lifecycle events can mark items ready and blocked", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-work-lifecycle-"));
+
+  await recordWorkCreatedEvent(repoPath, {
+    id: "ready-work",
+    title: "Ready work",
+  });
+  await recordWorkCreatedEvent(repoPath, {
+    id: "blocked-work",
+    title: "Blocked work",
+  });
+  const ready = await recordWorkReadyEvent(
+    repoPath,
+    { id: "ready-work" },
+    { observedAt: "2026-05-17T09:20:00.000Z" },
+  );
+  const blocked = await recordWorkBlockedEvent(
+    repoPath,
+    {
+      id: "blocked-work",
+      reason: "Waiting for review.",
+    },
+    { observedAt: "2026-05-17T09:21:00.000Z" },
+  );
+
+  assert.equal(ready.type, "work.ready");
+  assert.equal(blocked.type, "work.blocked");
+
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(state.work.readyToFinish[0].id, "ready-work");
+  assert.equal(state.work.blocked[0].id, "blocked-work");
+  assert.equal(state.work.blocked[0].blockedReason, "Waiting for review.");
+  assert.equal(status.work.readyToFinish[0].id, "ready-work");
+  assert.equal(status.work.blocked[0].id, "blocked-work");
 });
 
 test("project health scanner surfaces invalid gates from config", async () => {

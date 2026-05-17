@@ -32,7 +32,9 @@ import {
   recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
   recordSplitWorkEvents,
+  recordWorkBlockedEvent,
   recordWorkCreatedEvent,
+  recordWorkReadyEvent,
   recordWorkStartedEvent,
   runConfiguredGate,
   writeInitPlan,
@@ -76,6 +78,10 @@ try {
     await renderWorkCreate(args.slice(2));
   } else if (command === "work" && args[1] === "start") {
     await renderWorkStart(args.slice(2));
+  } else if (command === "work" && args[1] === "ready") {
+    await renderWorkReady(args.slice(2));
+  } else if (command === "work" && args[1] === "block") {
+    await renderWorkBlock(args.slice(2));
   } else if (command === "work" && args[1] === "list") {
     await renderWorkList(args.slice(2));
   } else {
@@ -449,6 +455,43 @@ async function renderWorkStart(argsForCommand) {
     {
       schemaVersion: "0.1",
       command: "work_start",
+      workItem: event.payload,
+      event,
+    },
+    options.json,
+  );
+}
+
+async function renderWorkReady(argsForCommand) {
+  const { options, positional } = parseOptionsAndPositionals(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const event = await recordWorkReadyEvent(repoPath, {
+    id: positional[0] ?? options.id,
+  });
+
+  render(
+    {
+      schemaVersion: "0.1",
+      command: "work_ready",
+      workItem: event.payload,
+      event,
+    },
+    options.json,
+  );
+}
+
+async function renderWorkBlock(argsForCommand) {
+  const { options, positional } = parseOptionsAndPositionals(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const event = await recordWorkBlockedEvent(repoPath, {
+    id: positional[0] ?? options.id,
+    reason: options.reason,
+  });
+
+  render(
+    {
+      schemaVersion: "0.1",
+      command: "work_block",
       workItem: event.payload,
       event,
     },

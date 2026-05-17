@@ -779,6 +779,71 @@ test("CLI work create is idempotent for existing ids", async () => {
   assert.equal(log.trim().split("\n").length, 1);
 });
 
+test("CLI work ready and block update lifecycle state", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "ready-work",
+    "--title",
+    "Ready work",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "blocked-work",
+    "--title",
+    "Blocked work",
+    "--json",
+  ]);
+
+  const ready = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "ready",
+    "ready-work",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const blocked = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "block",
+    "blocked-work",
+    "--repo",
+    repoPath,
+    "--reason",
+    "Waiting for review.",
+    "--json",
+  ]);
+  const status = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+
+  assert.equal(JSON.parse(ready.stdout).command, "work_ready");
+  assert.equal(JSON.parse(blocked.stdout).command, "work_block");
+
+  const statusJson = JSON.parse(status.stdout);
+  assert.equal(statusJson.work.readyToFinish[0].id, "ready-work");
+  assert.equal(statusJson.work.blocked[0].id, "blocked-work");
+  assert.equal(statusJson.work.blocked[0].blockedReason, "Waiting for review.");
+});
+
 test("CLI gates run executes configured gate and writes evidence", async () => {
   const repoPath = await createTempGitRepo();
   const scriptPath = join(repoPath, "gate-script.mjs");

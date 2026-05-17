@@ -18,6 +18,8 @@ devflow health
 devflow gates run
 devflow work create
 devflow work start
+devflow work ready
+devflow work block
 devflow work list
 devflow status
 devflow split
@@ -62,7 +64,8 @@ minimum project contract and skips existing files instead of overwriting them.
 `devflow health` checks those scaffold files and configured gates.
 `devflow gates run` executes one configured gate and records pass/fail
 evidence.
-`devflow work create/start/list` provides the first local work item registry.
+`devflow work create/start/ready/block/list` provides the first local work item
+registry.
 `devflow dashboard` stays in the broad contract.
 `doctor` is included early because plugin/skill-first workflows need a cheap
 way to avoid repeated local-environment mistakes.
@@ -89,10 +92,11 @@ the same log and derives the latest handoff and latest gate evidence from it.
 The event log is local-first project state and is ignored by git by default in
 this repository.
 `devflow work create` appends `work.created`, `devflow work start` appends
-`work.started`, and `devflow work list` derives current work item state from
-the same log. Work item writes are idempotent by id: creating or starting an
-already recorded work item returns the existing event with `existing: true`
-instead of appending another line.
+`work.started`, `devflow work ready` appends `work.ready`, `devflow work block`
+appends `work.blocked`, and `devflow work list` derives current work item state
+from the same log. Work item create/start writes are idempotent by id: creating
+or starting an already recorded work item returns the existing event with
+`existing: true` instead of appending another line.
 
 ## Shared CLI Rules
 
@@ -415,6 +419,42 @@ Outputs:
 
 If the id already has a `work.started` event, the command returns that existing
 event with `existing: true` and does not append another event.
+
+## `devflow work ready`
+
+Marks a local work item as ready to finish.
+
+Example:
+
+```powershell
+devflow work ready phase-3-work-registry --json
+```
+
+Outputs:
+
+- `work_ready` JSON wrapper
+- ready work item payload
+- appended `work.ready` event
+
+Ready items appear under `work.readyToFinish` in `devflow status`.
+
+## `devflow work block`
+
+Marks a local work item as blocked.
+
+Example:
+
+```powershell
+devflow work block phase-3-work-registry --reason "Waiting for review." --json
+```
+
+Outputs:
+
+- `work_block` JSON wrapper
+- blocked work item payload, including the optional reason
+- appended `work.blocked` event
+
+Blocked items appear under `work.blocked` in `devflow status`.
 
 ## `devflow work list`
 
