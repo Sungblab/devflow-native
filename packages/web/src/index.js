@@ -28,7 +28,7 @@ function renderDashboardLiveSection(dashboard) {
   const gates = dashboard.gates?.counts ?? {};
   const sessions = dashboard.sessions?.counts ?? {};
   const handoffs = dashboard.handoffs?.counts ?? {};
-  return [
+  const metrics = [
     ["Active work", work.active ?? 0],
     ["Blocked", work.blocked ?? 0],
     ["Ready", work.readyToFinish ?? 0],
@@ -38,6 +38,18 @@ function renderDashboardLiveSection(dashboard) {
   ]
     .map(([label, value]) => '<article><span>' + label + '</span><strong>' + value + '</strong></article>')
     .join("");
+  const latestGate = dashboard.gates?.latest?.[0];
+  const latestSession = dashboard.sessions?.latest;
+  const latestHandoff = dashboard.handoffs?.latest;
+  const details = [
+    latestGate ? ["Latest gate", latestGate.id + " " + latestGate.status] : null,
+    latestSession ? ["Latest session", latestSession.summary || latestSession.sessionId] : null,
+    latestHandoff ? ["Latest handoff", latestHandoff.prompt || latestHandoff.title || latestHandoff.workItemId] : null,
+  ]
+    .filter(Boolean)
+    .map(([label, value]) => '<article><span>' + label + '</span><strong>' + value + '</strong></article>')
+    .join("");
+  return metrics + details;
 }
 
 loadDashboard().catch((error) => {
@@ -62,7 +74,7 @@ export function renderDashboardLiveSection(dashboard) {
   const gates = dashboard.gates?.counts ?? {};
   const sessions = dashboard.sessions?.counts ?? {};
   const handoffs = dashboard.handoffs?.counts ?? {};
-  return [
+  const metrics = [
     ["Active work", work.active ?? 0],
     ["Blocked", work.blocked ?? 0],
     ["Ready", work.readyToFinish ?? 0],
@@ -72,6 +84,18 @@ export function renderDashboardLiveSection(dashboard) {
   ]
     .map(([label, value]) => `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`)
     .join("");
+  const latestGate = dashboard.gates?.latest?.[0];
+  const latestSession = dashboard.sessions?.latest;
+  const latestHandoff = dashboard.handoffs?.latest;
+  const details = [
+    latestGate ? ["Latest gate", `${latestGate.id} ${latestGate.status}`] : null,
+    latestSession ? ["Latest session", latestSession.summary || latestSession.sessionId] : null,
+    latestHandoff ? ["Latest handoff", latestHandoff.prompt || latestHandoff.title || latestHandoff.workItemId] : null,
+  ]
+    .filter(Boolean)
+    .map(([label, value]) => `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`)
+    .join("");
+  return metrics + details;
 }
 
 function escapeHtml(value) {

@@ -36,3 +36,37 @@ test("web package renders dashboard JSON into a live summary section", () => {
   assert.match(html, /Sessions/);
   assert.match(html, />5</);
 });
+
+test("web package renders latest evidence details in the live section", () => {
+  const html = renderDashboardLiveSection({
+    work: { counts: { active: 1, blocked: 0, readyToFinish: 0 } },
+    gates: {
+      counts: { failing: 0 },
+      latest: [{ id: "unit", status: "passed", command: "npm test" }],
+    },
+    sessions: {
+      counts: { total: 1 },
+      latest: {
+        sessionId: "manual:dashboard",
+        agent: "Codex",
+        summary: "Rendered the dashboard panel.",
+      },
+    },
+    handoffs: {
+      counts: { stale: 0 },
+      latest: {
+        workItemId: "dashboard-web-panel",
+        title: "Dashboard web panel",
+        prompt: "Continue dashboard panel work.",
+      },
+    },
+  });
+
+  assert.match(html, /Latest gate/);
+  assert.match(html, /unit/);
+  assert.match(html, /passed/);
+  assert.match(html, /Latest session/);
+  assert.match(html, /Rendered the dashboard panel/);
+  assert.match(html, /Latest handoff/);
+  assert.match(html, /Continue dashboard panel work/);
+});
