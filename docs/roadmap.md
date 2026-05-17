@@ -257,9 +257,10 @@ Exit criteria:
 Current implementation note: `devflow dashboard` and MCP `devflow.dashboard`
 now render the first local dashboard contract: active, blocked, and
 ready-to-finish work counts, item lists, latest gate evidence, latest handoff
-state, stale handoff counts, and one next-action recommendation from
-`.devflow/state/events.jsonl`. A browser UI, timeline, maps, sessions, and
-dedicated gates/handoffs views remain later Phase 8 work.
+state, stale handoff counts, attached/manual session counts, recent sessions,
+agent breakdown, and one next-action recommendation from
+`.devflow/state/events.jsonl`. A browser UI, timeline, maps, and dedicated
+gates/sessions/handoffs views remain later Phase 8 work.
 
 ## Phase 9: GitHub Review Integration
 

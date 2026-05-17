@@ -79,8 +79,8 @@ and at least one configured gate are present. `devflow work create`,
 `.devflow/state/events.jsonl` events. Work create and start writes are
 idempotent by id, returning the existing event instead of appending duplicates.
 `devflow dashboard` renders active, blocked, and ready-to-finish work, latest
-gate evidence, and handoff state from the same local state as a compact
-terminal or JSON dashboard summary.
+gate evidence, session summaries, and handoff state from the same local state
+as a compact terminal or JSON dashboard summary.
 `devflow split` renders local worktree-session plans, and `devflow split
 --register --start` can append the generated sessions as active work items
 without manual re-entry. The

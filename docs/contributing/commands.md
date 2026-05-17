@@ -1065,6 +1065,8 @@ Outputs:
 - active, blocked, and ready-to-finish work counts
 - active, blocked, and ready-to-finish work item lists
 - latest gate evidence counts and entries
+- attached/manual session counts, latest session, recent sessions, and agent
+  breakdown
 - latest handoff and stale handoff count
 - first dashboard recommendation
 

@@ -67,6 +67,7 @@ export function createDashboardSummary(input = {}) {
   const blocked = work.blocked ?? [];
   const readyToFinish = work.readyToFinish ?? [];
   const gates = createDashboardGateSummary(state.gates?.latestById ?? {});
+  const sessions = createDashboardSessionSummary(state.sessions?.attached ?? []);
   const handoffs = {
     latest: input.handoffs?.latest ?? state.handoffs?.latest ?? null,
     stale: input.handoffs?.stale ?? state.handoffs?.stale ?? [],
@@ -92,6 +93,7 @@ export function createDashboardSummary(input = {}) {
       readyToFinish,
     },
     gates,
+    sessions,
     handoffs: {
       latest: handoffs.latest,
       stale: handoffs.stale,
@@ -1224,6 +1226,31 @@ function createDashboardGateSummary(latestById) {
       failed: latest.filter((gate) => gate.status === "failed").length,
     },
     latest,
+  };
+}
+
+function createDashboardSessionSummary(sessions) {
+  const recent = sortSessionsByObservedAt(sessions, "observedAt:desc").slice(0, 5);
+  const byAgent = [];
+  const agentCounts = new Map();
+
+  for (const session of sessions) {
+    agentCounts.set(session.agent, (agentCounts.get(session.agent) ?? 0) + 1);
+  }
+
+  for (const [agent, count] of agentCounts) {
+    byAgent.push({ agent, count });
+  }
+
+  return {
+    counts: {
+      total: sessions.length,
+      attached: sessions.filter((session) => session.kind === "attached").length,
+      manualNotes: sessions.filter((session) => session.kind === "manual-note").length,
+    },
+    latest: recent[0] ?? null,
+    recent,
+    byAgent,
   };
 }
 

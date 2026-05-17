@@ -278,8 +278,8 @@ leaking provider-specific formats through the system.
 
 The initial dashboard surface is a shared summary contract exposed by
 `devflow dashboard` and MCP `devflow.dashboard`. It renders active, blocked,
-and ready-to-finish work, latest gate evidence, and latest handoff state from
-local state before a browser UI exists.
+and ready-to-finish work, latest gate evidence, session summaries, and latest
+handoff state from local state before a browser UI exists.
 
 ## Security
 

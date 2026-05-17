@@ -906,6 +906,20 @@ test("CLI dashboard renders active work view JSON", async () => {
     "Continue dashboard evidence.",
     "--json",
   ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "note",
+    "--repo",
+    repoPath,
+    "--work",
+    "dashboard-evidence",
+    "--agent",
+    "Codex",
+    "--summary",
+    "Implemented dashboard session summary.",
+    "--json",
+  ]);
 
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",
@@ -925,6 +939,9 @@ test("CLI dashboard renders active work view JSON", async () => {
   assert.equal(dashboard.gates.counts.passed, 1);
   assert.equal(dashboard.gates.latest[0].id, "unit");
   assert.equal(dashboard.handoffs.latest.workItemId, "dashboard-evidence");
+  assert.equal(dashboard.sessions.counts.total, 1);
+  assert.equal(dashboard.sessions.latest.agent, "Codex");
+  assert.equal(dashboard.sessions.byAgent[0].agent, "Codex");
 });
 
 test("CLI gates run executes configured gate and writes evidence", async () => {

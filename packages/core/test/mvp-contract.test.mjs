@@ -409,6 +409,45 @@ test("dashboard summary includes gate evidence and handoff state", async () => {
   assert.equal(dashboard.handoffs.counts.stale, 0);
 });
 
+test("dashboard summary includes attached session summary", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-dashboard-sessions-"));
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "dashboard-sessions",
+      agent: "Codex",
+      summary: "Implemented dashboard session summary.",
+    },
+    { observedAt: "2026-05-17T11:00:00+09:00" },
+  );
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "dashboard-sessions",
+      agent: "manual",
+      summary: "Reviewed dashboard session state.",
+    },
+    { observedAt: "2026-05-17T11:05:00+09:00" },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const dashboard = createDashboardSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(dashboard.sessions.counts.total, 2);
+  assert.equal(dashboard.sessions.counts.manualNotes, 2);
+  assert.equal(dashboard.sessions.counts.attached, 0);
+  assert.equal(dashboard.sessions.latest.agent, "manual");
+  assert.match(dashboard.sessions.latest.summary, /Reviewed dashboard/);
+  assert.deepEqual(dashboard.sessions.byAgent, [
+    { agent: "Codex", count: 1 },
+    { agent: "manual", count: 1 },
+  ]);
+  assert.equal(dashboard.sessions.recent[0].agent, "manual");
+});
+
 test("project health scanner surfaces invalid gates from config", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-health-invalid-"));
   const plan = createInitPlan({

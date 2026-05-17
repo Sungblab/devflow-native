@@ -670,6 +670,8 @@ function renderDashboardText(summary) {
     `Ready to finish: ${summary.work.counts.readyToFinish}`,
     `Latest gates: ${summary.gates.counts.total}`,
     `Failing gates: ${summary.gates.counts.failed}`,
+    `Sessions: ${summary.sessions.counts.total}`,
+    `Latest session: ${summary.sessions.latest?.workItemId ?? "none"}`,
     `Latest handoff: ${summary.handoffs.latest?.workItemId ?? "none"}`,
     `Stale handoffs: ${summary.handoffs.counts.stale}`,
   ];
@@ -689,6 +691,10 @@ function renderDashboardText(summary) {
 
   for (const gate of summary.gates.latest) {
     lines.push(`gate ${gate.id} ${gate.status} ${gate.command}`);
+  }
+
+  for (const session of summary.sessions.recent) {
+    lines.push(`session ${session.agent} ${session.workItemId} ${session.kind}`);
   }
 
   if (summary.recommendations.length > 0) {

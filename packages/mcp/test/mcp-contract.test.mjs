@@ -336,6 +336,12 @@ test("MCP dashboard renders active work view", async () => {
     gates: [{ id: "unit", command: "npm test", status: "passed" }],
     nextTask: "Continue dashboard evidence.",
   });
+  await callTool("devflow.sessions_note", {
+    repo: repoPath,
+    work: "dashboard-evidence",
+    agent: "Codex",
+    summary: "Implemented dashboard session summary.",
+  });
 
   const dashboard = await callTool("devflow.dashboard", {
     repo: repoPath,
@@ -349,6 +355,9 @@ test("MCP dashboard renders active work view", async () => {
   assert.equal(dashboard.structuredContent.gates.counts.total, 1);
   assert.equal(dashboard.structuredContent.gates.latest[0].id, "unit");
   assert.equal(dashboard.structuredContent.handoffs.latest.workItemId, "dashboard-evidence");
+  assert.equal(dashboard.structuredContent.sessions.counts.total, 1);
+  assert.equal(dashboard.structuredContent.sessions.latest.agent, "Codex");
+  assert.equal(dashboard.structuredContent.sessions.byAgent[0].agent, "Codex");
 });
 
 test("MCP gates_run executes configured gate and records evidence", async () => {
