@@ -573,6 +573,41 @@ test("CLI health passes after confirmed init scaffold", async () => {
   assert.equal(parsed.missingFiles.length, 0);
 });
 
+test("CLI health reports invalid configured gates", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "init",
+    "--repo",
+    repoPath,
+    "--confirm",
+    "--json",
+  ]);
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [
+        { id: "docs-check", command: "npm run docs:check" },
+        { id: "docs-check", command: "" },
+      ],
+    })}\n`,
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "health",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.status, "invalid");
+  assert.ok(parsed.invalidGates.some((gate) => gate.reason === "duplicate-id"));
+  assert.ok(parsed.invalidGates.some((gate) => gate.reason === "missing-command"));
+});
+
 test("CLI status reads gate definitions from devflow config", async () => {
   const repoPath = await createTempGitRepo();
   await mkdir(join(repoPath, ".devflow"), { recursive: true });

@@ -158,7 +158,7 @@ Safety rules:
 ## `devflow health`
 
 Checks whether the local project has the minimum Devflow scaffold and at least
-one configured verification gate.
+one valid configured verification gate.
 
 Example:
 
@@ -171,7 +171,14 @@ Outputs:
 - required scaffold files and whether they are present
 - missing scaffold files
 - configured gates from `.devflow/config.json`
-- recommendations for missing files or gates
+- invalid gates with missing ids, missing commands, or duplicate ids
+- recommendations for missing files, missing gates, or invalid gates
+
+Health status values:
+
+- `ok`: scaffold files are present and configured gates are valid
+- `missing`: required scaffold files or gates are missing
+- `invalid`: at least one configured gate is malformed
 
 ## `devflow status`
 

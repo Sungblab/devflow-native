@@ -174,6 +174,60 @@ test("project health scanner reads scaffold files and configured gates", async (
   assert.equal(summary.gates[0].id, "docs-check");
 });
 
+test("health summary reports invalid gate definitions", () => {
+  const summary = createHealthSummary({
+    repo: { absolutePath: "C:\\repo" },
+    existingPaths: [
+      ".devflow/config.json",
+      "AGENTS.md",
+      "docs/README.md",
+      "docs/contributing/workflow.md",
+      "docs/testing/strategy.md",
+      "docs/architecture/maps/README.md",
+    ],
+    gates: [
+      { id: "docs-check", command: "npm run docs:check" },
+      { id: "docs-check", command: "npm test" },
+      { id: "", command: "npm run lint" },
+      { id: "empty-command", command: "" },
+    ],
+  });
+
+  assert.equal(summary.status, "invalid");
+  assert.equal(summary.invalidGates.length, 3);
+  assert.ok(summary.invalidGates.some((gate) => gate.reason === "duplicate-id"));
+  assert.ok(summary.invalidGates.some((gate) => gate.reason === "missing-id"));
+  assert.ok(summary.invalidGates.some((gate) => gate.reason === "missing-command"));
+  assert.ok(summary.recommendations.some((item) => item.kind === "invalid-gate"));
+});
+
+test("project health scanner surfaces invalid gates from config", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-health-invalid-"));
+  const plan = createInitPlan({
+    repo: repoPath,
+    profile: "standard",
+    platform: "windows-powershell",
+  });
+  await writeInitPlan(repoPath, plan, { confirmed: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [
+        { id: "unit", command: "npm test" },
+        { id: "unit", command: "" },
+      ],
+    })}\n`,
+  );
+
+  const config = await readDevflowConfig(repoPath);
+  const summary = await readProjectHealth(repoPath, config);
+
+  assert.equal(summary.status, "invalid");
+  assert.equal(summary.missingFiles.length, 0);
+  assert.ok(summary.invalidGates.some((gate) => gate.reason === "duplicate-id"));
+  assert.ok(summary.invalidGates.some((gate) => gate.reason === "missing-command"));
+});
+
 test("session attach plan proposes confirmation-gated work links", () => {
   const plan = createSessionAttachPlan({
     workItems: [

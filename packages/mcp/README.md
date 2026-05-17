@@ -30,8 +30,9 @@ work item, and `agent` to focus sessions from one recorded agent/manual source,
 while preserving the same core JSON contract used by the CLI.
 
 `devflow.health` checks the local project scaffold. It reports required files,
-missing files, configured gates, and recommendations without reading private
-agent history.
+missing files, configured gates, invalid gate definitions, and recommendations
+without reading private agent history. A gate is invalid when its id is missing,
+its command is missing, or its id duplicates another configured gate.
 
 `devflow.sessions_codex` is read-only and requires an explicit `codexHome`
 argument before it reads local Codex session candidates.

@@ -305,6 +305,7 @@ export function createHealthSummary(input = {}) {
   });
   const missingFiles = requiredFiles.filter((file) => !file.present);
   const gates = normalizeGates(input.gates);
+  const invalidGates = validateGates(gates);
 
   return {
     schemaVersion: "0.1",
@@ -312,11 +313,12 @@ export function createHealthSummary(input = {}) {
     repo: {
       absolutePath: input.repo?.absolutePath ?? process.cwd(),
     },
-    status: missingFiles.length === 0 && gates.length > 0 ? "ok" : "missing",
+    status: invalidGates.length > 0 ? "invalid" : missingFiles.length === 0 && gates.length > 0 ? "ok" : "missing",
     requiredFiles,
     missingFiles,
     gates,
-    recommendations: createHealthRecommendations(missingFiles, gates),
+    invalidGates,
+    recommendations: createHealthRecommendations(missingFiles, gates, invalidGates),
     warnings: input.warnings ?? [],
   };
 }
@@ -1047,10 +1049,51 @@ function normalizeGates(gates) {
   }
 
   return gates.map((gate) => ({
-    id: gate.id,
-    command: gate.command,
+    id: typeof gate.id === "string" ? gate.id.trim() : gate.id,
+    command: typeof gate.command === "string" ? gate.command.trim() : gate.command,
     recommended: gate.recommended ?? true,
   }));
+}
+
+function validateGates(gates) {
+  const seenIds = new Set();
+  const invalidGates = [];
+
+  gates.forEach((gate, index) => {
+    const id = typeof gate.id === "string" ? gate.id : "";
+    const command = typeof gate.command === "string" ? gate.command : "";
+
+    if (!id) {
+      invalidGates.push(createInvalidGate(gate, index, "missing-id", "Gate id is required."));
+    }
+
+    if (!command) {
+      invalidGates.push(createInvalidGate(gate, index, "missing-command", "Gate command is required."));
+    }
+
+    if (!id) {
+      return;
+    }
+
+    if (seenIds.has(id)) {
+      invalidGates.push(createInvalidGate(gate, index, "duplicate-id", `Gate id "${id}" is duplicated.`));
+      return;
+    }
+
+    seenIds.add(id);
+  });
+
+  return invalidGates;
+}
+
+function createInvalidGate(gate, index, reason, message) {
+  return {
+    index,
+    id: gate.id ?? null,
+    command: gate.command ?? null,
+    reason,
+    message,
+  };
 }
 
 function defaultRequiredFiles() {
@@ -1064,11 +1107,18 @@ function defaultRequiredFiles() {
   ];
 }
 
-function createHealthRecommendations(missingFiles, gates) {
+function createHealthRecommendations(missingFiles, gates, invalidGates = []) {
   const recommendations = missingFiles.map((file) => ({
     kind: "missing-file",
     message: `Create ${file.path} with devflow init --confirm or project-specific scaffolding.`,
   }));
+
+  for (const gate of invalidGates) {
+    recommendations.push({
+      kind: "invalid-gate",
+      message: `Fix gate ${gate.index} in .devflow/config.json: ${gate.message}`,
+    });
+  }
 
   if (gates.length === 0) {
     recommendations.push({

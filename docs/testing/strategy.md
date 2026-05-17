@@ -9,6 +9,10 @@ documentation surface still works.
 - `npm run docs:check`
 - `npm test`
 
+Gate ids in `.devflow/config.json` must be unique, and every gate must include
+a non-empty `id` and `command`. `devflow health` treats malformed gate
+definitions as `invalid` even when all scaffold files are present.
+
 ## When To Run Each Gate
 
 Run `npm run docs:check` for any change under `docs/`, `README.md`,

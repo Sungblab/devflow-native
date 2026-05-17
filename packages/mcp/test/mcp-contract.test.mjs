@@ -56,6 +56,38 @@ test("MCP status reads configured gates from devflow config", async () => {
   assert.equal(result.structuredContent.gates[0].command, "npm run custom");
 });
 
+test("MCP health reports invalid configured gates", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-health-invalid-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(join(repoPath, ".devflow", "config.json"), "{}\n");
+  await mkdir(join(repoPath, "docs", "contributing"), { recursive: true });
+  await mkdir(join(repoPath, "docs", "testing"), { recursive: true });
+  await mkdir(join(repoPath, "docs", "architecture", "maps"), { recursive: true });
+  await writeFile(join(repoPath, "AGENTS.md"), "# Agent Guide\n");
+  await writeFile(join(repoPath, "docs", "README.md"), "# Project Contract\n");
+  await writeFile(join(repoPath, "docs", "contributing", "workflow.md"), "# Workflow\n");
+  await writeFile(join(repoPath, "docs", "testing", "strategy.md"), "# Testing\n");
+  await writeFile(join(repoPath, "docs", "architecture", "maps", "README.md"), "# Maps\n");
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [
+        { id: "unit", command: "npm test" },
+        { id: "unit", command: "" },
+      ],
+    })}\n`,
+  );
+
+  const result = await callTool("devflow.health", {
+    repo: repoPath,
+  });
+
+  assert.equal(result.structuredContent.status, "invalid");
+  assert.ok(result.structuredContent.invalidGates.some((gate) => gate.reason === "duplicate-id"));
+  assert.ok(result.structuredContent.invalidGates.some((gate) => gate.reason === "missing-command"));
+  assert.match(result.content[0].text, /invalid/);
+});
+
 test("MCP status returns local repo state and latest handoff evidence", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-status-"));
   await callTool("devflow.finish", {
