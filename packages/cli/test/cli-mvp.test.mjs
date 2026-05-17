@@ -631,6 +631,121 @@ test("CLI status reads gate definitions from devflow config", async () => {
   assert.equal(parsed.gates[0].command, "npm run custom");
 });
 
+test("CLI work create, start, and list persist local work item state", async () => {
+  const repoPath = await createTempGitRepo();
+
+  const created = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "phase-3-work-registry",
+    "--title",
+    "Phase 3 work registry",
+    "--owned-path",
+    "packages/core/**",
+    "--owned-path",
+    "packages/cli/**",
+    "--json",
+  ]);
+  const createJson = JSON.parse(created.stdout);
+  assert.equal(createJson.command, "work_create");
+  assert.equal(createJson.workItem.id, "phase-3-work-registry");
+
+  const started = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "start",
+    "phase-3-work-registry",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const startJson = JSON.parse(started.stdout);
+  assert.equal(startJson.command, "work_start");
+  assert.equal(startJson.workItem.id, "phase-3-work-registry");
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "list",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const listJson = JSON.parse(stdout);
+
+  assert.equal(listJson.command, "work_list");
+  assert.equal(listJson.items[0].id, "phase-3-work-registry");
+  assert.equal(listJson.items[0].status, "active");
+  assert.deepEqual(listJson.items[0].ownedPaths, ["packages/core/**", "packages/cli/**"]);
+});
+
+test("CLI gates run executes configured gate and writes evidence", async () => {
+  const repoPath = await createTempGitRepo();
+  const scriptPath = join(repoPath, "gate-script.mjs");
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(scriptPath, "console.log('cli gate stdout');\n", "utf8");
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [{ id: "unit", command: `${JSON.stringify(process.execPath)} ${JSON.stringify(scriptPath)}` }],
+    })}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "gates",
+    "run",
+    "unit",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "gates_run");
+  assert.equal(parsed.gate.id, "unit");
+  assert.equal(parsed.status, "passed");
+  assert.equal(parsed.exitCode, 0);
+  assert.match(parsed.stdout.summary, /cli gate stdout/);
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.match(log, /"type":"gate.finished"/);
+  assert.match(log, /cli gate stdout/);
+});
+
+test("CLI gates run supports npm commands from config", async () => {
+  const repoPath = await createTempGitRepo();
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [{ id: "npm-version", command: "npm --version" }],
+    })}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "gates",
+    "run",
+    "npm-version",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "gates_run");
+  assert.equal(parsed.status, "passed");
+  assert.equal(parsed.exitCode, 0);
+  assert.match(parsed.stdout.summary, /\d+\.\d+\.\d+/);
+});
+
 test("CLI finish renders JSON evidence summary", async () => {
   const repoPath = await createTempGitRepo();
   const { stdout } = await execFileAsync("node", [

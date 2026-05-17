@@ -81,6 +81,14 @@ Exit criteria:
   self-contained prompt per session
 - work items can be registered and listed from local state
 
+Current implementation note: `devflow work create`, `devflow work start`, and
+`devflow work list` now append and derive local work item state from
+`.devflow/state/events.jsonl`. MCP exposes the same contract as
+`devflow.work_create`, `devflow.work_start`, and `devflow.work_list`, and
+`devflow status` now reads active work items from derived state. Richer work
+item fields, blocking states, ready-to-finish transitions, and automatic links
+from split tasks remain later Phase 3 work.
+
 ## Phase 4: Gate Runner
 
 Build:
@@ -96,6 +104,13 @@ Exit criteria:
 - project-specific verification can be run and recorded
 - skipped or failing gates remain visible
 
+Current implementation note: `devflow gates run <id>` and MCP
+`devflow.gates_run` can execute a configured `.devflow/config.json` gate as a
+single process command, capture stdout/stderr summaries, record exit code and
+pass/fail status in `.devflow/state/events.jsonl`, and surface that evidence
+through `devflow status`. Shell-operator support, richer output redaction, and
+multi-step gate descriptors remain later Phase 4 work.
+
 ## Phase 5: MCP And Agent Integrations
 
 Build:
@@ -106,6 +121,7 @@ Build:
 - `devflow.split` MCP tool
 - `devflow.finish` MCP tool
 - `devflow.record_gate` MCP tool
+- `devflow.gates_run` MCP tool
 - `devflow.next_prompt` MCP tool
 - `devflow.rewrite_prompt` MCP tool
 - `devflow.sessions_codex` MCP tool
@@ -113,6 +129,9 @@ Build:
 - `devflow.sessions_attach` MCP tool
 - `devflow.sessions_list` MCP tool
 - `devflow.sessions_note` MCP tool
+- `devflow.work_create` MCP tool
+- `devflow.work_start` MCP tool
+- `devflow.work_list` MCP tool
 - Claude Code plugin draft with slash commands
 - Codex MCP config template
 - Gemini MCP config template
@@ -128,11 +147,13 @@ Exit criteria:
 
 Current implementation note: `packages/mcp` has testable handler functions for
 `devflow.status`, `devflow.split`, `devflow.explain_term`, `devflow.doctor`,
-`devflow.finish`, `devflow.record_gate`, `devflow.next_prompt`, and
-`devflow.rewrite_prompt`, plus adapter-backed `devflow.sessions_codex` and
+`devflow.finish`, `devflow.record_gate`, `devflow.gates_run`,
+`devflow.next_prompt`, and `devflow.rewrite_prompt`, plus adapter-backed
+`devflow.sessions_codex` and
 dry-run `devflow.sessions_attach_plan`, confirmed-write
 `devflow.sessions_attach`, read-only `devflow.sessions_list`, manual
-`devflow.sessions_note`, and a
+`devflow.sessions_note`, local work item tools `devflow.work_create`,
+`devflow.work_start`, and `devflow.work_list`, and a
 minimal stdio JSON-RPC transport. The CLI also has thin `devflow split --json`
 and `devflow explain` renderers, plus `devflow prompt rewrite` for converting
 vague maintainer intent into agent-ready requirements. Host-specific Codex and

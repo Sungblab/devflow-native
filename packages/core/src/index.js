@@ -1,5 +1,9 @@
 import { mkdir, readFile, appendFile, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
 import { dirname, join } from "node:path";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 export function createStatusSummary(input = {}) {
   const changedFiles = input.changedFiles ?? [];
@@ -41,11 +45,7 @@ export function createStatusSummary(input = {}) {
       changedFiles,
       worktrees: input.worktrees ?? [],
     },
-    work: {
-      active: input.work?.active ?? [],
-      blocked: input.work?.blocked ?? [],
-      readyToFinish: input.work?.readyToFinish ?? [],
-    },
+    work: input.work ?? state.work,
     sessions: {
       discovered: input.sessions?.discovered ?? state.sessions?.discovered ?? [],
       attached: attachedSessions,
@@ -380,6 +380,53 @@ export async function writeInitPlan(repoPath, plan, options = {}) {
   };
 }
 
+export async function recordWorkCreatedEvent(repoPath, workItem, options = {}) {
+  if (!workItem?.id) {
+    throw new Error("work create requires id.");
+  }
+
+  if (!workItem.title) {
+    throw new Error("work create requires title.");
+  }
+
+  const observedAt = options.observedAt ?? new Date().toISOString();
+  const event = {
+    schemaVersion: "0.1",
+    type: "work.created",
+    observedAt,
+    payload: {
+      id: workItem.id,
+      title: workItem.title,
+      description: workItem.description ?? null,
+      ownedPaths: workItem.ownedPaths ?? [],
+      status: "created",
+    },
+  };
+
+  await appendDevflowEvent(repoPath, event);
+  return event;
+}
+
+export async function recordWorkStartedEvent(repoPath, workItem, options = {}) {
+  if (!workItem?.id) {
+    throw new Error("work start requires id.");
+  }
+
+  const observedAt = options.observedAt ?? new Date().toISOString();
+  const event = {
+    schemaVersion: "0.1",
+    type: "work.started",
+    observedAt,
+    payload: {
+      id: workItem.id,
+      status: "active",
+    },
+  };
+
+  await appendDevflowEvent(repoPath, event);
+  return event;
+}
+
 export function createSessionAttachPlan(input = {}) {
   const workItems = input.workItems ?? [];
   const sessions = input.sessions ?? [];
@@ -697,9 +744,7 @@ export async function recordFinishEvent(repoPath, finishSummary, options = {}) {
     payload: finishSummary,
   };
 
-  const stateDir = join(repoPath, ".devflow", "state");
-  await mkdir(stateDir, { recursive: true });
-  await appendFile(join(stateDir, "events.jsonl"), `${JSON.stringify(event)}\n`, "utf8");
+  await appendDevflowEvent(repoPath, event);
 
   return event;
 }
@@ -717,14 +762,91 @@ export async function recordGateEvent(repoPath, gateEvidence, options = {}) {
       observedAt,
       summary: gateEvidence.summary ?? null,
       workItemId: gateEvidence.workItemId ?? null,
+      exitCode: gateEvidence.exitCode ?? null,
+      stdout: gateEvidence.stdout ?? null,
+      stderr: gateEvidence.stderr ?? null,
     },
   };
 
-  const stateDir = join(repoPath, ".devflow", "state");
-  await mkdir(stateDir, { recursive: true });
-  await appendFile(join(stateDir, "events.jsonl"), `${JSON.stringify(event)}\n`, "utf8");
+  await appendDevflowEvent(repoPath, event);
 
   return event;
+}
+
+export function createWorkListSummary(input = {}) {
+  const state = input.state ?? emptyDevflowState();
+  const status = input.status ?? null;
+  const allItems = input.items ?? state.work?.items ?? [];
+  const items = status ? allItems.filter((item) => item.status === status) : allItems;
+
+  return {
+    schemaVersion: "0.1",
+    command: "work_list",
+    repo: {
+      absolutePath: input.repo?.absolutePath ?? process.cwd(),
+    },
+    filters: {
+      status,
+    },
+    items,
+    count: items.length,
+    totalCount: allItems.length,
+    warnings: [...(input.warnings ?? []), ...(state.warnings ?? [])],
+  };
+}
+
+export async function runConfiguredGate(repoPath, input = {}) {
+  const id = input.id;
+  if (!id) {
+    throw new Error("gates run requires a gate id.");
+  }
+
+  const gates = normalizeGates(input.gates);
+  const invalidGates = validateGates(gates);
+  if (invalidGates.length > 0) {
+    throw new Error("Cannot run gates while .devflow/config.json contains invalid gate definitions.");
+  }
+
+  const gate = gates.find((candidate) => candidate.id === id);
+  if (!gate) {
+    throw new Error(`No configured gate found for id: ${id}`);
+  }
+
+  const startedAt = input.observedAt ?? new Date().toISOString();
+  const execution = await executeGateCommand(gate.command, repoPath);
+  const status = execution.exitCode === 0 ? "passed" : "failed";
+  const summaryText = createGateRunSummary(status, execution);
+  const event = await recordGateEvent(
+    repoPath,
+    {
+      id: gate.id,
+      command: gate.command,
+      status,
+      summary: summaryText,
+      exitCode: execution.exitCode,
+      stdout: execution.stdout,
+      stderr: execution.stderr,
+      workItemId: input.workItemId ?? null,
+    },
+    { observedAt: startedAt },
+  );
+
+  return {
+    schemaVersion: "0.1",
+    command: "gates_run",
+    repo: {
+      absolutePath: repoPath,
+    },
+    gate: {
+      id: gate.id,
+      command: gate.command,
+    },
+    status,
+    exitCode: execution.exitCode,
+    stdout: execution.stdout,
+    stderr: execution.stderr,
+    event,
+  };
 }
 
 export async function recordSessionAttachedEvent(repoPath, proposal, options = {}) {
@@ -772,9 +894,7 @@ export async function recordSessionAttachedEvent(repoPath, proposal, options = {
     },
   };
 
-  const stateDir = join(repoPath, ".devflow", "state");
-  await mkdir(stateDir, { recursive: true });
-  await appendFile(join(stateDir, "events.jsonl"), `${JSON.stringify(event)}\n`, "utf8");
+  await appendDevflowEvent(repoPath, event);
 
   return event;
 }
@@ -837,6 +957,12 @@ export async function readDevflowState(repoPath) {
   }
 
   return deriveStateFromEvents(events, warnings);
+}
+
+async function appendDevflowEvent(repoPath, event) {
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await appendFile(join(stateDir, "events.jsonl"), `${JSON.stringify(event)}\n`, "utf8");
 }
 
 function normalizePlatform(platform = {}) {
@@ -935,6 +1061,7 @@ function deriveStateFromEvents(events, warnings = []) {
     gates: {
       latestById: createLatestGateEvidence(events),
     },
+    work: createWorkState(events),
     sessions: {
       discovered: [],
       attached: createAttachedSessionEvidence(events),
@@ -963,6 +1090,9 @@ function createLatestGateEvidence(events) {
         observedAt: event.payload.observedAt ?? event.observedAt,
         summary: event.payload.summary ?? null,
         workItemId: event.payload.workItemId ?? null,
+        exitCode: event.payload.exitCode ?? null,
+        stdout: event.payload.stdout ?? null,
+        stderr: event.payload.stderr ?? null,
       };
       continue;
     }
@@ -984,6 +1114,73 @@ function createLatestGateEvidence(events) {
   }
 
   return latestById;
+}
+
+function createWorkState(events) {
+  const itemsById = new Map();
+  const order = [];
+
+  for (const event of events) {
+    if (event.type === "work.created") {
+      const item = {
+        id: event.payload.id,
+        title: event.payload.title,
+        description: event.payload.description ?? null,
+        ownedPaths: event.payload.ownedPaths ?? [],
+        status: "created",
+        createdAt: event.observedAt,
+        startedAt: null,
+        completedAt: null,
+      };
+      itemsById.set(item.id, item);
+      if (!order.includes(item.id)) {
+        order.push(item.id);
+      }
+      continue;
+    }
+
+    if (event.type === "work.started") {
+      const item = ensureWorkItem(itemsById, order, event.payload.id);
+      item.status = "active";
+      item.startedAt = event.observedAt;
+      continue;
+    }
+
+    if (event.type === "work.completed" && event.payload?.command === "finish") {
+      const id = event.payload.workItem.id;
+      const item = ensureWorkItem(itemsById, order, id);
+      item.title = event.payload.workItem.title ?? item.title;
+      item.status = "completed";
+      item.completedAt = event.observedAt;
+    }
+  }
+
+  const items = order.map((id) => itemsById.get(id));
+
+  return {
+    items,
+    active: items.filter((item) => item.status === "active"),
+    blocked: items.filter((item) => item.status === "blocked"),
+    readyToFinish: items.filter((item) => item.status === "ready-to-finish"),
+  };
+}
+
+function ensureWorkItem(itemsById, order, id) {
+  if (!itemsById.has(id)) {
+    itemsById.set(id, {
+      id,
+      title: id,
+      description: null,
+      ownedPaths: [],
+      status: "created",
+      createdAt: null,
+      startedAt: null,
+      completedAt: null,
+    });
+    order.push(id);
+  }
+
+  return itemsById.get(id);
 }
 
 function createAttachedSessionEvidence(events) {
@@ -1053,6 +1250,149 @@ function normalizeGates(gates) {
     command: typeof gate.command === "string" ? gate.command.trim() : gate.command,
     recommended: gate.recommended ?? true,
   }));
+}
+
+async function executeGateCommand(command, repoPath) {
+  const [file, ...args] = parseGateCommand(command);
+  const invocation = resolvePlatformInvocation(file, args);
+
+  try {
+    const result = await execFileAsync(invocation.file, invocation.args, {
+      cwd: repoPath,
+      encoding: "utf8",
+      windowsHide: true,
+      maxBuffer: 1024 * 1024,
+    });
+
+    return {
+      exitCode: 0,
+      stdout: summarizeOutput(result.stdout),
+      stderr: summarizeOutput(result.stderr),
+    };
+  } catch (error) {
+    return {
+      exitCode: typeof error.code === "number" ? error.code : null,
+      stdout: summarizeOutput(error.stdout ?? ""),
+      stderr: summarizeOutput(error.stderr ?? error.message ?? ""),
+    };
+  }
+}
+
+function parseGateCommand(command) {
+  if (typeof command !== "string" || !command.trim()) {
+    throw new Error("Gate command is required.");
+  }
+
+  const tokens = [];
+  let current = "";
+  let quote = null;
+
+  for (let index = 0; index < command.length; index += 1) {
+    const char = command[index];
+    const next = command[index + 1];
+
+    if (
+      !quote &&
+      (char === "\n" || char === "\r" || char === "|" || char === ";" || char === "<" || char === ">" || char === "&")
+    ) {
+      throw new Error("Gate commands must be single-process commands without shell operators.");
+    }
+
+    if (!quote && char === "|" && next === "|") {
+      throw new Error("Gate commands must be single-process commands without shell operators.");
+    }
+
+    if ((char === "\"" || char === "'") && !quote) {
+      quote = char;
+      continue;
+    }
+
+    if (char === quote) {
+      quote = null;
+      continue;
+    }
+
+    if (/\s/.test(char) && !quote) {
+      if (current) {
+        tokens.push(current);
+        current = "";
+      }
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (quote) {
+    throw new Error("Gate command has an unterminated quoted argument.");
+  }
+
+  if (current) {
+    tokens.push(current);
+  }
+
+  if (tokens.length === 0) {
+    throw new Error("Gate command is required.");
+  }
+
+  return tokens;
+}
+
+function resolvePlatformInvocation(file, args) {
+  if (process.platform !== "win32") {
+    return { file, args };
+  }
+
+  if (/[\\/]/.test(file) || /\.[a-z0-9]+$/i.test(file)) {
+    return { file, args };
+  }
+
+  if (file === "npm" || file === "pnpm" || file === "yarn" || file === "npx") {
+    return {
+      file: process.env.ComSpec ?? "cmd.exe",
+      args: ["/d", "/s", "/c", quoteCmdInvocation(`${file}.cmd`, args)],
+    };
+  }
+
+  return { file, args };
+}
+
+function quoteCmdInvocation(file, args) {
+  const tokens = [file, ...args];
+  for (const token of tokens) {
+    if (/[&|<>^%"\r\n]/.test(token)) {
+      throw new Error("Windows command-shim gate arguments cannot contain cmd metacharacters.");
+    }
+  }
+
+  return tokens.map(quoteCmdToken).join(" ");
+}
+
+function quoteCmdToken(token) {
+  if (!/[\s"]/g.test(token)) {
+    return token;
+  }
+
+  return `"${token.replaceAll("\"", "\\\"")}"`;
+}
+
+function summarizeOutput(value) {
+  const text = String(value ?? "");
+  const normalized = text.replace(/\r\n/g, "\n");
+  const limit = 4000;
+  const summary = normalized.length > limit ? normalized.slice(0, limit) : normalized;
+
+  return {
+    summary,
+    truncated: normalized.length > limit,
+  };
+}
+
+function createGateRunSummary(status, execution) {
+  const stdout = execution.stdout.summary.trim();
+  const stderr = execution.stderr.summary.trim();
+  const details = stdout || stderr || "No output captured.";
+  return `${status} exitCode=${execution.exitCode ?? "unknown"} ${details}`;
 }
 
 function validateGates(gates) {
@@ -1147,6 +1487,12 @@ function emptyDevflowState() {
     },
     gates: {
       latestById: {},
+    },
+    work: {
+      items: [],
+      active: [],
+      blocked: [],
+      readyToFinish: [],
     },
     sessions: {
       discovered: [],

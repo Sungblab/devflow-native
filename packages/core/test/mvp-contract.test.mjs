@@ -10,6 +10,7 @@ import {
   createDoctorSummary,
   createInitPlan,
   createSessionAttachPlan,
+  createWorkListSummary,
   createTermExplanation,
   createNextPrompt,
   createPromptRewrite,
@@ -23,11 +24,14 @@ import {
   readProjectHealth,
   readDevflowConfig,
   readDevflowState,
+  runConfiguredGate,
   recordGateEvent,
   recordFinishEvent,
   writeInitPlan,
   recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
+  recordWorkCreatedEvent,
+  recordWorkStartedEvent,
 } from "../src/index.js";
 
 test("status summary captures repo, dirty files, gates, and prompt recommendation", () => {
@@ -199,6 +203,51 @@ test("health summary reports invalid gate definitions", () => {
   assert.ok(summary.invalidGates.some((gate) => gate.reason === "missing-id"));
   assert.ok(summary.invalidGates.some((gate) => gate.reason === "missing-command"));
   assert.ok(summary.recommendations.some((item) => item.kind === "invalid-gate"));
+});
+
+test("work item events can create, start, list, and feed status", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-work-"));
+
+  const created = await recordWorkCreatedEvent(
+    repoPath,
+    {
+      id: "phase-3-work-registry",
+      title: "Phase 3 work registry",
+      description: "Persist work items in local state.",
+      ownedPaths: ["packages/core/**", "packages/cli/**"],
+    },
+    { observedAt: "2026-05-17T08:00:00.000Z" },
+  );
+  const started = await recordWorkStartedEvent(
+    repoPath,
+    { id: "phase-3-work-registry" },
+    { observedAt: "2026-05-17T08:01:00.000Z" },
+  );
+
+  assert.equal(created.type, "work.created");
+  assert.equal(started.type, "work.started");
+
+  const state = await readDevflowState(repoPath);
+  const list = createWorkListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(list.command, "work_list");
+  assert.equal(list.items.length, 1);
+  assert.equal(list.items[0].id, "phase-3-work-registry");
+  assert.equal(list.items[0].status, "active");
+  assert.deepEqual(list.items[0].ownedPaths, ["packages/core/**", "packages/cli/**"]);
+
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+  assert.equal(status.work.active[0].id, "phase-3-work-registry");
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.match(log, /"type":"work.created"/);
+  assert.match(log, /"type":"work.started"/);
 });
 
 test("project health scanner surfaces invalid gates from config", async () => {
@@ -882,6 +931,60 @@ test("status summary can derive gate evidence recorded independently", async () 
   assert.equal(status.gates[0].lastRun.status, "passed");
   assert.equal(status.gates[0].lastRun.summary, "Documentation link check passed.");
   assert.equal(status.gates[0].lastRun.workItemId, "docs-check");
+});
+
+test("configured gate runner executes a configured command and records evidence", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-gate-run-"));
+  const scriptPath = join(repoPath, "gate-script.mjs");
+  await writeFile(
+    scriptPath,
+    "console.log('gate stdout line'); console.error('gate stderr line');\n",
+    "utf8",
+  );
+
+  const summary = await runConfiguredGate(repoPath, {
+    id: "unit",
+    gates: [{ id: "unit", command: `${JSON.stringify(process.execPath)} ${JSON.stringify(scriptPath)}` }],
+  });
+
+  assert.equal(summary.command, "gates_run");
+  assert.equal(summary.gate.id, "unit");
+  assert.equal(summary.status, "passed");
+  assert.equal(summary.exitCode, 0);
+  assert.match(summary.stdout.summary, /gate stdout line/);
+  assert.match(summary.stderr.summary, /gate stderr line/);
+
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    gates: [{ id: "unit", command: "node gate-script.mjs", recommended: true }],
+  });
+  assert.equal(status.gates[0].lastRun.status, "passed");
+  assert.equal(status.gates[0].lastRun.exitCode, 0);
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.match(log, /"type":"gate.finished"/);
+  assert.match(log, /gate stdout line/);
+});
+
+test("configured gate runner records failed command evidence", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-gate-run-fail-"));
+  const scriptPath = join(repoPath, "gate-fail.mjs");
+  await writeFile(scriptPath, "console.error('gate failed'); process.exit(7);\n", "utf8");
+
+  const summary = await runConfiguredGate(repoPath, {
+    id: "unit",
+    gates: [{ id: "unit", command: `${JSON.stringify(process.execPath)} ${JSON.stringify(scriptPath)}` }],
+  });
+
+  assert.equal(summary.status, "failed");
+  assert.equal(summary.exitCode, 7);
+  assert.match(summary.stderr.summary, /gate failed/);
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.match(log, /"status":"failed"/);
+  assert.match(log, /"exitCode":7/);
 });
 
 test("doctor summary renders platform rules and repeated mistake memory", () => {

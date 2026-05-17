@@ -15,6 +15,7 @@ import {
   createSplitPlan,
   createStatusSummary,
   createTermExplanation,
+  createWorkListSummary,
   parseSessionListLimit,
   parseSessionListSince,
   parseSessionListSort,
@@ -26,6 +27,9 @@ import {
   recordGateEvent,
   recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
+  recordWorkCreatedEvent,
+  recordWorkStartedEvent,
+  runConfiguredGate,
 } from "../../core/src/index.js";
 
 const tools = [
@@ -70,6 +74,18 @@ const tools = [
     description: "Record a manual session note into local Devflow state.",
   },
   {
+    name: "devflow.work_create",
+    description: "Create a local Devflow work item.",
+  },
+  {
+    name: "devflow.work_start",
+    description: "Mark a local Devflow work item as active.",
+  },
+  {
+    name: "devflow.work_list",
+    description: "List local Devflow work items.",
+  },
+  {
     name: "devflow.doctor",
     description: "Inspect local execution rules and repeated-mistake memory.",
   },
@@ -80,6 +96,10 @@ const tools = [
   {
     name: "devflow.record_gate",
     description: "Record standalone gate evidence without closing a work item.",
+  },
+  {
+    name: "devflow.gates_run",
+    description: "Run a configured verification gate and record command evidence.",
   },
   {
     name: "devflow.next_prompt",
@@ -132,6 +152,18 @@ export async function callTool(name, args = {}) {
     return callSessionNote(args);
   }
 
+  if (name === "devflow.work_create") {
+    return callWorkCreate(args);
+  }
+
+  if (name === "devflow.work_start") {
+    return callWorkStart(args);
+  }
+
+  if (name === "devflow.work_list") {
+    return callWorkList(args);
+  }
+
   if (name === "devflow.doctor") {
     return callDoctor(args);
   }
@@ -142,6 +174,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.record_gate") {
     return callRecordGate(args);
+  }
+
+  if (name === "devflow.gates_run") {
+    return callGatesRun(args);
   }
 
   if (name === "devflow.next_prompt") {
@@ -345,6 +381,57 @@ async function callSessionNote(args) {
   );
 }
 
+async function callWorkCreate(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const event = await recordWorkCreatedEvent(repoPath, {
+    id: args.id,
+    title: args.title,
+    description: args.description,
+    ownedPaths: args.ownedPaths ?? [],
+  });
+
+  return toolResult(
+    {
+      schemaVersion: "0.1",
+      command: "work_create",
+      workItem: event.payload,
+      event,
+    },
+    `devflow work_create: ${event.payload.id}`,
+  );
+}
+
+async function callWorkStart(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const event = await recordWorkStartedEvent(repoPath, {
+    id: args.id,
+  });
+
+  return toolResult(
+    {
+      schemaVersion: "0.1",
+      command: "work_start",
+      workItem: event.payload,
+      event,
+    },
+    `devflow work_start: ${event.payload.id}`,
+  );
+}
+
+async function callWorkList(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const state = await readDevflowState(repoPath);
+  const summary = createWorkListSummary({
+    repo: {
+      absolutePath: repoPath,
+    },
+    state,
+    status: args.status,
+  });
+
+  return toolResult(summary, `devflow work_list: ${summary.count} items`);
+}
+
 async function callDoctor(args) {
   const repoPath = args.repo ?? process.cwd();
   const memory = await readMistakeMemory(repoPath);
@@ -410,6 +497,18 @@ async function callRecordGate(args) {
     },
     `devflow record_gate: ${event.payload.id}`,
   );
+}
+
+async function callGatesRun(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const config = await readDevflowConfig(repoPath);
+  const summary = await runConfiguredGate(repoPath, {
+    id: args.id,
+    gates: args.gates ?? config.gates,
+    workItemId: args.workItemId ?? args.work,
+  });
+
+  return toolResult(summary, `devflow gates_run: ${summary.gate.id} ${summary.status}`);
 }
 
 function callNextPrompt(args) {

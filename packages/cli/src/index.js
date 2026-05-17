@@ -19,6 +19,7 @@ import {
   createSplitPlan,
   createStatusSummary,
   createTermExplanation,
+  createWorkListSummary,
   parseGitStatusLines,
   parseSessionListLimit,
   parseSessionListSince,
@@ -30,6 +31,9 @@ import {
   recordFinishEvent,
   recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
+  recordWorkCreatedEvent,
+  recordWorkStartedEvent,
+  runConfiguredGate,
   writeInitPlan,
 } from "../../core/src/index.js";
 
@@ -51,6 +55,8 @@ try {
     await renderFinish(args.slice(1));
   } else if (command === "doctor") {
     await renderDoctor(args.slice(1));
+  } else if (command === "gates" && args[1] === "run") {
+    await renderGatesRun(args.slice(2));
   } else if (command === "prompt" && args[1] === "next") {
     renderNextPrompt(args.slice(2));
   } else if (command === "prompt" && args[1] === "rewrite") {
@@ -65,6 +71,12 @@ try {
     await renderSessionList(args.slice(2));
   } else if (command === "sessions" && args[1] === "note") {
     await renderSessionNote(args.slice(2));
+  } else if (command === "work" && args[1] === "create") {
+    await renderWorkCreate(args.slice(2));
+  } else if (command === "work" && args[1] === "start") {
+    await renderWorkStart(args.slice(2));
+  } else if (command === "work" && args[1] === "list") {
+    await renderWorkList(args.slice(2));
   } else {
     throw new Error(`Unknown command: ${args.join(" ") || "<none>"}`);
   }
@@ -206,6 +218,20 @@ async function renderDoctor(argsForCommand) {
     },
     mistakes: memory.mistakes,
     warnings: memory.warnings,
+  });
+
+  render(summary, options.json);
+}
+
+async function renderGatesRun(argsForCommand) {
+  const { options, positional } = parseOptionsAndPositionals(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const id = positional[0];
+  const config = await readDevflowConfig(repoPath);
+  const summary = await runConfiguredGate(repoPath, {
+    id,
+    gates: config.gates,
+    workItemId: options.work,
   });
 
   render(summary, options.json);
@@ -384,6 +410,65 @@ async function renderSessionNote(argsForCommand) {
   );
 }
 
+async function renderWorkCreate(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const event = await recordWorkCreatedEvent(repoPath, {
+    id: options.id,
+    title: options.title,
+    description: options.description,
+    ownedPaths: collectRepeated(options["owned-path"]),
+  });
+
+  render(
+    {
+      schemaVersion: "0.1",
+      command: "work_create",
+      workItem: event.payload,
+      event,
+    },
+    options.json,
+  );
+}
+
+async function renderWorkStart(argsForCommand) {
+  const { options, positional } = parseOptionsAndPositionals(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const event = await recordWorkStartedEvent(repoPath, {
+    id: positional[0] ?? options.id,
+  });
+
+  render(
+    {
+      schemaVersion: "0.1",
+      command: "work_start",
+      workItem: event.payload,
+      event,
+    },
+    options.json,
+  );
+}
+
+async function renderWorkList(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const state = await readDevflowState(repoPath);
+  const summary = createWorkListSummary({
+    repo: {
+      absolutePath: repoPath,
+    },
+    state,
+    status: options.status,
+  });
+
+  if (options.json) {
+    render(summary, true);
+    return;
+  }
+
+  renderWorkListText(summary);
+}
+
 function defaultPlatformName() {
   if (process.platform === "win32") {
     return "windows-powershell";
@@ -489,6 +574,19 @@ function renderSessionListText(summary) {
     lines.push(
       `${session.kind ?? "session"} ${session.workItemId ?? "unknown"} ${session.agent ?? "unknown"} ${session.observedAt ?? "unknown-time"} ${detail}`,
     );
+  }
+
+  process.stdout.write(`${lines.join("\n")}\n`);
+}
+
+function renderWorkListText(summary) {
+  const lines = ["Work items", `Filter: ${summary.filters.status ?? "all"}`, `Count: ${summary.count}`];
+  if (summary.warnings.length > 0) {
+    lines.push(`Warnings: ${summary.warnings.length}`);
+  }
+
+  for (const item of summary.items) {
+    lines.push(`${item.status} ${item.id} ${item.title}`);
   }
 
   process.stdout.write(`${lines.join("\n")}\n`);
