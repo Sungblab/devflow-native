@@ -12,6 +12,7 @@ test("stdio transport lists tools over JSON-RPC", async () => {
 
   assert.equal(response.id, 1);
   assert.equal(response.result.tools[0].name, "devflow.status");
+  assert.ok(!response.result.tools.some((tool) => tool.name === "devflow.dashboard"));
   assert.ok(response.result.tools.some((tool) => tool.name === "devflow.health"));
   assert.ok(response.result.tools.some((tool) => tool.name === "devflow.finish"));
   assert.ok(response.result.tools.some((tool) => tool.name === "devflow.record_gate"));
@@ -30,6 +31,7 @@ test("stdio transport lists tools over JSON-RPC", async () => {
   assert.ok(response.result.tools.some((tool) => tool.name === "devflow.work_rename"));
   assert.ok(response.result.tools.some((tool) => tool.name === "devflow.work_ready"));
   assert.ok(response.result.tools.some((tool) => tool.name === "devflow.work_block"));
+  assert.ok(response.result.tools.some((tool) => tool.name === "devflow.work_unblock"));
   assert.ok(response.result.tools.some((tool) => tool.name === "devflow.work_list"));
 });
 

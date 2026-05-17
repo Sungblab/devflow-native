@@ -459,7 +459,7 @@ test("CLI split reads project-specific tasks from devflow config", async () => {
           {
             id: "configured-cli",
             ownedPaths: ["packages/cli/**"],
-            avoidPaths: ["packages/web/**"],
+            avoidPaths: ["packages/artifacts/**"],
             verification: [{ cwd: ".", command: "npm test" }],
           },
         ],
@@ -962,6 +962,58 @@ test("CLI work rename updates only the work item title", async () => {
   assert.equal(statusJson.work.active[0].title, "Renamed title");
   assert.equal(statusJson.work.active[0].description, "Keep description");
   assert.deepEqual(statusJson.work.active[0].ownedPaths, ["docs/**"]);
+});
+
+test("CLI work unblock returns blocked work to active state", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "blocked-work",
+    "--title",
+    "Blocked work",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "block",
+    "blocked-work",
+    "--repo",
+    repoPath,
+    "--reason",
+    "Waiting for review.",
+    "--json",
+  ]);
+
+  const unblocked = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "unblock",
+    "blocked-work",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const status = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+
+  assert.equal(JSON.parse(unblocked.stdout).command, "work_unblock");
+
+  const statusJson = JSON.parse(status.stdout);
+  assert.equal(statusJson.work.active[0].id, "blocked-work");
+  assert.equal(statusJson.work.active[0].blockedReason, null);
+  assert.equal(statusJson.work.blocked.length, 0);
 });
 
 test("CLI gates run executes configured gate and writes evidence", async () => {
@@ -1973,5 +2025,11 @@ test("CLI sessions list text output surfaces state warnings", async () => {
 async function createTempGitRepo() {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-cli-"));
   await execFileAsync("git", ["init"], { cwd: repoPath });
+  await execFileAsync("git", ["config", "user.email", "devflow@example.test"], { cwd: repoPath });
+  await execFileAsync("git", ["config", "user.name", "Devflow Test"], { cwd: repoPath });
+  await writeFile(join(repoPath, "README.md"), "# Temp repo\n", "utf8");
+  await execFileAsync("git", ["add", "README.md"], { cwd: repoPath });
+  await execFileAsync("git", ["commit", "-m", "init"], { cwd: repoPath });
   return repoPath;
 }
+

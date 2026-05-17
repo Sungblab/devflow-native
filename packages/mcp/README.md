@@ -23,6 +23,7 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.work_rename`
 - `devflow.work_ready`
 - `devflow.work_block`
+- `devflow.work_unblock`
 - `devflow.work_list`
 - `devflow.finish`
 - `devflow.record_gate`
@@ -68,10 +69,11 @@ unchanged. `limit` must be a positive integer, `since` must parse as a date, and
 `session.message` event so external work can appear beside agent sessions.
 
 `devflow.work_create`, `devflow.work_start`, `devflow.work_update`,
-`devflow.work_rename`, `devflow.work_ready`, `devflow.work_block`, and
-`devflow.work_list` expose the local work item registry to agent hosts. The
-write tools append `work.created`, `work.started`, `work.updated`, `work.ready`,
-and `work.blocked` events; the list tool derives current item status from local
+`devflow.work_rename`, `devflow.work_ready`, `devflow.work_block`,
+`devflow.work_unblock`, and `devflow.work_list` expose the local work item
+registry to agent hosts. The write tools append `work.created`, `work.started`,
+`work.updated`, `work.ready`, `work.blocked`, and `work.unblocked` events; the
+list tool derives current item status from local
 state without reading agent history. Repeated create or start calls for the
 same id return the existing event with `existing: true` instead of appending
 duplicate lines. `devflow.work_rename` is a title-only alias over

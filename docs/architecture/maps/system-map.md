@@ -3,11 +3,11 @@
 ```mermaid
 flowchart TD
   User[Maintainer] --> CLI[devflow CLI]
-  User --> Dashboard[Local dashboard]
+  User --> Artifacts[Generated artifacts]
   User --> Agent[Codex / Claude / Gemini / Copilot / OpenCode / Goose / Aider]
 
   CLI --> Core[Core model]
-  Dashboard --> Core
+  Artifacts --> Core
   Agent --> Skills[Devflow skills]
   Skills --> CLI
 
@@ -27,7 +27,7 @@ flowchart TD
 
 - Core owns normalized project state.
 - CLI owns mutation and automation commands.
-- Dashboard owns visualization.
+- Artifacts own optional visualization.
 - Skills own agent behavior.
 - Profiles own methodology differences.
 - Adapters own external tool formats.

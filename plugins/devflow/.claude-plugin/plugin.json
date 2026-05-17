@@ -13,5 +13,8 @@
     "evidence",
     "mcp",
     "local-first"
-  ]
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "hooks": "./hooks/hooks.json"
 }

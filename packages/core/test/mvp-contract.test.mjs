@@ -37,6 +37,7 @@ import {
   recordWorkRenamedEvent,
   recordWorkStartedEvent,
   recordWorkUpdatedEvent,
+  recordWorkUnblockedEvent,
 } from "../src/index.js";
 
 test("status summary captures repo, dirty files, gates, and prompt recommendation", () => {
@@ -67,7 +68,7 @@ test("finish summary records evidence, skipped checks, risks, and next-session p
     intent: "Start the first useful Solo Devflow OS loop.",
     changedFiles: [{ path: "packages/core/src/index.js", status: "added" }],
     gates: [{ id: "unit", command: "npm test", status: "passed" }],
-    skipped: [{ id: "dashboard-smoke", reason: "No dashboard exists in this slice." }],
+    skipped: [{ id: "artifact-smoke", reason: "No artifact view exists in this slice." }],
     risks: [{ severity: "low", message: "No persistent SQLite store yet." }],
     nextTask: "Add file-backed .devflow state persistence.",
     nextPrompt: "Continue Solo Devflow OS by adding file-backed state persistence.",
@@ -76,7 +77,7 @@ test("finish summary records evidence, skipped checks, risks, and next-session p
   assert.equal(summary.command, "finish");
   assert.equal(summary.workItem.status, "completed");
   assert.equal(summary.evidence.gates[0].status, "passed");
-  assert.equal(summary.evidence.skipped[0].id, "dashboard-smoke");
+  assert.equal(summary.evidence.skipped[0].id, "artifact-smoke");
   assert.match(summary.nextSession.prompt, /file-backed state persistence/);
 });
 
@@ -391,6 +392,43 @@ test("work rename events update only the title", async () => {
   assert.equal(item.description, "Keep description");
   assert.deepEqual(item.ownedPaths, ["docs/**"]);
   assert.equal(item.status, "active");
+});
+
+test("work lifecycle events can unblock blocked items", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-work-unblock-"));
+
+  await recordWorkCreatedEvent(repoPath, {
+    id: "blocked-work",
+    title: "Blocked work",
+  });
+  await recordWorkBlockedEvent(
+    repoPath,
+    {
+      id: "blocked-work",
+      reason: "Waiting for review.",
+    },
+    { observedAt: "2026-05-17T09:21:00.000Z" },
+  );
+  const unblocked = await recordWorkUnblockedEvent(
+    repoPath,
+    { id: "blocked-work" },
+    { observedAt: "2026-05-17T09:22:00.000Z" },
+  );
+
+  assert.equal(unblocked.type, "work.unblocked");
+  assert.equal(unblocked.payload.status, "active");
+
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(state.work.active[0].id, "blocked-work");
+  assert.equal(state.work.active[0].blockedReason, null);
+  assert.equal(state.work.blocked.length, 0);
+  assert.equal(status.work.active[0].id, "blocked-work");
+  assert.equal(status.work.blocked.length, 0);
 });
 
 test("project health scanner surfaces invalid gates from config", async () => {

@@ -1,0 +1,41 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$PLUGIN_ROOT/hooks/session-start.mjs\"",
+            "statusMessage": "Loading Devflow start context",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$PLUGIN_ROOT/hooks/user-prompt-submit.mjs\"",
+            "statusMessage": "Checking Devflow workflow intent",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$PLUGIN_ROOT/hooks/stop.mjs\"",
+            "statusMessage": "Checking Devflow finish guard",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

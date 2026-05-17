@@ -9,7 +9,7 @@ Deliverables:
 - research notes
 - roadmap
 - initial command contract
-- dashboard information architecture
+- plugin-first information architecture
 
 Exit criteria:
 
@@ -25,6 +25,8 @@ Build:
 - `devflow finish`
 - `devflow doctor`
 - `devflow prompt next`
+- repo-local Codex/Claude plugin hooks for start, prompt intent, and finish
+  guard context
 - local `.devflow/` state files
 - git dirty-file capture
 - gate evidence capture
@@ -41,7 +43,7 @@ Exit criteria:
 - a completed task can record changed files, commands run, skipped checks,
   risks, and a next-session prompt
 - the product's first daily loop works from plugin skills, CLI, or future MCP
-  tools without dashboard or hosted sync
+  tools without a dashboard or hosted sync
 
 ## Phase 2: Repo Scaffold And Health
 
@@ -73,7 +75,7 @@ Build:
 
 - `devflow split`
 - work item registry
-- `devflow work create/start/update/rename/ready/block/list`
+- `devflow work create/start/update/rename/ready/block/unblock/list`
 
 Exit criteria:
 
@@ -83,15 +85,15 @@ Exit criteria:
 
 Current implementation note: `devflow work create`, `devflow work start`,
 `devflow work update`, `devflow work rename`, `devflow work ready`,
-`devflow work block`, and `devflow work list` now append and derive local work
+`devflow work block`, `devflow work unblock`, and `devflow work list` now append and derive local work
 item state from
 `.devflow/state/events.jsonl`. MCP exposes the same contract as
 `devflow.work_create`, `devflow.work_start`, `devflow.work_update`,
 `devflow.work_rename`, `devflow.work_ready`, `devflow.work_block`, and
-`devflow.work_list`, and `devflow status` now reads active, blocked, and
+`devflow.work_unblock`, and `devflow.work_list`, and `devflow status` now reads active, blocked, and
 ready-to-finish work items from derived state. `work.updated` changes title,
 description, and owned paths without changing lifecycle status; rename is a
-title-only alias.
+title-only alias. `work.unblocked` returns a blocked item to active status.
 `devflow split --register --start` and MCP `devflow.split` with
 `register: true` and `start: true` can also register generated split sessions
 as active work items. Repeated create/start and split registration writes are
@@ -144,6 +146,7 @@ Build:
 - `devflow.work_rename` MCP tool
 - `devflow.work_ready` MCP tool
 - `devflow.work_block` MCP tool
+- `devflow.work_unblock` MCP tool
 - `devflow.work_list` MCP tool
 - Claude Code plugin draft with slash commands
 - Codex MCP config template
@@ -167,7 +170,8 @@ dry-run `devflow.sessions_attach_plan`, confirmed-write
 `devflow.sessions_attach`, read-only `devflow.sessions_list`, manual
 `devflow.sessions_note`, local work item tools `devflow.work_create`,
 `devflow.work_start`, `devflow.work_update`, `devflow.work_rename`,
-`devflow.work_ready`, `devflow.work_block`, and `devflow.work_list`, and a
+`devflow.work_ready`, `devflow.work_block`, `devflow.work_unblock`, and
+`devflow.work_list`, and a
 minimal stdio JSON-RPC transport. The CLI also has `devflow split --json` with
 optional work registration and `devflow explain` renderers, plus `devflow prompt rewrite` for converting
 vague maintainer intent into agent-ready requirements. Host-specific Codex and
@@ -190,7 +194,8 @@ Build:
 Exit criteria:
 
 - active and historical agent sessions can be attached to a task
-- dashboard can show what each session did and where it stopped
+- compact status and optional artifacts can show what each session did and
+  where it stopped
 
 Current implementation note: `packages/adapters` has first read-only Codex
 session discovery helpers. `findCodexSessionFiles` locates candidate JSONL
@@ -244,20 +249,28 @@ Exit criteria:
 - simple/guided output remains a renderer over the same core state, not a
   separate product model
 
-## Phase 8: Local Dashboard
+## Phase 8: Generated Artifacts
 
 Build:
 
-- active work view
-- timeline
-- gates view
-- maps view
-- sessions view
-- handoffs view
+- on-demand HTML/text artifact generation from structured `.devflow` state
+- review sheet artifacts for changed files, gates, skipped checks, and risks
+- split board artifacts for parallel work planning
+- timeline artifacts for sessions, gates, and handoffs
+- handoff artifacts for next-session prompts and unresolved risks
 
 Exit criteria:
 
-- the maintainer can open one local dashboard and understand project state
+- the maintainer can request a visual artifact only when the state is too dense
+  for compact text
+- generated HTML is never the source of truth and is not fed back to agents by
+  default
+- artifact templates are local, deterministic, and cheap compared with asking
+  the model to regenerate layout every turn
+
+Current implementation note: the earlier dashboard package was removed from
+the MVP. Phase 8 is now an on-demand artifact layer rather than a persistent
+web app.
 
 ## Phase 9: GitHub Review Integration
 

@@ -27,6 +27,11 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.sessions_note"));
   assert.ok(names.includes("devflow.work_create"));
   assert.ok(names.includes("devflow.work_start"));
+  assert.ok(names.includes("devflow.work_update"));
+  assert.ok(names.includes("devflow.work_rename"));
+  assert.ok(names.includes("devflow.work_ready"));
+  assert.ok(names.includes("devflow.work_block"));
+  assert.ok(names.includes("devflow.work_unblock"));
   assert.ok(names.includes("devflow.work_list"));
 });
 
@@ -369,6 +374,33 @@ test("MCP work_rename updates only the work item title", async () => {
   assert.equal(status.structuredContent.work.active[0].title, "Renamed title");
   assert.equal(status.structuredContent.work.active[0].description, "Keep description");
   assert.deepEqual(status.structuredContent.work.active[0].ownedPaths, ["docs/**"]);
+});
+
+test("MCP work_unblock returns blocked work to active state", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-work-unblock-"));
+  await callTool("devflow.work_create", {
+    repo: repoPath,
+    id: "blocked-work",
+    title: "Blocked work",
+  });
+  await callTool("devflow.work_block", {
+    repo: repoPath,
+    id: "blocked-work",
+    reason: "Waiting for review.",
+  });
+
+  const unblocked = await callTool("devflow.work_unblock", {
+    repo: repoPath,
+    id: "blocked-work",
+  });
+  const status = await callTool("devflow.status", {
+    repo: repoPath,
+  });
+
+  assert.equal(unblocked.structuredContent.command, "work_unblock");
+  assert.equal(status.structuredContent.work.active[0].id, "blocked-work");
+  assert.equal(status.structuredContent.work.active[0].blockedReason, null);
+  assert.equal(status.structuredContent.work.blocked.length, 0);
 });
 
 test("MCP gates_run executes configured gate and records evidence", async () => {

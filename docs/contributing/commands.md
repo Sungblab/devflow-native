@@ -22,6 +22,7 @@ devflow work update
 devflow work rename
 devflow work ready
 devflow work block
+devflow work unblock
 devflow work list
 devflow status
 devflow split
@@ -34,7 +35,6 @@ devflow sessions attach-plan
 devflow sessions attach
 devflow sessions list
 devflow sessions note
-devflow dashboard
 devflow doctor
 ```
 
@@ -66,9 +66,8 @@ minimum project contract and skips existing files instead of overwriting them.
 `devflow health` checks those scaffold files and configured gates.
 `devflow gates run` executes one configured gate and records pass/fail
 evidence.
-`devflow work create/start/update/rename/ready/block/list` provides the first
+`devflow work create/start/update/rename/ready/block/unblock/list` provides the first
 local work item registry.
-`devflow dashboard` stays in the broad contract.
 `doctor` is included early because plugin/skill-first workflows need a cheap
 way to avoid repeated local-environment mistakes.
 `devflow sessions codex` is included as a read-only adapter probe. It requires
@@ -96,10 +95,11 @@ this repository.
 `devflow work create` appends `work.created`, `devflow work start` appends
 `work.started`, `devflow work update` and `devflow work rename` append
 `work.updated`, `devflow work ready` appends `work.ready`, `devflow work block`
-appends `work.blocked`, and `devflow work list` derives current work item state
-from the same log. Work item create/start writes are idempotent by id: creating
-or starting an already recorded work item returns the existing event with
-`existing: true` instead of appending another line.
+appends `work.blocked`, `devflow work unblock` appends `work.unblocked`, and
+`devflow work list` derives current work item state from the same log. Work
+item create/start writes are idempotent by id: creating or starting an already
+recorded work item returns the existing event with `existing: true` instead of
+appending another line.
 
 ## Shared CLI Rules
 
@@ -508,6 +508,25 @@ Outputs:
 - appended `work.blocked` event
 
 Blocked items appear under `work.blocked` in `devflow status`.
+
+## `devflow work unblock`
+
+Returns a blocked local work item to active status.
+
+Example:
+
+```powershell
+devflow work unblock phase-3-work-registry --json
+```
+
+Outputs:
+
+- `work_unblock` JSON wrapper
+- unblocked work item payload
+- appended `work.unblocked` event
+
+Unblocked items appear under `work.active` in `devflow status` and no longer
+carry `blockedReason`.
 
 ## `devflow work list`
 
@@ -1101,15 +1120,9 @@ Example:
 git fetch origin && git worktree add .worktrees/worker-static-quality -b codex/worker-static-quality origin/main
 ```
 
-## `devflow dashboard`
+## Generated artifacts
 
-Starts the local dashboard.
-
-Initial views:
-
-- active work
-- gates
-- parallel sessions
-- maps
-- handoffs
-- sessions
+The MVP no longer exposes a persistent `devflow dashboard` command. Visual
+surfaces should be generated on demand from structured state when a maintainer
+asks for a review sheet, split board, timeline, or handoff view. HTML artifacts
+are views, not state, and should not be fed back into agent context by default.

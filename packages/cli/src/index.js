@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { cwd, exit } from "node:process";
 
 import {
@@ -38,6 +39,7 @@ import {
   recordWorkRenamedEvent,
   recordWorkStartedEvent,
   recordWorkUpdatedEvent,
+  recordWorkUnblockedEvent,
   runConfiguredGate,
   writeInitPlan,
 } from "../../core/src/index.js";
@@ -88,6 +90,8 @@ try {
     await renderWorkReady(args.slice(2));
   } else if (command === "work" && args[1] === "block") {
     await renderWorkBlock(args.slice(2));
+  } else if (command === "work" && args[1] === "unblock") {
+    await renderWorkUnblock(args.slice(2));
   } else if (command === "work" && args[1] === "list") {
     await renderWorkList(args.slice(2));
   } else {
@@ -548,6 +552,24 @@ async function renderWorkBlock(argsForCommand) {
   );
 }
 
+async function renderWorkUnblock(argsForCommand) {
+  const { options, positional } = parseOptionsAndPositionals(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const event = await recordWorkUnblockedEvent(repoPath, {
+    id: positional[0] ?? options.id,
+  });
+
+  render(
+    {
+      schemaVersion: "0.1",
+      command: "work_unblock",
+      workItem: event.payload,
+      event,
+    },
+    options.json,
+  );
+}
+
 async function renderWorkList(argsForCommand) {
   const options = parseOptions(argsForCommand);
   const repoPath = options.repo ?? cwd();
@@ -712,7 +734,15 @@ function parseOptionsAndPositionals(rawArgs) {
     }
 
     const key = arg.slice(2);
-    if (key === "json" || key === "simple" || key === "guided" || key === "confirm" || key === "register" || key === "start") {
+    if (
+      key === "json" ||
+      key === "simple" ||
+      key === "guided" ||
+      key === "confirm" ||
+      key === "register" ||
+      key === "start" ||
+      key === "once"
+    ) {
       options[key] = true;
       continue;
     }
