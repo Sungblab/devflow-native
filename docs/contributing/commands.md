@@ -1079,7 +1079,9 @@ Without `--json`, the command prints a compact terminal dashboard. With
 `--html <path>`, the command writes a static browser shell from the same core
 summary and returns a `dashboard_html` JSON wrapper when `--json` is present.
 `devflow dashboard serve` starts a local HTTP server for the same browser shell
-and exposes `/dashboard.json` for the raw summary contract. It also exposes a
+and exposes `/dashboard.json` for the raw summary contract. Served dashboard
+HTML also references `/assets/dashboard.css` and `/assets/dashboard.js` as the
+first no-build web shell assets over the same JSON contract. It also exposes a
 dedicated gates view at `/gates` and the same gate slice as JSON at
 `/gates.json`, with latest gate detail pages at `/gates/<id>` and
 `/gates/<id>.json`. A dedicated sessions view is available at `/sessions` and

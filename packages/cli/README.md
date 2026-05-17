@@ -86,7 +86,9 @@ dashboard summary.
 `devflow dashboard --html <path>` writes a static browser shell from that same
 summary for local review.
 `devflow dashboard serve --port <port>` serves that browser shell over local
-HTTP, exposes `/dashboard.json` for the raw summary contract, and exposes
+HTTP, exposes `/dashboard.json` for the raw summary contract, serves
+`/assets/dashboard.css` and `/assets/dashboard.js` for the first no-build web
+shell layer, and exposes
 dedicated gate views at `/gates` and `/gates.json`, gate detail routes at
 `/gates/<id>` and `/gates/<id>.json`, session views at `/sessions` and
 `/sessions.json`, session detail routes at `/sessions/<id>` and

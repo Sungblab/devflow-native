@@ -216,6 +216,18 @@ async function renderDashboardServe(argsForCommand) {
       return;
     }
 
+    if (requestPath === "/assets/dashboard.css") {
+      response.writeHead(200, { "content-type": "text/css; charset=utf-8" });
+      response.end(DASHBOARD_WEB_CSS, () => closeServerOnce(server, options.once));
+      return;
+    }
+
+    if (requestPath === "/assets/dashboard.js") {
+      response.writeHead(200, { "content-type": "text/javascript; charset=utf-8" });
+      response.end(DASHBOARD_WEB_JS, () => closeServerOnce(server, options.once));
+      return;
+    }
+
     if (requestPath === "/gates.json") {
       response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
       response.end(`${JSON.stringify(summary.gates, null, 2)}\n`, () => closeServerOnce(server, options.once));
@@ -415,7 +427,7 @@ async function renderDashboardServe(argsForCommand) {
     }
 
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-    response.end(createDashboardHtml(summary), () => closeServerOnce(server, options.once));
+    response.end(createDashboardServedHtml(summary), () => closeServerOnce(server, options.once));
   });
 
   await new Promise((resolve, reject) => {
@@ -940,6 +952,40 @@ function renderWorkListText(summary) {
   }
 
   process.stdout.write(`${lines.join("\n")}\n`);
+}
+
+const DASHBOARD_WEB_CSS = `.devflow-dashboard-shell {
+  min-height: 100vh;
+}
+
+.devflow-dashboard-live {
+  border-top: 1px solid #d9dde5;
+  margin-top: 16px;
+  padding-top: 12px;
+}
+`;
+
+const DASHBOARD_WEB_JS = `async function loadDashboard() {
+  const response = await fetch("/dashboard.json");
+  if (!response.ok) {
+    throw new Error("Unable to load dashboard JSON");
+  }
+  const dashboard = await response.json();
+  document.documentElement.dataset.devflowDashboard = "ready";
+  document.documentElement.dataset.devflowActiveWork = String(dashboard.work?.counts?.active ?? 0);
+}
+
+loadDashboard().catch((error) => {
+  document.documentElement.dataset.devflowDashboard = "error";
+  console.error(error);
+});
+`;
+
+function createDashboardServedHtml(summary) {
+  return createDashboardHtml(summary)
+    .replace("<body>", '<body class="devflow-dashboard-shell">')
+    .replace("</head>", '  <link rel="stylesheet" href="/assets/dashboard.css">\n</head>')
+    .replace("</body>", '  <script type="module" src="/assets/dashboard.js"></script>\n</body>');
 }
 
 function renderDashboardText(summary) {

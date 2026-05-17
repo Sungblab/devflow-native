@@ -1045,6 +1045,49 @@ test("CLI dashboard serve exposes the browser shell over HTTP", async () => {
   }
 });
 
+test("CLI dashboard serve exposes web shell assets", async () => {
+  const repoPath = await createTempGitRepo();
+
+  const child = spawn(
+    "node",
+    [
+      "packages/cli/src/index.js",
+      "dashboard",
+      "serve",
+      "--repo",
+      repoPath,
+      "--port",
+      "0",
+      "--json",
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+
+  try {
+    const url = await waitForOutputMatch(child, /http:\/\/127\.0\.0\.1:\d+\//);
+    const shellResponse = await fetch(url);
+    const shellHtml = await shellResponse.text();
+    const cssResponse = await fetch(`${url}assets/dashboard.css`);
+    const css = await cssResponse.text();
+    const jsResponse = await fetch(`${url}assets/dashboard.js`);
+    const js = await jsResponse.text();
+
+    assert.equal(shellResponse.status, 200);
+    assert.match(shellHtml, /\/assets\/dashboard\.css/);
+    assert.match(shellHtml, /\/assets\/dashboard\.js/);
+    assert.equal(cssResponse.status, 200);
+    assert.match(css, /devflow-dashboard/);
+    assert.equal(jsResponse.status, 200);
+    assert.ok(js.includes('fetch("/dashboard.json")'));
+  } finally {
+    child.kill();
+    await waitForExit(child);
+  }
+});
+
 test("CLI dashboard serve exposes a dedicated gates view", async () => {
   const repoPath = await createTempGitRepo();
 

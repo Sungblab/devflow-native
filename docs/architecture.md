@@ -284,7 +284,9 @@ and latest handoff state from local state and project docs. `devflow dashboard
 --html <path>` can also write a static browser shell from the same contract
 before the full Vite/React dashboard exists. `devflow dashboard serve` wraps
 that shell in a local HTTP server and serves `/dashboard.json` for callers that
-need the raw contract, plus dedicated `/gates`, `/sessions`, `/handoffs`, and
+need the raw contract. It also serves `/assets/dashboard.css` and
+`/assets/dashboard.js` as the first no-build web shell asset layer before a
+bundled Vite/React app exists, plus dedicated `/gates`, `/sessions`, `/handoffs`, and
 `/maps` HTML/JSON slices, latest gate detail routes at `/gates/<id>` and
 `/gates/<id>.json`, session detail routes at `/sessions/<id>` and
 `/sessions/<id>.json`, handoff detail routes at `/handoffs/<work-item-id>` and
