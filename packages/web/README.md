@@ -21,7 +21,9 @@ The package also declares the first Vite/React build boundary:
   127.0.0.1` scripts.
 - `vite.config.js` keeps Vite output under `packages/web/dist`.
 - `index.html`, `src/dashboard-entry.jsx`, and `src/dashboard-app.jsx` define a
-  minimal React app shell that reads `/dashboard.json`.
+  React app shell that reads `/dashboard.json`.
+- `src/dashboard-view-model.js` derives the first React dashboard view model for
+  metrics, route links, and latest evidence.
 
 By default, `devflow dashboard serve` still serves the no-build shell so
 Windows PowerShell dogfooding remains dependency light. After running

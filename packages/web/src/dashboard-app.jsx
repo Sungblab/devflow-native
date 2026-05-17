@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { createDashboardViewModel } from "./dashboard-view-model.js";
+
 export function DashboardApp({ endpoint = "/dashboard.json" }) {
   const [dashboard, setDashboard] = useState(null);
   const [error, setError] = useState(null);
@@ -38,21 +40,32 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
     return <main><h1>Devflow Dashboard</h1><p>Loading dashboard...</p></main>;
   }
 
-  const work = dashboard.work?.counts ?? {};
-  const gates = dashboard.gates?.counts ?? {};
-  const sessions = dashboard.sessions?.counts ?? {};
-  const handoffs = dashboard.handoffs?.counts ?? {};
+  const viewModel = createDashboardViewModel(dashboard);
 
   return (
     <main>
       <h1>Devflow Dashboard</h1>
       <section aria-label="Dashboard metrics">
-        <Metric label="Active work" value={work.active ?? 0} />
-        <Metric label="Blocked" value={work.blocked ?? 0} />
-        <Metric label="Ready" value={work.readyToFinish ?? 0} />
-        <Metric label="Failing gates" value={gates.failing ?? 0} />
-        <Metric label="Sessions" value={sessions.total ?? 0} />
-        <Metric label="Stale handoffs" value={handoffs.stale ?? 0} />
+        {viewModel.metrics.map((metric) => (
+          <Metric key={metric.label} label={metric.label} value={metric.value} />
+        ))}
+      </section>
+      <nav aria-label="Dashboard sections">
+        {viewModel.routes.map((route) => (
+          <a key={route.href} href={route.href}>
+            <span>{route.label}</span>
+            <strong>{route.count}</strong>
+          </a>
+        ))}
+      </nav>
+      <section aria-label="Latest evidence">
+        {viewModel.evidence.map((item) => (
+          <article key={item.label}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <small>{item.detail}</small>
+          </article>
+        ))}
       </section>
     </main>
   );

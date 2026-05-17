@@ -247,3 +247,44 @@ test("web package declares a Vite React build boundary", async () => {
   assert.match(app, /export function DashboardApp/);
   assert.match(app, /\/dashboard\.json/);
 });
+
+test("web package derives a React dashboard view model", async () => {
+  const { createDashboardViewModel } = await import("../src/dashboard-view-model.js");
+  const viewModel = createDashboardViewModel({
+    work: { counts: { active: 2, blocked: 1, readyToFinish: 3 } },
+    gates: {
+      counts: { failing: 1, total: 4 },
+      latest: [{ id: "unit", status: "failed", command: "npm test" }],
+    },
+    sessions: {
+      counts: { total: 5 },
+      latest: { summary: "Attached the latest Codex session.", sessionId: "session-1" },
+    },
+    handoffs: {
+      counts: { stale: 2 },
+      latest: { prompt: "Continue the dashboard UI.", workItemId: "dashboard-ui" },
+    },
+    maps: { counts: { total: 6 } },
+  });
+
+  assert.deepEqual(viewModel.metrics, [
+    { label: "Active work", value: 2 },
+    { label: "Blocked", value: 1 },
+    { label: "Ready", value: 3 },
+    { label: "Failing gates", value: 1 },
+    { label: "Sessions", value: 5 },
+    { label: "Stale handoffs", value: 2 },
+  ]);
+  assert.deepEqual(viewModel.routes, [
+    { href: "/gates", label: "Gates", count: 4 },
+    { href: "/sessions", label: "Sessions", count: 5 },
+    { href: "/handoffs", label: "Handoffs", count: 2 },
+    { href: "/maps", label: "Maps", count: 6 },
+    { href: "/work", label: "Work", count: 6 },
+  ]);
+  assert.deepEqual(viewModel.evidence, [
+    { label: "Latest gate", value: "unit failed", detail: "npm test" },
+    { label: "Latest session", value: "Attached the latest Codex session.", detail: "session-1" },
+    { label: "Latest handoff", value: "Continue the dashboard UI.", detail: "dashboard-ui" },
+  ]);
+});
