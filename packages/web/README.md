@@ -10,9 +10,10 @@ DOM-specific rendering.
 
 The first route-specific page renderers also live here:
 `renderDashboardGatesPage`, `renderDashboardSessionsPage`, and
-`renderDashboardHandoffsPage`, and `renderDashboardMapsPage` render the
-`/gates`, `/sessions`, `/handoffs`, and `/maps` HTML slices from the dashboard
-summary contract while the CLI remains responsible for routing and process I/O.
+`renderDashboardHandoffsPage`, `renderDashboardMapsPage`, and
+`renderDashboardWorkPage` render the `/gates`, `/sessions`, `/handoffs`,
+`/maps`, and `/work/<id>` HTML slices from the dashboard summary contract while
+the CLI remains responsible for routing and process I/O.
 
 Future Vite/React work should grow from this package while keeping CLI and MCP
 JSON contracts stable.

@@ -11,6 +11,7 @@ import {
   renderDashboardSessionsPage,
   renderDashboardHandoffsPage,
   renderDashboardMapsPage,
+  renderDashboardWorkPage,
 } from "../src/index.js";
 
 test("web package owns the no-build dashboard shell assets", () => {
@@ -199,4 +200,21 @@ test("web package renders the maps slice page", () => {
   assert.match(html, /workflow-map/);
   assert.match(html, /docs\/architecture\/maps\/workflow-map\.md/);
   assert.match(html, /Dashboard Map/);
+});
+
+test("web package renders the work detail page", () => {
+  const html = renderDashboardWorkPage({
+    id: "dashboard-work-detail",
+    title: "Dashboard work detail",
+    status: "blocked",
+    description: "Render work details from the web package.",
+    blockedReason: "Waiting on final extraction.",
+  });
+
+  assert.match(html, /Devflow Work Detail/);
+  assert.match(html, /dashboard-work-detail/);
+  assert.match(html, /Dashboard work detail/);
+  assert.match(html, /blocked/);
+  assert.match(html, /Render work details from the web package/);
+  assert.match(html, /Waiting on final extraction/);
 });
