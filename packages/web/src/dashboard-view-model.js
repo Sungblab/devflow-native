@@ -92,6 +92,23 @@ export function createDashboardViewModel(dashboard) {
   };
 }
 
+export function filterDashboardViewModel(viewModel, query) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) {
+    return viewModel;
+  }
+
+  return {
+    ...viewModel,
+    workSections: filterSections(viewModel.workSections, normalizedQuery),
+    timeline: {
+      ...viewModel.timeline,
+      items: viewModel.timeline.items.filter((item) => itemMatches(item, normalizedQuery)),
+    },
+    detailSections: filterSections(viewModel.detailSections, normalizedQuery),
+  };
+}
+
 function createWorkItems(items) {
   return items.map((item) => ({
     href: `/work/${encodeURIComponent(item.id)}`,
@@ -134,4 +151,17 @@ function createMapItems(items) {
     meta: item.path ?? "no path",
     detail: item.id,
   }));
+}
+
+function filterSections(sections, query) {
+  return sections.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => itemMatches(item, query)),
+  }));
+}
+
+function itemMatches(item, query) {
+  return [item.title, item.meta, item.detail, item.href]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes(query));
 }

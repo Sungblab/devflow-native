@@ -249,7 +249,7 @@ test("web package declares a Vite React build boundary", async () => {
 });
 
 test("web package derives a React dashboard view model", async () => {
-  const { createDashboardViewModel } = await import("../src/dashboard-view-model.js");
+  const { createDashboardViewModel, filterDashboardViewModel } = await import("../src/dashboard-view-model.js");
   const viewModel = createDashboardViewModel({
     work: {
       counts: { active: 2, blocked: 1, readyToFinish: 3 },
@@ -397,4 +397,22 @@ test("web package derives a React dashboard view model", async () => {
       ],
     },
   ]);
+
+  const filtered = filterDashboardViewModel(viewModel, "unit");
+  assert.deepEqual(filtered.workSections.map((section) => section.items), [[], [], []]);
+  assert.deepEqual(filtered.timeline.items, [
+    {
+      title: "unit passed",
+      detail: "npm test",
+      meta: "2026-05-17T13:00:00.000Z",
+      href: "/work/active-work",
+    },
+  ]);
+  assert.deepEqual(filtered.detailSections.map((section) => section.items), [
+    [{ href: "/gates/unit", title: "unit failed", meta: "npm test", detail: "active-work" }],
+    [],
+    [],
+    [],
+  ]);
+  assert.equal(filterDashboardViewModel(viewModel, "   "), viewModel);
 });

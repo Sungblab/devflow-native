@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 
-import { createDashboardViewModel } from "./dashboard-view-model.js";
+import { createDashboardViewModel, filterDashboardViewModel } from "./dashboard-view-model.js";
 
 export function DashboardApp({ endpoint = "/dashboard.json" }) {
   const [dashboard, setDashboard] = useState(null);
   const [error, setError] = useState(null);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -40,11 +41,20 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
     return <main><h1>Devflow Dashboard</h1><p>Loading dashboard...</p></main>;
   }
 
-  const viewModel = createDashboardViewModel(dashboard);
+  const viewModel = filterDashboardViewModel(createDashboardViewModel(dashboard), query);
 
   return (
     <main>
       <h1>Devflow Dashboard</h1>
+      <label>
+        Filter dashboard
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Gate, session, handoff, map, work"
+        />
+      </label>
       <section aria-label="Dashboard metrics">
         {viewModel.metrics.map((metric) => (
           <Metric key={metric.label} label={metric.label} value={metric.value} />
