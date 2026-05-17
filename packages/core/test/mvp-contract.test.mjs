@@ -30,6 +30,7 @@ import {
   writeInitPlan,
   recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
+  recordSplitWorkEvents,
   recordWorkCreatedEvent,
   recordWorkStartedEvent,
 } from "../src/index.js";
@@ -745,6 +746,46 @@ test("split plan can derive project-specific tasks from devflow config", async (
   assert.deepEqual(plan.sessions[0].ownedPaths, ["apps/api/**"]);
   assert.equal(plan.sessions[0].verification[0].cwd, "apps/api");
   assert.deepEqual(plan.mergeOrder, ["configured-docs", "configured-api"]);
+});
+
+test("split sessions can be registered as active work items", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-split-register-"));
+  const plan = createSplitPlan({
+    goal: "Connect split tasks to work registry",
+    tasks: [
+      {
+        id: "core-cli",
+        goal: "Wire CLI split registration.",
+        ownedPaths: ["packages/core/**", "packages/cli/**"],
+      },
+      {
+        id: "mcp-docs",
+        goal: "Expose split registration through MCP and docs.",
+        ownedPaths: ["packages/mcp/**", "docs/**"],
+      },
+    ],
+  });
+
+  const registration = await recordSplitWorkEvents(repoPath, plan, {
+    start: true,
+    observedAt: "2026-05-17T09:00:00.000Z",
+  });
+  const state = await readDevflowState(repoPath);
+  const list = createWorkListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(registration.command, "split_register");
+  assert.equal(registration.created.length, 2);
+  assert.equal(registration.started.length, 2);
+  assert.deepEqual(
+    list.items.map((item) => item.id),
+    ["core-cli", "mcp-docs"],
+  );
+  assert.deepEqual(list.items[0].ownedPaths, ["packages/core/**", "packages/cli/**"]);
+  assert.equal(list.items[0].status, "active");
+  assert.equal(list.items[1].title, "Expose split registration through MCP and docs.");
 });
 
 test("split plan surfaces invalid config warnings while falling back to defaults", async () => {

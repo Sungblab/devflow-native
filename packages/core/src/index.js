@@ -427,6 +427,43 @@ export async function recordWorkStartedEvent(repoPath, workItem, options = {}) {
   return event;
 }
 
+export async function recordSplitWorkEvents(repoPath, splitPlan, options = {}) {
+  const sessions = splitPlan?.sessions ?? [];
+  const created = [];
+  const started = [];
+
+  for (const session of sessions) {
+    const createdEvent = await recordWorkCreatedEvent(
+      repoPath,
+      {
+        id: session.id,
+        title: session.goal ?? session.id,
+        description: `Registered from split run ${splitPlan.runId ?? "local-split"}.`,
+        ownedPaths: session.ownedPaths ?? [],
+      },
+      { observedAt: options.observedAt },
+    );
+    created.push(createdEvent);
+
+    if (options.start) {
+      const startedEvent = await recordWorkStartedEvent(
+        repoPath,
+        { id: session.id },
+        { observedAt: options.observedAt },
+      );
+      started.push(startedEvent);
+    }
+  }
+
+  return {
+    schemaVersion: "0.1",
+    command: "split_register",
+    runId: splitPlan?.runId ?? null,
+    created,
+    started,
+  };
+}
+
 export function createSessionAttachPlan(input = {}) {
   const workItems = input.workItems ?? [];
   const sessions = input.sessions ?? [];

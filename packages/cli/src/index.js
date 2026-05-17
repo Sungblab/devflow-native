@@ -31,6 +31,7 @@ import {
   recordFinishEvent,
   recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
+  recordSplitWorkEvents,
   recordWorkCreatedEvent,
   recordWorkStartedEvent,
   runConfiguredGate,
@@ -160,6 +161,12 @@ async function renderSplit(argsForCommand) {
     worktreeRoot: options["worktree-root"],
     config,
   });
+
+  if (options.register) {
+    plan.registration = await recordSplitWorkEvents(repoPath, plan, {
+      start: Boolean(options.start),
+    });
+  }
 
   render(plan, options.json);
 }
@@ -613,7 +620,7 @@ function parseOptionsAndPositionals(rawArgs) {
     }
 
     const key = arg.slice(2);
-    if (key === "json" || key === "simple" || key === "guided" || key === "confirm") {
+    if (key === "json" || key === "simple" || key === "guided" || key === "confirm" || key === "register" || key === "start") {
       options[key] = true;
       continue;
     }

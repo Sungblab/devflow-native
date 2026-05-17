@@ -54,9 +54,9 @@ This loop should answer three daily questions before larger surfaces exist:
 - What local shell, path, tool, and repeated-mistake rules should the agent
   follow before running commands?
 
-`devflow split` now has a first thin CLI renderer over the core split contract,
-but work-item persistence and project-specific split discovery remain later
-slices. `devflow init` now has a first guarded scaffold implementation:
+`devflow split` now has a CLI renderer over the core split contract, can read
+project-specific split tasks, and can register generated sessions into the
+local work item registry. `devflow init` now has a first guarded scaffold implementation:
 without `--confirm`, it renders the plan only; with `--confirm`, it writes the
 minimum project contract and skips existing files instead of overwriting them.
 `devflow health` checks those scaffold files and configured gates.
@@ -438,6 +438,7 @@ Example:
 
 ```powershell
 devflow split --sessions 4 --goal "next OpenCairn development slices" --profile standard --platform powershell --json
+devflow split --register --start --json
 ```
 
 Inputs:
@@ -451,6 +452,9 @@ Inputs:
 - optional base branch
 - optional worktree root
 - optional paths to include or avoid
+- optional `--register` to append `work.created` events for generated sessions
+- optional `--start` with `--register` to append `work.started` events for the
+  same sessions
 
 Outputs:
 
@@ -460,11 +464,17 @@ Outputs:
 - paths to avoid
 - verification commands
 - merge/review order
+- optional `registration` evidence when `--register` is provided
 
 When `split.tasks` exists in `.devflow/config.json`, `devflow split` uses those
 project-specific tasks unless explicit tasks are supplied by an MCP caller.
 This lets a project define stable ownership boundaries and verification gates
 without hard-coding them into an agent prompt.
+When `--register` is present, each generated session id becomes a work item id,
+the session goal becomes the work item title, and owned paths are copied into
+the registry. `--start` marks those generated work items active in the same
+local event log so `devflow work list` and `devflow status` can see them without
+manual re-entry.
 
 JSON output:
 
@@ -536,6 +546,13 @@ JSON output:
     "hocuspocus-smoke-stability",
     "e2e-gate-seed-hardening"
   ],
+  "registration": {
+    "schemaVersion": "0.1",
+    "command": "split_register",
+    "runId": "2026-05-15-opencairn-next",
+    "created": ["work.created events"],
+    "started": ["work.started events"]
+  },
   "warnings": []
 }
 ```

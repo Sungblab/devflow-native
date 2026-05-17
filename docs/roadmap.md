@@ -85,9 +85,11 @@ Current implementation note: `devflow work create`, `devflow work start`, and
 `devflow work list` now append and derive local work item state from
 `.devflow/state/events.jsonl`. MCP exposes the same contract as
 `devflow.work_create`, `devflow.work_start`, and `devflow.work_list`, and
-`devflow status` now reads active work items from derived state. Richer work
-item fields, blocking states, ready-to-finish transitions, and automatic links
-from split tasks remain later Phase 3 work.
+`devflow status` now reads active work items from derived state.
+`devflow split --register --start` and MCP `devflow.split` with
+`register: true` and `start: true` can also register generated split sessions
+as active work items. Richer work item fields, blocking states, and
+ready-to-finish transitions remain later Phase 3 work.
 
 ## Phase 4: Gate Runner
 
@@ -154,8 +156,8 @@ dry-run `devflow.sessions_attach_plan`, confirmed-write
 `devflow.sessions_attach`, read-only `devflow.sessions_list`, manual
 `devflow.sessions_note`, local work item tools `devflow.work_create`,
 `devflow.work_start`, and `devflow.work_list`, and a
-minimal stdio JSON-RPC transport. The CLI also has thin `devflow split --json`
-and `devflow explain` renderers, plus `devflow prompt rewrite` for converting
+minimal stdio JSON-RPC transport. The CLI also has `devflow split --json` with
+optional work registration and `devflow explain` renderers, plus `devflow prompt rewrite` for converting
 vague maintainer intent into agent-ready requirements. Host-specific Codex and
 Gemini MCP config templates are present. Project-specific split discovery can now read
 `.devflow/config.json` `split.tasks`; richer docs/code map inference remains

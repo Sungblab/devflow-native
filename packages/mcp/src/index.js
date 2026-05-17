@@ -27,6 +27,7 @@ import {
   recordGateEvent,
   recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
+  recordSplitWorkEvents,
   recordWorkCreatedEvent,
   recordWorkStartedEvent,
   runConfiguredGate,
@@ -241,6 +242,12 @@ async function callSplit(args) {
     tasks: args.tasks,
     config,
   });
+
+  if (args.register) {
+    plan.registration = await recordSplitWorkEvents(repoPath, plan, {
+      start: Boolean(args.start),
+    });
+  }
 
   return toolResult(plan, `devflow split: ${plan.sessions.length} sessions`);
 }

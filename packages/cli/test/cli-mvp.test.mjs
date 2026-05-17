@@ -483,6 +483,66 @@ test("CLI split reads project-specific tasks from devflow config", async () => {
   assert.deepEqual(parsed.sessions[0].ownedPaths, ["packages/cli/**"]);
 });
 
+test("CLI split can register and start generated work items", async () => {
+  const repoPath = await createTempGitRepo();
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        split: {
+          tasks: [
+            {
+              id: "core-cli",
+              goal: "Wire CLI split registration.",
+              ownedPaths: ["packages/core/**", "packages/cli/**"],
+            },
+            {
+              id: "mcp-docs",
+              goal: "Expose split registration through MCP and docs.",
+              ownedPaths: ["packages/mcp/**", "docs/**"],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "split",
+    "--repo",
+    repoPath,
+    "--register",
+    "--start",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "split");
+  assert.equal(parsed.registration.command, "split_register");
+  assert.equal(parsed.registration.created.length, 2);
+  assert.equal(parsed.registration.started.length, 2);
+
+  const listed = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "list",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const listJson = JSON.parse(listed.stdout);
+  assert.deepEqual(
+    listJson.items.map((item) => item.status),
+    ["active", "active"],
+  );
+  assert.equal(listJson.items[1].title, "Expose split registration through MCP and docs.");
+});
+
 test("CLI init renders scaffold plan without writing files by default", async () => {
   const repoPath = await createTempGitRepo();
 

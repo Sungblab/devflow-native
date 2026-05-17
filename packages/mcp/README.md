@@ -68,6 +68,11 @@ local work item registry to agent hosts. The write tools append `work.created`
 and `work.started` events; the list tool derives current item status from local
 state without reading agent history.
 
+`devflow.split` accepts `register: true` to append generated sessions as
+`work.created` events. When `start: true` is also provided, it appends matching
+`work.started` events so agent hosts can make split tasks visible in
+`devflow.work_list` and `devflow.status` without re-entering work item details.
+
 `devflow.gates_run` reads `.devflow/config.json`, finds a configured gate by
 `id`, executes its command without a shell, and appends a `gate.finished` event
 with status, command, exit code, and stdout/stderr summaries. Hosts can pass
