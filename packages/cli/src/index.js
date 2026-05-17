@@ -1240,6 +1240,7 @@ function isDashboardHtmlRoute(requestPath) {
     /^\/handoffs\/[^/]+$/.test(requestPath) ||
     requestPath === "/maps" ||
     /^\/maps\/[^/]+$/.test(requestPath) ||
+    requestPath === "/work" ||
     /^\/work\/[^/]+$/.test(requestPath)
   );
 }

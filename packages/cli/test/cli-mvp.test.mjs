@@ -1184,6 +1184,8 @@ test("CLI dashboard serve --web-build serves the React app for dashboard HTML ro
     const url = await waitForOutputMatch(child, /http:\/\/127\.0\.0\.1:\d+\//);
     const gatesResponse = await fetch(`${url}gates`);
     const gatesHtml = await gatesResponse.text();
+    const workListResponse = await fetch(`${url}work`);
+    const workListHtml = await workListResponse.text();
     const workResponse = await fetch(`${url}work/route-work`);
     const workHtml = await workResponse.text();
     const gatesJsonResponse = await fetch(`${url}gates.json`);
@@ -1191,6 +1193,8 @@ test("CLI dashboard serve --web-build serves the React app for dashboard HTML ro
 
     assert.equal(gatesResponse.status, 200);
     assert.match(gatesHtml, /built-route-shell/);
+    assert.equal(workListResponse.status, 200);
+    assert.match(workListHtml, /built-route-shell/);
     assert.equal(workResponse.status, 200);
     assert.match(workHtml, /built-route-shell/);
     assert.equal(gatesJsonResponse.status, 200);

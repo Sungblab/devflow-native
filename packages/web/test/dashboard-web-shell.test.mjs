@@ -497,6 +497,41 @@ test("web package derives a React dashboard view model", async () => {
       },
     ],
   });
+  assert.deepEqual(createDashboardRouteViewModel(viewModel, "/work"), {
+    kind: "section",
+    title: "Work",
+    count: 3,
+    emptyText: "No work items.",
+    items: [
+      {
+        href: "/work/active-work",
+        title: "Active work",
+        meta: "active-work",
+        facts: [
+          { label: "Status", value: "active" },
+          { label: "Work", value: "active-work" },
+        ],
+      },
+      {
+        href: "/work/blocked-work",
+        title: "Blocked work",
+        meta: "Waiting on review.",
+        facts: [
+          { label: "Status", value: "blocked" },
+          { label: "Work", value: "blocked-work" },
+        ],
+      },
+      {
+        href: "/work/ready-work",
+        title: "Ready work",
+        meta: "ready-work",
+        facts: [
+          { label: "Status", value: "ready-to-finish" },
+          { label: "Work", value: "ready-work" },
+        ],
+      },
+    ],
+  });
   assert.deepEqual(createDashboardRouteViewModel(viewModel, "/gates/unit"), {
     kind: "detail",
     title: "unit failed",

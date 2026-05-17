@@ -110,6 +110,17 @@ export function filterDashboardViewModel(viewModel, query) {
 }
 
 export function createDashboardRouteViewModel(viewModel, pathname) {
+  if (pathname === "/work") {
+    const items = viewModel.workSections.flatMap((section) => section.items);
+    return {
+      kind: "section",
+      title: "Work",
+      count: items.length,
+      emptyText: "No work items.",
+      items,
+    };
+  }
+
   const routeMap = new Map([
     ["/gates", { label: "Gate evidence", emptyText: "No gate evidence.", notFoundTitle: "Gate not found" }],
     ["/sessions", { label: "Sessions", emptyText: "No sessions.", notFoundTitle: "Session not found" }],
