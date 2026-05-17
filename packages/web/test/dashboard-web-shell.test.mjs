@@ -249,9 +249,13 @@ test("web package declares a Vite React build boundary", async () => {
   assert.match(app, /export function DashboardApp/);
   assert.match(app, /className="dashboard-app"/);
   assert.match(app, /className="dashboard-card"/);
+  assert.match(app, /className="dashboard-route-header"/);
+  assert.match(app, /className="dashboard-back-link"/);
   assert.match(css, /\.dashboard-app/);
   assert.match(css, /\.dashboard-card/);
   assert.match(css, /\.dashboard-search/);
+  assert.match(css, /\.dashboard-route-header/);
+  assert.match(css, /\.dashboard-back-link/);
   assert.match(app, /\/dashboard\.json/);
 });
 

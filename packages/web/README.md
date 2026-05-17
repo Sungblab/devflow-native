@@ -31,7 +31,8 @@ The package also declares the first Vite/React build boundary:
   models with route-specific empty and not-found states for built dashboard
   HTML routes, including the built `/work` list route. Detail views carry
   structured fact rows for command, agent, prompt, path, status, and work-item
-  context when available.
+  context when available, and the app shell gives detail/not-found routes a
+  stable route header and back-link styling hook.
 
 By default, `devflow dashboard serve` still serves the no-build shell so
 Windows PowerShell dogfooding remains dependency light. After running

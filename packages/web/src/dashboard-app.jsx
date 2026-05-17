@@ -121,8 +121,10 @@ function RouteView({ route }) {
   if (route.kind === "not_found") {
     return (
       <section className="dashboard-card" aria-label="Dashboard route not found">
-        <a href={route.backHref}>{route.backLabel}</a>
-        <h2>{route.title}</h2>
+        <header className="dashboard-route-header">
+          <a className="dashboard-back-link" href={route.backHref}>{route.backLabel}</a>
+          <h2>{route.title}</h2>
+        </header>
       </section>
     );
   }
@@ -130,8 +132,10 @@ function RouteView({ route }) {
   if (route.kind === "detail") {
     return (
       <section className="dashboard-card" aria-label="Dashboard route detail">
-        <a href={route.backHref}>{route.backLabel}</a>
-        <h2>{route.title}</h2>
+        <header className="dashboard-route-header">
+          <a className="dashboard-back-link" href={route.backHref}>{route.backLabel}</a>
+          <h2>{route.title}</h2>
+        </header>
         <p>{route.meta}</p>
         <p>{route.detail}</p>
         <FactList facts={route.facts} />

@@ -86,6 +86,23 @@ a:hover {
   font-size: 24px;
 }
 
+.dashboard-route-header {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.dashboard-back-link {
+  width: fit-content;
+  color: #475467;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.dashboard-back-link::before {
+  content: "< ";
+}
+
 .dashboard-list {
   display: grid;
   gap: 10px;
