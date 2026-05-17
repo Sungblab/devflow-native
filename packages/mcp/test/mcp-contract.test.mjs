@@ -12,6 +12,7 @@ test("MCP lists initial devflow tools", () => {
 
   assert.ok(names.includes("devflow.doctor"));
   assert.ok(names.includes("devflow.status"));
+  assert.ok(names.includes("devflow.health"));
   assert.ok(names.includes("devflow.finish"));
   assert.ok(names.includes("devflow.next_prompt"));
   assert.ok(names.includes("devflow.record_gate"));
@@ -23,6 +24,36 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.sessions_attach"));
   assert.ok(names.includes("devflow.sessions_list"));
   assert.ok(names.includes("devflow.sessions_note"));
+});
+
+test("MCP health reports missing scaffold files", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-health-"));
+  const result = await callTool("devflow.health", {
+    repo: repoPath,
+  });
+
+  assert.equal(result.structuredContent.command, "health");
+  assert.equal(result.structuredContent.status, "missing");
+  assert.ok(result.structuredContent.missingFiles.some((file) => file.path === ".devflow/config.json"));
+  assert.match(result.content[0].text, /health/);
+});
+
+test("MCP status reads configured gates from devflow config", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-status-config-gates-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [{ id: "custom", command: "npm run custom" }],
+    })}\n`,
+  );
+
+  const result = await callTool("devflow.status", {
+    repo: repoPath,
+  });
+
+  assert.equal(result.structuredContent.gates[0].id, "custom");
+  assert.equal(result.structuredContent.gates[0].command, "npm run custom");
 });
 
 test("MCP status returns local repo state and latest handoff evidence", async () => {

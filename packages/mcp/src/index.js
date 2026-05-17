@@ -18,6 +18,7 @@ import {
   parseSessionListLimit,
   parseSessionListSince,
   parseSessionListSort,
+  readProjectHealth,
   readDevflowConfig,
   readDevflowState,
   readMistakeMemory,
@@ -31,6 +32,10 @@ const tools = [
   {
     name: "devflow.status",
     description: "Read local repo state, handoffs, gate evidence, and recommendations.",
+  },
+  {
+    name: "devflow.health",
+    description: "Inspect required scaffold files and configured verification gates.",
   },
   {
     name: "devflow.split",
@@ -91,6 +96,10 @@ export async function callTool(name, args = {}) {
     return callStatus(args);
   }
 
+  if (name === "devflow.health") {
+    return callHealth(args);
+  }
+
   if (name === "devflow.split") {
     return callSplit(args);
   }
@@ -145,6 +154,7 @@ export async function callTool(name, args = {}) {
 async function callStatus(args) {
   const repoPath = args.repo ?? process.cwd();
   const state = await readDevflowState(repoPath);
+  const config = await readDevflowConfig(repoPath);
   const summary = createStatusSummary({
     repo: {
       absolutePath: repoPath,
@@ -156,7 +166,8 @@ async function callStatus(args) {
     state,
     workItemId: args.work ?? args.workItemId,
     agent: args.agent,
-    gates: args.gates ?? [{ id: "docs-check", command: "npm run docs:check", recommended: true }],
+    gates: args.gates ?? config.gates ?? [{ id: "docs-check", command: "npm run docs:check", recommended: true }],
+    warnings: config.warnings,
     profile: {
       name: args.profile ?? "standard",
       source: "mcp",
@@ -169,6 +180,14 @@ async function callStatus(args) {
   });
 
   return toolResult(summary, `devflow status: ${summary.repo.absolutePath}`);
+}
+
+async function callHealth(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const config = await readDevflowConfig(repoPath);
+  const summary = await readProjectHealth(repoPath, config);
+
+  return toolResult(summary, `devflow health: ${summary.status}`);
 }
 
 async function callSplit(args) {

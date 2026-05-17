@@ -365,6 +365,31 @@ test("CLI prompt next renders a copy-paste prompt", async () => {
   assert.match(stdout, /Next task/);
 });
 
+test("CLI prompt next preserves modified tracked file names from git status", async () => {
+  const repoPath = await createTempGitRepo();
+  await writeFile(join(repoPath, "README.md"), "before\n");
+  await execFileAsync("git", ["add", "README.md"], { cwd: repoPath });
+  await execFileAsync(
+    "git",
+    ["-c", "user.name=Devflow Test", "-c", "user.email=devflow@example.test", "commit", "-m", "initial"],
+    { cwd: repoPath },
+  );
+  await writeFile(join(repoPath, "README.md"), "after\n");
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "prompt",
+    "next",
+    "--repo",
+    repoPath,
+    "--objective",
+    "Continue after README edit",
+  ]);
+
+  assert.match(stdout, /^- README\.md$/m);
+  assert.doesNotMatch(stdout, /^- EADME\.md$/m);
+});
+
 test("CLI prompt rewrite renders agent-ready prompt JSON", async () => {
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",
@@ -456,6 +481,119 @@ test("CLI split reads project-specific tasks from devflow config", async () => {
   assert.equal(parsed.profile.name, "superpowers");
   assert.equal(parsed.sessions[0].id, "configured-cli");
   assert.deepEqual(parsed.sessions[0].ownedPaths, ["packages/cli/**"]);
+});
+
+test("CLI init renders scaffold plan without writing files by default", async () => {
+  const repoPath = await createTempGitRepo();
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "init",
+    "--repo",
+    repoPath,
+    "--profile",
+    "standard",
+    "--platform",
+    "windows-powershell",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "init");
+  assert.equal(parsed.repo.absolutePath, repoPath);
+  assert.ok(parsed.files.some((file) => file.path === ".devflow/config.json"));
+  await assert.rejects(() => readFile(join(repoPath, ".devflow", "config.json"), "utf8"), {
+    code: "ENOENT",
+  });
+});
+
+test("CLI init --confirm writes the minimum project scaffold", async () => {
+  const repoPath = await createTempGitRepo();
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "init",
+    "--repo",
+    repoPath,
+    "--profile",
+    "standard",
+    "--platform",
+    "windows-powershell",
+    "--confirm",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+  const config = JSON.parse(await readFile(join(repoPath, ".devflow", "config.json"), "utf8"));
+
+  assert.equal(parsed.command, "init");
+  assert.equal(parsed.result.written.length, parsed.files.length);
+  assert.equal(config.defaultProfile, "standard");
+  assert.equal(config.defaultPlatform, "windows-powershell");
+});
+
+test("CLI health reports missing scaffold files", async () => {
+  const repoPath = await createTempGitRepo();
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "health",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "health");
+  assert.equal(parsed.status, "missing");
+  assert.ok(parsed.missingFiles.some((file) => file.path === ".devflow/config.json"));
+});
+
+test("CLI health passes after confirmed init scaffold", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "init",
+    "--repo",
+    repoPath,
+    "--confirm",
+    "--json",
+  ]);
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "health",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.status, "ok");
+  assert.equal(parsed.missingFiles.length, 0);
+});
+
+test("CLI status reads gate definitions from devflow config", async () => {
+  const repoPath = await createTempGitRepo();
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [{ id: "custom", command: "npm run custom" }],
+    })}\n`,
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.gates[0].id, "custom");
+  assert.equal(parsed.gates[0].command, "npm run custom");
 });
 
 test("CLI finish renders JSON evidence summary", async () => {

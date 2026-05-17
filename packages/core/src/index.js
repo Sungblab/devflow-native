@@ -1,5 +1,5 @@
-import { mkdir, readFile, appendFile } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, readFile, appendFile, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 
 export function createStatusSummary(input = {}) {
   const changedFiles = input.changedFiles ?? [];
@@ -185,6 +185,196 @@ export function createPromptRewrite(input = {}) {
     requirements,
     missingDetails,
     agentReadyPrompt: `${agentReadyPrompt}\n`,
+  };
+}
+
+export function createInitPlan(input = {}) {
+  const repoPath = input.repo ?? process.cwd();
+  const profile = input.profile ?? "standard";
+  const platform = input.platform ?? "windows-powershell";
+  const files = [
+    {
+      path: ".devflow/config.json",
+      kind: "config",
+      content: `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          defaultProfile: profile,
+          defaultPlatform: platform,
+          gates: [{ id: "docs-check", command: "npm run docs:check" }],
+        },
+        null,
+        2,
+      )}\n`,
+    },
+    {
+      path: "docs/README.md",
+      kind: "docs-router",
+      content: [
+        "# Project Contract",
+        "",
+        "This project is managed with Solo Devflow OS.",
+        "",
+        "## Read First",
+        "",
+        "- AGENTS.md",
+        "- docs/contributing/workflow.md",
+        "- docs/testing/strategy.md",
+        "- docs/architecture/maps/README.md",
+        "",
+      ].join("\n"),
+    },
+    {
+      path: "docs/contributing/workflow.md",
+      kind: "workflow",
+      content: [
+        "# Development Workflow",
+        "",
+        "1. Run `devflow status` before starting.",
+        "2. Record completed work with `devflow finish`.",
+        "3. Include changed files, gates, risks, and the next-session prompt.",
+        "",
+      ].join("\n"),
+    },
+    {
+      path: "docs/testing/strategy.md",
+      kind: "testing",
+      content: [
+        "# Testing Strategy",
+        "",
+        "Record every verification gate that proves a work item is ready.",
+        "",
+        "## Initial Gate",
+        "",
+        "- `npm run docs:check`",
+        "",
+      ].join("\n"),
+    },
+    {
+      path: "docs/architecture/maps/README.md",
+      kind: "architecture-map",
+      content: [
+        "# Architecture Maps",
+        "",
+        "Add routes from product docs to owning code paths and verification gates.",
+        "",
+      ].join("\n"),
+    },
+    {
+      path: "AGENTS.md",
+      kind: "agent-guide",
+      content: [
+        "# Agent Guide",
+        "",
+        "Start with `devflow doctor` and `devflow status` before command-heavy work.",
+        "Finish by recording evidence with `devflow finish`.",
+        "",
+      ].join("\n"),
+    },
+  ];
+
+  return {
+    schemaVersion: "0.1",
+    command: "init",
+    repo: {
+      absolutePath: repoPath,
+    },
+    profile: {
+      name: profile,
+      requiredRuntime: false,
+    },
+    platform: normalizePlatform(platform),
+    files: files.map((file) => ({
+      path: file.path,
+      kind: file.kind,
+      action: "create-if-missing",
+      content: file.content,
+    })),
+    warnings: [],
+  };
+}
+
+export function createHealthSummary(input = {}) {
+  const requiredFiles = (input.requiredFiles ?? defaultRequiredFiles()).map((file) => {
+    const path = typeof file === "string" ? file : file.path;
+    return {
+      path,
+      kind: typeof file === "string" ? "required" : file.kind,
+      present: (input.existingPaths ?? []).includes(path),
+    };
+  });
+  const missingFiles = requiredFiles.filter((file) => !file.present);
+  const gates = normalizeGates(input.gates);
+
+  return {
+    schemaVersion: "0.1",
+    command: "health",
+    repo: {
+      absolutePath: input.repo?.absolutePath ?? process.cwd(),
+    },
+    status: missingFiles.length === 0 && gates.length > 0 ? "ok" : "missing",
+    requiredFiles,
+    missingFiles,
+    gates,
+    recommendations: createHealthRecommendations(missingFiles, gates),
+    warnings: input.warnings ?? [],
+  };
+}
+
+export async function readProjectHealth(repoPath, config = {}) {
+  const requiredFiles = defaultRequiredFiles();
+  const existingPaths = [];
+
+  for (const file of requiredFiles) {
+    try {
+      await readFile(join(repoPath, file.path), "utf8");
+      existingPaths.push(file.path);
+    } catch (error) {
+      if (error.code !== "ENOENT") {
+        throw error;
+      }
+    }
+  }
+
+  return createHealthSummary({
+    repo: { absolutePath: repoPath },
+    requiredFiles,
+    existingPaths,
+    gates: config.gates,
+    warnings: config.warnings,
+  });
+}
+
+export async function writeInitPlan(repoPath, plan, options = {}) {
+  if (!options.confirmed) {
+    throw new Error("devflow init requires explicit confirmation before writing files.");
+  }
+
+  const written = [];
+  const skipped = [];
+
+  for (const file of plan.files ?? []) {
+    const target = join(repoPath, file.path);
+    try {
+      await readFile(target, "utf8");
+      skipped.push({ path: file.path, reason: "already-exists" });
+      continue;
+    } catch (error) {
+      if (error.code !== "ENOENT") {
+        throw error;
+      }
+    }
+
+    await mkdir(dirname(target), { recursive: true });
+    await writeFile(target, file.content, "utf8");
+    written.push({ path: file.path });
+  }
+
+  return {
+    schemaVersion: "0.1",
+    command: "init_result",
+    written,
+    skipped,
   };
 }
 
@@ -849,6 +1039,52 @@ function mergeGateEvidence(configuredGates, latestById) {
   }
 
   return merged;
+}
+
+function normalizeGates(gates) {
+  if (!Array.isArray(gates) || gates.length === 0) {
+    return [{ id: "docs-check", command: "npm run docs:check", recommended: true }];
+  }
+
+  return gates.map((gate) => ({
+    id: gate.id,
+    command: gate.command,
+    recommended: gate.recommended ?? true,
+  }));
+}
+
+function defaultRequiredFiles() {
+  return [
+    { path: ".devflow/config.json", kind: "config" },
+    { path: "AGENTS.md", kind: "agent-guide" },
+    { path: "docs/README.md", kind: "docs-router" },
+    { path: "docs/contributing/workflow.md", kind: "workflow" },
+    { path: "docs/testing/strategy.md", kind: "testing" },
+    { path: "docs/architecture/maps/README.md", kind: "architecture-map" },
+  ];
+}
+
+function createHealthRecommendations(missingFiles, gates) {
+  const recommendations = missingFiles.map((file) => ({
+    kind: "missing-file",
+    message: `Create ${file.path} with devflow init --confirm or project-specific scaffolding.`,
+  }));
+
+  if (gates.length === 0) {
+    recommendations.push({
+      kind: "missing-gate",
+      message: "Configure at least one verification gate in .devflow/config.json.",
+    });
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push({
+      kind: "healthy",
+      message: "Project scaffold and configured gates are present.",
+    });
+  }
+
+  return recommendations;
 }
 
 function emptyDevflowState() {

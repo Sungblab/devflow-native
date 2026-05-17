@@ -58,6 +58,14 @@ Exit criteria:
 - a new repo can get a complete development workflow scaffold
 - health status can detect missing docs, gates, and workflow files
 
+Current implementation note: `devflow init` has a first confirmation-gated
+scaffold path. The CLI renders a scaffold plan by default and writes
+`.devflow/config.json`, `AGENTS.md`, docs router, workflow, testing strategy,
+and architecture map index only with `--confirm`, skipping existing files
+instead of overwriting them. `devflow health` and MCP `devflow.health` can now
+report missing scaffold files and configured gates. Template customization
+remains later Phase 2 work.
+
 ## Phase 3: Split Planning
 
 Build:

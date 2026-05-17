@@ -6,7 +6,9 @@ import test from "node:test";
 
 import {
   createFinishSummary,
+  createHealthSummary,
   createDoctorSummary,
+  createInitPlan,
   createSessionAttachPlan,
   createTermExplanation,
   createNextPrompt,
@@ -18,10 +20,12 @@ import {
   parseSessionListSince,
   parseSessionListSort,
   parseGitStatusLines,
+  readProjectHealth,
   readDevflowConfig,
   readDevflowState,
   recordGateEvent,
   recordFinishEvent,
+  writeInitPlan,
   recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
 } from "../src/index.js";
@@ -95,6 +99,79 @@ test("prompt rewrite turns vague intent into agent-ready requirements", () => {
   assert.match(rewrite.agentReadyPrompt, /Phase 7/);
   assert.ok(rewrite.requirements.some((item) => item.includes("Infer")));
   assert.ok(rewrite.missingDetails.includes("target repository or feature area"));
+});
+
+test("init plan describes a local project scaffold without writing files", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-init-plan-"));
+  const plan = createInitPlan({
+    repo: repoPath,
+    profile: "standard",
+    platform: "windows-powershell",
+  });
+
+  assert.equal(plan.schemaVersion, "0.1");
+  assert.equal(plan.command, "init");
+  assert.equal(plan.repo.absolutePath, repoPath);
+  assert.ok(plan.files.some((file) => file.path === ".devflow/config.json"));
+  assert.ok(plan.files.some((file) => file.path === "docs/README.md"));
+
+  await assert.rejects(() => readFile(join(repoPath, ".devflow", "config.json"), "utf8"), {
+    code: "ENOENT",
+  });
+});
+
+test("init plan writes scaffold files only after confirmation", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-init-write-"));
+  const plan = createInitPlan({
+    repo: repoPath,
+    profile: "standard",
+    platform: "windows-powershell",
+  });
+
+  await assert.rejects(() => writeInitPlan(repoPath, plan), /requires explicit confirmation/);
+
+  const result = await writeInitPlan(repoPath, plan, { confirmed: true });
+  const config = JSON.parse(await readFile(join(repoPath, ".devflow", "config.json"), "utf8"));
+  const docsRouter = await readFile(join(repoPath, "docs", "README.md"), "utf8");
+
+  assert.equal(result.written.length, plan.files.length);
+  assert.equal(config.defaultProfile, "standard");
+  assert.equal(config.defaultPlatform, "windows-powershell");
+  assert.match(docsRouter, /Project Contract/);
+});
+
+test("health summary reports missing scaffold files and gates", () => {
+  const summary = createHealthSummary({
+    repo: { absolutePath: "C:\\repo" },
+    existingPaths: ["AGENTS.md", "docs/README.md"],
+    gates: [{ id: "docs-check", command: "npm run docs:check" }],
+  });
+
+  assert.equal(summary.schemaVersion, "0.1");
+  assert.equal(summary.command, "health");
+  assert.equal(summary.status, "missing");
+  assert.ok(summary.requiredFiles.some((file) => file.path === "AGENTS.md" && file.present));
+  assert.ok(summary.requiredFiles.some((file) => file.path === ".devflow/config.json" && !file.present));
+  assert.equal(summary.gates[0].id, "docs-check");
+  assert.ok(summary.recommendations.some((item) => item.kind === "missing-file"));
+});
+
+test("project health scanner reads scaffold files and configured gates", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-health-"));
+  const plan = createInitPlan({
+    repo: repoPath,
+    profile: "standard",
+    platform: "windows-powershell",
+  });
+  await writeInitPlan(repoPath, plan, { confirmed: true });
+
+  const config = await readDevflowConfig(repoPath);
+  const summary = await readProjectHealth(repoPath, config);
+
+  assert.equal(summary.command, "health");
+  assert.equal(summary.status, "ok");
+  assert.equal(summary.missingFiles.length, 0);
+  assert.equal(summary.gates[0].id, "docs-check");
 });
 
 test("session attach plan proposes confirmation-gated work links", () => {

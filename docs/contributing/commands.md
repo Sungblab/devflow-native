@@ -14,6 +14,7 @@ This document defines the intended CLI shape before implementation.
 
 ```text
 devflow init
+devflow health
 devflow status
 devflow split
 devflow explain
@@ -51,7 +52,11 @@ This loop should answer three daily questions before larger surfaces exist:
 
 `devflow split` now has a first thin CLI renderer over the core split contract,
 but work-item persistence and project-specific split discovery remain later
-slices. `devflow init` and `devflow dashboard` stay in the broad contract.
+slices. `devflow init` now has a first guarded scaffold implementation:
+without `--confirm`, it renders the plan only; with `--confirm`, it writes the
+minimum project contract and skips existing files instead of overwriting them.
+`devflow health` checks those scaffold files and configured gates.
+`devflow dashboard` stays in the broad contract.
 `doctor` is included early because plugin/skill-first workflows need a cheap
 way to avoid repeated local-environment mistakes.
 `devflow sessions codex` is included as a read-only adapter probe. It requires
@@ -122,6 +127,13 @@ output for a chosen platform.
 
 Creates or updates a project contract.
 
+The MVP implementation is confirmation-gated:
+
+```powershell
+devflow init --repo C:\path\to\repo --profile standard --platform windows-powershell --json
+devflow init --repo C:\path\to\repo --profile standard --platform windows-powershell --confirm --json
+```
+
 Inputs:
 
 - profile
@@ -136,6 +148,30 @@ Outputs:
 - architecture maps
 - testing strategy
 - `.devflow/config.json`
+
+Safety rules:
+
+- without `--confirm`, no files are written
+- with `--confirm`, missing scaffold files are created
+- existing files are skipped, not overwritten
+
+## `devflow health`
+
+Checks whether the local project has the minimum Devflow scaffold and at least
+one configured verification gate.
+
+Example:
+
+```powershell
+devflow health --repo C:\path\to\repo --json
+```
+
+Outputs:
+
+- required scaffold files and whether they are present
+- missing scaffold files
+- configured gates from `.devflow/config.json`
+- recommendations for missing files or gates
 
 ## `devflow status`
 
