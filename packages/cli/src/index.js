@@ -264,6 +264,36 @@ async function renderDashboardServe(argsForCommand) {
       return;
     }
 
+    const workJsonMatch = requestPath.match(/^\/work\/([^/]+)\.json$/);
+    if (workJsonMatch) {
+      const workItem = findDashboardWorkItem(summary, decodeURIComponent(workJsonMatch[1]));
+      if (!workItem) {
+        response.writeHead(404, { "content-type": "application/json; charset=utf-8" });
+        response.end(`${JSON.stringify({ error: "work item not found" })}\n`, () =>
+          closeServerOnce(server, options.once),
+        );
+        return;
+      }
+      response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      response.end(`${JSON.stringify(workItem, null, 2)}\n`, () => closeServerOnce(server, options.once));
+      return;
+    }
+
+    const workHtmlMatch = requestPath.match(/^\/work\/([^/]+)$/);
+    if (workHtmlMatch) {
+      const workItem = findDashboardWorkItem(summary, decodeURIComponent(workHtmlMatch[1]));
+      if (!workItem) {
+        response.writeHead(404, { "content-type": "text/html; charset=utf-8" });
+        response.end(renderDashboardNotFoundPage("Work item not found"), () =>
+          closeServerOnce(server, options.once),
+        );
+        return;
+      }
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      response.end(renderDashboardWorkPage(workItem), () => closeServerOnce(server, options.once));
+      return;
+    }
+
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     response.end(createDashboardHtml(summary), () => closeServerOnce(server, options.once));
   });
@@ -994,6 +1024,63 @@ function renderDashboardMapsPage(summary) {
       <thead><tr><th>Title</th><th>ID</th><th>Path</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
+  </main>
+</body>
+</html>
+`;
+}
+
+function findDashboardWorkItem(summary, id) {
+  return [
+    ...(summary.work.active ?? []),
+    ...(summary.work.blocked ?? []),
+    ...(summary.work.readyToFinish ?? []),
+  ].find((item) => item.id === id);
+}
+
+function renderDashboardWorkPage(workItem) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devflow Work Detail</title>
+  <style>
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f7f9; color: #171a1f; }
+    main { max-width: 880px; margin: 0 auto; padding: 32px 20px 48px; }
+    h1 { margin: 0 0 8px; font-size: 32px; }
+    dl { display: grid; grid-template-columns: 140px 1fr; gap: 10px 16px; background: #fff; border: 1px solid #d9dde5; border-radius: 8px; padding: 16px; }
+    dt { color: #5b6270; font-weight: 700; }
+    dd { margin: 0; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Devflow Work Detail</h1>
+    <dl>
+      <dt>ID</dt><dd>${escapeHtml(workItem.id)}</dd>
+      <dt>Title</dt><dd>${escapeHtml(workItem.title)}</dd>
+      <dt>Status</dt><dd>${escapeHtml(workItem.status)}</dd>
+      <dt>Description</dt><dd>${escapeHtml(workItem.description ?? "none")}</dd>
+      <dt>Blocked reason</dt><dd>${escapeHtml(workItem.blockedReason ?? "none")}</dd>
+    </dl>
+  </main>
+</body>
+</html>
+`;
+}
+
+function renderDashboardNotFoundPage(message) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devflow Not Found</title>
+</head>
+<body>
+  <main>
+    <h1>${escapeHtml(message)}</h1>
   </main>
 </body>
 </html>

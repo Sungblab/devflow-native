@@ -1257,6 +1257,69 @@ test("CLI dashboard serve exposes a dedicated maps view", async () => {
   }
 });
 
+test("CLI dashboard serve exposes a work item detail view", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "detail-work",
+    "--title",
+    "Detail work",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "start",
+    "--repo",
+    repoPath,
+    "--id",
+    "detail-work",
+    "--json",
+  ]);
+
+  const child = spawn(
+    "node",
+    [
+      "packages/cli/src/index.js",
+      "dashboard",
+      "serve",
+      "--repo",
+      repoPath,
+      "--port",
+      "0",
+      "--json",
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+
+  try {
+    const url = await waitForOutputMatch(child, /http:\/\/127\.0\.0\.1:\d+\//);
+    const detailResponse = await fetch(`${url}work/detail-work`);
+    const detailHtml = await detailResponse.text();
+    const detailJsonResponse = await fetch(`${url}work/detail-work.json`);
+    const detailJson = await detailJsonResponse.json();
+
+    assert.equal(detailResponse.status, 200);
+    assert.match(detailHtml, /Devflow Work Detail/);
+    assert.match(detailHtml, /Detail work/);
+    assert.equal(detailJson.id, "detail-work");
+    assert.equal(detailJson.title, "Detail work");
+    assert.equal(detailJson.status, "active");
+  } finally {
+    child.kill();
+    await waitForExit(child);
+  }
+});
+
 test("CLI gates run executes configured gate and writes evidence", async () => {
   const repoPath = await createTempGitRepo();
   const scriptPath = join(repoPath, "gate-script.mjs");

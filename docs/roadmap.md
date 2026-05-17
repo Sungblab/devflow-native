@@ -265,8 +265,9 @@ static browser shell from the same summary, and `devflow dashboard serve`
 serves that shell plus `/dashboard.json` over local HTTP. The server also
 includes dedicated `/gates`, `/sessions`, `/handoffs`, and `/maps` HTML views
 plus `/gates.json`, `/sessions.json`, `/handoffs.json`, and `/maps.json`
-slices. A richer Vite/React dashboard and linked detail pages remain later
-Phase 8 work.
+slices, plus first work item detail routes at `/work/<id>` and
+`/work/<id>.json`. A richer Vite/React dashboard and deeper linked detail pages
+remain later Phase 8 work.
 
 ## Phase 9: GitHub Review Integration
 

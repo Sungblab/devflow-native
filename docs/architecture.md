@@ -285,7 +285,8 @@ and latest handoff state from local state and project docs. `devflow dashboard
 before the full Vite/React dashboard exists. `devflow dashboard serve` wraps
 that shell in a local HTTP server and serves `/dashboard.json` for callers that
 need the raw contract, plus dedicated `/gates`, `/sessions`, `/handoffs`, and
-`/maps` HTML/JSON slices.
+`/maps` HTML/JSON slices and first work item detail routes at `/work/<id>` and
+`/work/<id>.json`.
 
 ## Security
 

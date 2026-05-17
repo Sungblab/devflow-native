@@ -89,7 +89,8 @@ summary for local review.
 HTTP, exposes `/dashboard.json` for the raw summary contract, and exposes
 dedicated gate views at `/gates` and `/gates.json` plus session views at
 `/sessions` and `/sessions.json` plus handoff views at `/handoffs` and
-`/handoffs.json` plus map views at `/maps` and `/maps.json`.
+`/handoffs.json` plus map views at `/maps` and `/maps.json`, with work item
+detail routes at `/work/<id>` and `/work/<id>.json`.
 `devflow split` renders local worktree-session plans, and `devflow split
 --register --start` can append the generated sessions as active work items
 without manual re-entry. The
