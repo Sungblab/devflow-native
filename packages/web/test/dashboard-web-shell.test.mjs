@@ -249,11 +249,14 @@ test("web package declares a Vite React build boundary", async () => {
   assert.match(app, /export function DashboardApp/);
   assert.match(app, /className="dashboard-app"/);
   assert.match(app, /className="dashboard-card"/);
+  assert.match(app, /className="dashboard-route-nav"/);
   assert.match(app, /className="dashboard-route-header"/);
   assert.match(app, /className="dashboard-back-link"/);
+  assert.match(app, /aria-current/);
   assert.match(css, /\.dashboard-app/);
   assert.match(css, /\.dashboard-card/);
   assert.match(css, /\.dashboard-search/);
+  assert.match(css, /\.dashboard-route-nav/);
   assert.match(css, /\.dashboard-route-header/);
   assert.match(css, /\.dashboard-back-link/);
   assert.match(app, /\/dashboard\.json/);
@@ -493,6 +496,7 @@ test("web package derives a React dashboard view model", async () => {
   assert.deepEqual(createDashboardRouteViewModel(viewModel, "/gates"), {
     kind: "section",
     title: "Gate evidence",
+    activeRouteHref: "/gates",
     count: 4,
     emptyText: "No gate evidence.",
     items: [
@@ -511,6 +515,7 @@ test("web package derives a React dashboard view model", async () => {
   assert.deepEqual(createDashboardRouteViewModel(viewModel, "/work"), {
     kind: "section",
     title: "Work",
+    activeRouteHref: "/work",
     count: 3,
     emptyText: "No work items.",
     items: [
@@ -546,6 +551,7 @@ test("web package derives a React dashboard view model", async () => {
   assert.deepEqual(createDashboardRouteViewModel(viewModel, "/gates/unit"), {
     kind: "detail",
     title: "unit failed",
+    activeRouteHref: "/gates",
     meta: "npm test",
     detail: "active-work",
     facts: [
@@ -558,6 +564,7 @@ test("web package derives a React dashboard view model", async () => {
   assert.deepEqual(createDashboardRouteViewModel(viewModel, "/sessions/session-1"), {
     kind: "detail",
     title: "Attached the latest Codex session.",
+    activeRouteHref: "/sessions",
     meta: "Codex",
     detail: "active-work",
     facts: [
@@ -570,6 +577,7 @@ test("web package derives a React dashboard view model", async () => {
   assert.deepEqual(createDashboardRouteViewModel(viewModel, "/work/active-work"), {
     kind: "detail",
     title: "Active work",
+    activeRouteHref: "/work",
     meta: "active-work",
     detail: "Active",
     facts: [
@@ -582,6 +590,7 @@ test("web package derives a React dashboard view model", async () => {
   assert.deepEqual(createDashboardRouteViewModel(viewModel, "/gates/missing"), {
     kind: "not_found",
     title: "Gate not found",
+    activeRouteHref: "/gates",
     backHref: "/gates",
     backLabel: "Gate evidence",
   });

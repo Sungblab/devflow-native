@@ -52,6 +52,7 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
     return (
       <main className="dashboard-app">
         <h1>Devflow Dashboard</h1>
+        <RouteNav activeHref={routeViewModel.activeRouteHref} routes={viewModel.routes} />
         <RouteView route={routeViewModel} />
       </main>
     );
@@ -74,14 +75,7 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
           <Metric key={metric.label} label={metric.label} value={metric.value} />
         ))}
       </section>
-      <nav className="dashboard-grid" aria-label="Dashboard sections">
-        {viewModel.routes.map((route) => (
-          <a key={route.href} href={route.href}>
-            <span>{route.label}</span>
-            <strong>{route.count}</strong>
-          </a>
-        ))}
-      </nav>
+      <RouteNav routes={viewModel.routes} />
       <section className="dashboard-grid" aria-label="Latest evidence">
         {viewModel.evidence.map((item) => (
           <article className="dashboard-card" key={item.label}>
@@ -114,6 +108,23 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
         ))}
       </section>
     </main>
+  );
+}
+
+function RouteNav({ activeHref, routes }) {
+  return (
+    <nav className="dashboard-route-nav" aria-label="Dashboard sections">
+      {routes.map((route) => (
+        <a
+          aria-current={route.href === activeHref ? "page" : undefined}
+          key={route.href}
+          href={route.href}
+        >
+          <span>{route.label}</span>
+          <strong>{route.count}</strong>
+        </a>
+      ))}
+    </nav>
   );
 }
 

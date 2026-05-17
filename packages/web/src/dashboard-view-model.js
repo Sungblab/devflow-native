@@ -115,6 +115,7 @@ export function createDashboardRouteViewModel(viewModel, pathname) {
     return {
       kind: "section",
       title: "Work",
+      activeRouteHref: "/work",
       count: items.length,
       emptyText: "No work items.",
       items,
@@ -134,6 +135,7 @@ export function createDashboardRouteViewModel(viewModel, pathname) {
       ? {
           kind: "section",
           title: section.label,
+          activeRouteHref: pathname,
           count: section.count,
           emptyText: sectionConfig.emptyText,
           items: section.items,
@@ -148,6 +150,7 @@ export function createDashboardRouteViewModel(viewModel, pathname) {
       return {
         kind: "detail",
         title: item.title,
+        activeRouteHref: section.href,
         meta: item.meta,
         detail: item.detail,
         facts: item.facts ?? [],
@@ -161,6 +164,7 @@ export function createDashboardRouteViewModel(viewModel, pathname) {
     return {
       kind: "not_found",
       title: detailConfig.notFoundTitle,
+      activeRouteHref: detailConfig.href,
       backHref: detailConfig.href,
       backLabel: detailConfig.label,
     };
@@ -172,6 +176,7 @@ export function createDashboardRouteViewModel(viewModel, pathname) {
       return {
         kind: "detail",
         title: item.title,
+        activeRouteHref: "/work",
         meta: item.meta,
         detail: section.label,
         facts: item.facts ?? [],

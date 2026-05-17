@@ -32,7 +32,9 @@ The package also declares the first Vite/React build boundary:
   HTML routes, including the built `/work` list route. Detail views carry
   structured fact rows for command, agent, prompt, path, status, and work-item
   context when available, and the app shell gives detail/not-found routes a
-  stable route header and back-link styling hook.
+  stable route header and back-link styling hook. Built route pages also keep
+  the dashboard section navigation visible and mark the active section with
+  `aria-current="page"`.
 
 By default, `devflow dashboard serve` still serves the no-build shell so
 Windows PowerShell dogfooding remains dependency light. After running

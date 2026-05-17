@@ -67,6 +67,18 @@ a:hover {
   margin: 16px 0;
 }
 
+.dashboard-route-nav {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin: 16px 0;
+}
+
+.dashboard-route-nav a[aria-current="page"] {
+  outline: 2px solid #0f5f8f;
+  outline-offset: 2px;
+}
+
 .dashboard-card {
   border: 1px solid #d9dde5;
   border-radius: 8px;
