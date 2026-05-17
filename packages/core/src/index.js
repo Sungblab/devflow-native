@@ -1,6 +1,6 @@
-import { mkdir, readFile, appendFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, appendFile, writeFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
@@ -69,6 +69,7 @@ export function createDashboardSummary(input = {}) {
   const gates = createDashboardGateSummary(state.gates?.latestById ?? {});
   const sessions = createDashboardSessionSummary(state.sessions?.attached ?? []);
   const timeline = createDashboardTimelineSummary(state.events ?? []);
+  const maps = input.maps ?? createEmptyDashboardMapSummary();
   const handoffs = {
     latest: input.handoffs?.latest ?? state.handoffs?.latest ?? null,
     stale: input.handoffs?.stale ?? state.handoffs?.stale ?? [],
@@ -96,6 +97,7 @@ export function createDashboardSummary(input = {}) {
     gates,
     sessions,
     timeline,
+    maps,
     handoffs: {
       latest: handoffs.latest,
       stale: handoffs.stale,
@@ -106,6 +108,69 @@ export function createDashboardSummary(input = {}) {
     recommendations: createDashboardRecommendations({ active, blocked, readyToFinish, gates }),
     warnings: [...(input.warnings ?? []), ...(state.warnings ?? [])],
   };
+}
+
+export async function readDashboardMaps(repoPath) {
+  const mapsDir = join(repoPath, "docs", "architecture", "maps");
+  let entries = [];
+
+  try {
+    entries = await readdir(mapsDir, { withFileTypes: true });
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return createEmptyDashboardMapSummary();
+    }
+    throw error;
+  }
+
+  const items = [];
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith(".md") || entry.name.toLowerCase() === "readme.md") {
+      continue;
+    }
+
+    const absolutePath = join(mapsDir, entry.name);
+    const content = await readFile(absolutePath, "utf8");
+    const id = basename(entry.name, ".md");
+    items.push({
+      id,
+      title: extractMarkdownTitle(content) ?? titleFromMapId(id),
+      path: `docs/architecture/maps/${entry.name}`,
+    });
+  }
+
+  items.sort((left, right) => left.path.localeCompare(right.path));
+
+  return {
+    counts: {
+      total: items.length,
+    },
+    items,
+  };
+}
+
+function createEmptyDashboardMapSummary() {
+  return {
+    counts: {
+      total: 0,
+    },
+    items: [],
+  };
+}
+
+function extractMarkdownTitle(content) {
+  const line = content
+    .split(/\r?\n/)
+    .find((candidate) => candidate.startsWith("# "));
+  return line ? line.replace(/^#\s+/, "").trim() : null;
+}
+
+function titleFromMapId(id) {
+  return id
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((word) => `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`)
+    .join(" ");
 }
 
 export function createDashboardHtml(summary) {

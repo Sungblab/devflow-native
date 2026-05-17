@@ -21,6 +21,7 @@ import {
   parseSessionListSince,
   parseSessionListSort,
   readProjectHealth,
+  readDashboardMaps,
   readDevflowConfig,
   readDevflowState,
   readMistakeMemory,
@@ -249,11 +250,13 @@ async function callStatus(args) {
 async function callDashboard(args) {
   const repoPath = args.repo ?? process.cwd();
   const state = await readDevflowState(repoPath);
+  const maps = await readDashboardMaps(repoPath);
   const summary = createDashboardSummary({
     repo: {
       absolutePath: repoPath,
     },
     state,
+    maps,
   });
 
   return toolResult(summary, `devflow dashboard: ${summary.work.counts.open} open work items`);

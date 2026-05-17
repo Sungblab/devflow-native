@@ -24,6 +24,7 @@ import {
   parseSessionListSort,
   parseGitStatusLines,
   readProjectHealth,
+  readDashboardMaps,
   readDevflowConfig,
   readDevflowState,
   runConfiguredGate,
@@ -487,6 +488,28 @@ test("dashboard summary and HTML include recent timeline events", async () => {
   assert.match(html, /Timeline/);
   assert.match(html, /unit passed/);
   assert.match(html, /139 tests passed/);
+});
+
+test("dashboard summary includes architecture map entries", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-dashboard-maps-"));
+  await mkdir(join(repoPath, "docs", "architecture", "maps"), { recursive: true });
+  await writeFile(
+    join(repoPath, "docs", "architecture", "maps", "system-map.md"),
+    "# System Map\n\n```mermaid\ngraph TD\n  CLI --> Core\n```\n",
+    "utf8",
+  );
+  await writeFile(join(repoPath, "docs", "architecture", "maps", "README.md"), "# Maps\n", "utf8");
+
+  const maps = await readDashboardMaps(repoPath);
+  const dashboard = createDashboardSummary({
+    repo: { absolutePath: repoPath },
+    maps,
+  });
+
+  assert.equal(dashboard.maps.counts.total, 1);
+  assert.equal(dashboard.maps.items[0].id, "system-map");
+  assert.equal(dashboard.maps.items[0].title, "System Map");
+  assert.equal(dashboard.maps.items[0].path, "docs/architecture/maps/system-map.md");
 });
 
 test("dashboard HTML renders the dashboard summary as a browser shell", () => {

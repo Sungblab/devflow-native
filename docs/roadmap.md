@@ -258,13 +258,15 @@ Current implementation note: `devflow dashboard` and MCP `devflow.dashboard`
 now render the first local dashboard contract: active, blocked, and
 ready-to-finish work counts, item lists, latest gate evidence, latest handoff
 state, stale handoff counts, attached/manual session counts, recent sessions,
-agent breakdown, recent timeline events, and one next-action recommendation from
-`.devflow/state/events.jsonl`. `devflow dashboard --html <path>` now writes a
+agent breakdown, recent timeline events, architecture map entries, and one
+next-action recommendation from `.devflow/state/events.jsonl` plus
+`docs/architecture/maps/*.md`. `devflow dashboard --html <path>` now writes a
 static browser shell from the same summary, and `devflow dashboard serve`
 serves that shell plus `/dashboard.json` over local HTTP. The server also
-includes dedicated `/gates`, `/sessions`, and `/handoffs` HTML views plus
-`/gates.json`, `/sessions.json`, and `/handoffs.json` slices. A richer
-Vite/React dashboard, maps, and linked detail pages remain later Phase 8 work.
+includes dedicated `/gates`, `/sessions`, `/handoffs`, and `/maps` HTML views
+plus `/gates.json`, `/sessions.json`, `/handoffs.json`, and `/maps.json`
+slices. A richer Vite/React dashboard and linked detail pages remain later
+Phase 8 work.
 
 ## Phase 9: GitHub Review Integration
 

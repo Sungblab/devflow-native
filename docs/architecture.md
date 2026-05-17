@@ -279,11 +279,13 @@ leaking provider-specific formats through the system.
 The initial dashboard surface is a shared summary contract exposed by
 `devflow dashboard` and MCP `devflow.dashboard`. It renders active, blocked,
 and ready-to-finish work, latest gate evidence, session summaries, recent
-timeline events, and latest handoff state from local state. `devflow dashboard
+timeline events, architecture map entries from `docs/architecture/maps/*.md`,
+and latest handoff state from local state and project docs. `devflow dashboard
 --html <path>` can also write a static browser shell from the same contract
 before the full Vite/React dashboard exists. `devflow dashboard serve` wraps
 that shell in a local HTTP server and serves `/dashboard.json` for callers that
-need the raw contract.
+need the raw contract, plus dedicated `/gates`, `/sessions`, `/handoffs`, and
+`/maps` HTML/JSON slices.
 
 ## Security
 

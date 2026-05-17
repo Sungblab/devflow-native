@@ -1212,6 +1212,51 @@ test("CLI dashboard serve exposes a dedicated handoffs view", async () => {
   }
 });
 
+test("CLI dashboard serve exposes a dedicated maps view", async () => {
+  const repoPath = await createTempGitRepo();
+  await mkdir(join(repoPath, "docs", "architecture", "maps"), { recursive: true });
+  await writeFile(
+    join(repoPath, "docs", "architecture", "maps", "workflow-map.md"),
+    "# Workflow Map\n\n```mermaid\ngraph LR\n  Start --> Finish\n```\n",
+    "utf8",
+  );
+
+  const child = spawn(
+    "node",
+    [
+      "packages/cli/src/index.js",
+      "dashboard",
+      "serve",
+      "--repo",
+      repoPath,
+      "--port",
+      "0",
+      "--json",
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+
+  try {
+    const url = await waitForOutputMatch(child, /http:\/\/127\.0\.0\.1:\d+\//);
+    const mapsResponse = await fetch(`${url}maps`);
+    const mapsHtml = await mapsResponse.text();
+    const mapsJsonResponse = await fetch(`${url}maps.json`);
+    const mapsJson = await mapsJsonResponse.json();
+
+    assert.equal(mapsResponse.status, 200);
+    assert.match(mapsHtml, /Devflow Maps/);
+    assert.match(mapsHtml, /Workflow Map/);
+    assert.equal(mapsJson.counts.total, 1);
+    assert.equal(mapsJson.items[0].id, "workflow-map");
+  } finally {
+    child.kill();
+    await waitForExit(child);
+  }
+});
+
 test("CLI gates run executes configured gate and writes evidence", async () => {
   const repoPath = await createTempGitRepo();
   const scriptPath = join(repoPath, "gate-script.mjs");

@@ -1071,6 +1071,7 @@ Outputs:
 - attached/manual session counts, latest session, recent sessions, and agent
   breakdown
 - recent timeline event count and entries from `.devflow/state/events.jsonl`
+- architecture map entries from `docs/architecture/maps/*.md`
 - latest handoff and stale handoff count
 - first dashboard recommendation
 
@@ -1082,8 +1083,9 @@ and exposes `/dashboard.json` for the raw summary contract. It also exposes a
 dedicated gates view at `/gates` and the same gate slice as JSON at
 `/gates.json`, plus a dedicated sessions view at `/sessions` and the same
 session slice as JSON at `/sessions.json`. The latest and stale handoffs are
-available at `/handoffs` and `/handoffs.json`. Use `--port 0` when the caller
-should choose an available port.
+available at `/handoffs` and `/handoffs.json`. Architecture maps are available
+at `/maps` and `/maps.json`. Use `--port 0` when the caller should choose an
+available port.
 
 Initial browser views:
 

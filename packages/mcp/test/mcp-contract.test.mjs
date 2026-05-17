@@ -311,6 +311,12 @@ test("MCP work lifecycle tools mark items ready and blocked", async () => {
 
 test("MCP dashboard renders active work view", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-dashboard-"));
+  await mkdir(join(repoPath, "docs", "architecture", "maps"), { recursive: true });
+  await writeFile(
+    join(repoPath, "docs", "architecture", "maps", "profile-map.md"),
+    "# Profile Map\n\n```mermaid\ngraph TD\n  Profile --> Adapter\n```\n",
+    "utf8",
+  );
   await callTool("devflow.work_create", {
     repo: repoPath,
     id: "active-work",
@@ -358,6 +364,8 @@ test("MCP dashboard renders active work view", async () => {
   assert.equal(dashboard.structuredContent.sessions.counts.total, 1);
   assert.equal(dashboard.structuredContent.sessions.latest.agent, "Codex");
   assert.equal(dashboard.structuredContent.sessions.byAgent[0].agent, "Codex");
+  assert.equal(dashboard.structuredContent.maps.counts.total, 1);
+  assert.equal(dashboard.structuredContent.maps.items[0].id, "profile-map");
 });
 
 test("MCP gates_run executes configured gate and records evidence", async () => {

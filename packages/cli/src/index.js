@@ -29,6 +29,7 @@ import {
   parseSessionListSince,
   parseSessionListSort,
   readProjectHealth,
+  readDashboardMaps,
   readDevflowConfig,
   readDevflowState,
   readMistakeMemory,
@@ -154,9 +155,11 @@ async function renderDashboard(argsForCommand) {
   const options = parseOptions(argsForCommand);
   const repoPath = options.repo ?? cwd();
   const state = await readDevflowState(repoPath);
+  const maps = await readDashboardMaps(repoPath);
   const summary = createDashboardSummary({
     repo: readGitRepo(repoPath),
     state,
+    maps,
   });
 
   if (options.html) {
@@ -200,9 +203,11 @@ async function renderDashboardServe(argsForCommand) {
   const server = createServer(async (request, response) => {
     const requestPath = request.url?.split("?")[0] ?? "/";
     const state = await readDevflowState(repoPath);
+    const maps = await readDashboardMaps(repoPath);
     const summary = createDashboardSummary({
       repo: readGitRepo(repoPath),
       state,
+      maps,
     });
 
     if (requestPath === "/dashboard.json") {
@@ -244,6 +249,18 @@ async function renderDashboardServe(argsForCommand) {
     if (requestPath === "/handoffs") {
       response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
       response.end(renderDashboardHandoffsPage(summary), () => closeServerOnce(server, options.once));
+      return;
+    }
+
+    if (requestPath === "/maps.json") {
+      response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      response.end(`${JSON.stringify(summary.maps, null, 2)}\n`, () => closeServerOnce(server, options.once));
+      return;
+    }
+
+    if (requestPath === "/maps") {
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      response.end(renderDashboardMapsPage(summary), () => closeServerOnce(server, options.once));
       return;
     }
 
@@ -937,6 +954,45 @@ function renderDashboardHandoffsPage(summary) {
     <table>
       <thead><tr><th>Work</th><th>Title</th><th>Prompt</th></tr></thead>
       <tbody>${staleRows || '<tr><td colspan="3">No stale handoffs.</td></tr>'}</tbody>
+    </table>
+  </main>
+</body>
+</html>
+`;
+}
+
+function renderDashboardMapsPage(summary) {
+  const mapRows = summary.maps.items
+    .map(
+      (map) => `<tr><td>${escapeHtml(map.title)}</td><td>${escapeHtml(map.id)}</td><td>${escapeHtml(map.path)}</td></tr>`,
+    )
+    .join("");
+  const rows = mapRows || '<tr><td colspan="3">No architecture maps.</td></tr>';
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devflow Maps</title>
+  <style>
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f7f9; color: #171a1f; }
+    main { max-width: 960px; margin: 0 auto; padding: 32px 20px 48px; }
+    h1 { margin: 0 0 8px; font-size: 32px; }
+    p { margin: 0 0 20px; color: #5b6270; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #d9dde5; border-radius: 8px; overflow: hidden; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eceff3; vertical-align: top; }
+    th { font-size: 13px; color: #5b6270; text-transform: uppercase; }
+    td { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Devflow Maps</h1>
+    <p>${escapeHtml(summary.maps.counts.total)} architecture maps</p>
+    <table>
+      <thead><tr><th>Title</th><th>ID</th><th>Path</th></tr></thead>
+      <tbody>${rows}</tbody>
     </table>
   </main>
 </body>
