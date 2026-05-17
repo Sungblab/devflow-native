@@ -1156,6 +1156,62 @@ test("CLI dashboard serve exposes a dedicated sessions view", async () => {
   }
 });
 
+test("CLI dashboard serve exposes a dedicated handoffs view", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "served-handoff",
+    "--title",
+    "Served handoff",
+    "--intent",
+    "Serve handoff evidence.",
+    "--next-task",
+    "Continue served handoff.",
+    "--json",
+  ]);
+
+  const child = spawn(
+    "node",
+    [
+      "packages/cli/src/index.js",
+      "dashboard",
+      "serve",
+      "--repo",
+      repoPath,
+      "--port",
+      "0",
+      "--json",
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+
+  try {
+    const url = await waitForOutputMatch(child, /http:\/\/127\.0\.0\.1:\d+\//);
+    const handoffsResponse = await fetch(`${url}handoffs`);
+    const handoffsHtml = await handoffsResponse.text();
+    const handoffsJsonResponse = await fetch(`${url}handoffs.json`);
+    const handoffsJson = await handoffsJsonResponse.json();
+
+    assert.equal(handoffsResponse.status, 200);
+    assert.match(handoffsHtml, /Devflow Handoffs/);
+    assert.match(handoffsHtml, /served-handoff/);
+    assert.match(handoffsHtml, /Continue served handoff/);
+    assert.equal(handoffsJson.latest.workItemId, "served-handoff");
+    assert.match(handoffsJson.latest.prompt, /Continue served handoff/);
+  } finally {
+    child.kill();
+    await waitForExit(child);
+  }
+});
+
 test("CLI gates run executes configured gate and writes evidence", async () => {
   const repoPath = await createTempGitRepo();
   const scriptPath = join(repoPath, "gate-script.mjs");
