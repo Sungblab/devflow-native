@@ -38,11 +38,11 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
   }, [endpoint]);
 
   if (error) {
-    return <main><h1>Devflow Dashboard</h1><p>{error.message}</p></main>;
+    return <main className="dashboard-app"><h1>Devflow Dashboard</h1><p>{error.message}</p></main>;
   }
 
   if (!dashboard) {
-    return <main><h1>Devflow Dashboard</h1><p>Loading dashboard...</p></main>;
+    return <main className="dashboard-app"><h1>Devflow Dashboard</h1><p>Loading dashboard...</p></main>;
   }
 
   const viewModel = filterDashboardViewModel(createDashboardViewModel(dashboard), query);
@@ -50,7 +50,7 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
 
   if (routeViewModel) {
     return (
-      <main>
+      <main className="dashboard-app">
         <h1>Devflow Dashboard</h1>
         <RouteView route={routeViewModel} />
       </main>
@@ -58,9 +58,9 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
   }
 
   return (
-    <main>
+    <main className="dashboard-app">
       <h1>Devflow Dashboard</h1>
-      <label>
+      <label className="dashboard-search">
         Filter dashboard
         <input
           type="search"
@@ -69,12 +69,12 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
           placeholder="Gate, session, handoff, map, work"
         />
       </label>
-      <section aria-label="Dashboard metrics">
+      <section className="dashboard-grid" aria-label="Dashboard metrics">
         {viewModel.metrics.map((metric) => (
           <Metric key={metric.label} label={metric.label} value={metric.value} />
         ))}
       </section>
-      <nav aria-label="Dashboard sections">
+      <nav className="dashboard-grid" aria-label="Dashboard sections">
         {viewModel.routes.map((route) => (
           <a key={route.href} href={route.href}>
             <span>{route.label}</span>
@@ -82,31 +82,31 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
           </a>
         ))}
       </nav>
-      <section aria-label="Latest evidence">
+      <section className="dashboard-grid" aria-label="Latest evidence">
         {viewModel.evidence.map((item) => (
-          <article key={item.label}>
+          <article className="dashboard-card" key={item.label}>
             <span>{item.label}</span>
             <strong>{item.value}</strong>
             <small>{item.detail}</small>
           </article>
         ))}
       </section>
-      <section aria-label="Work lists">
+      <section className="dashboard-grid" aria-label="Work lists">
         {viewModel.workSections.map((section) => (
-          <section key={section.label}>
+          <section className="dashboard-card" key={section.label}>
             <h2>{section.label}</h2>
             <ItemList emptyText={`No ${section.label.toLowerCase()} work.`} items={section.items} />
           </section>
         ))}
       </section>
-      <section aria-label="Timeline">
+      <section className="dashboard-card" aria-label="Timeline">
         <h2>Timeline</h2>
         <p>Total {viewModel.timeline.count}</p>
         <ItemList emptyText="No timeline events." items={viewModel.timeline.items} />
       </section>
-      <section aria-label="Dashboard detail panels">
+      <section className="dashboard-grid" aria-label="Dashboard detail panels">
         {viewModel.detailSections.map((section) => (
-          <section key={section.label}>
+          <section className="dashboard-card" key={section.label}>
             <h2><a href={section.href}>{section.label}</a></h2>
             <p>Total {section.count}</p>
             <ItemList emptyText={`No ${section.label.toLowerCase()} items.`} items={section.items} />
@@ -120,7 +120,7 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
 function RouteView({ route }) {
   if (route.kind === "not_found") {
     return (
-      <section aria-label="Dashboard route not found">
+      <section className="dashboard-card" aria-label="Dashboard route not found">
         <a href={route.backHref}>{route.backLabel}</a>
         <h2>{route.title}</h2>
       </section>
@@ -129,7 +129,7 @@ function RouteView({ route }) {
 
   if (route.kind === "detail") {
     return (
-      <section aria-label="Dashboard route detail">
+      <section className="dashboard-card" aria-label="Dashboard route detail">
         <a href={route.backHref}>{route.backLabel}</a>
         <h2>{route.title}</h2>
         <p>{route.meta}</p>
@@ -140,7 +140,7 @@ function RouteView({ route }) {
   }
 
   return (
-    <section aria-label="Dashboard route section">
+    <section className="dashboard-card" aria-label="Dashboard route section">
       <h2>{route.title}</h2>
       <p>Total {route.count}</p>
       <ItemList emptyText={route.emptyText} items={route.items} />
@@ -154,7 +154,7 @@ function FactList({ facts }) {
   }
 
   return (
-    <dl>
+    <dl className="dashboard-facts">
       {facts.map((fact) => (
         <div key={`${fact.label}-${fact.value}`}>
           <dt>{fact.label}</dt>
@@ -167,7 +167,7 @@ function FactList({ facts }) {
 
 function Metric({ label, value }) {
   return (
-    <article>
+    <article className="dashboard-card">
       <span>{label}</span>
       <strong>{value}</strong>
     </article>
@@ -180,7 +180,7 @@ function ItemList({ emptyText, items }) {
   }
 
   return (
-    <ul>
+    <ul className="dashboard-list">
       {items.map((item) => (
         <li key={`${item.title}-${item.meta}`}>
           {item.href ? <a href={item.href}>{item.title}</a> : <strong>{item.title}</strong>}

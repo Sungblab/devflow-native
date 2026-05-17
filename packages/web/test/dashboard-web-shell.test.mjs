@@ -229,6 +229,7 @@ test("web package declares a Vite React build boundary", async () => {
   const viteConfig = await readFile(join(packageRoot, "vite.config.js"), "utf8");
   const html = await readFile(join(packageRoot, "index.html"), "utf8");
   const app = await readFile(join(packageRoot, "src", "dashboard-app.jsx"), "utf8");
+  const css = await readFile(join(packageRoot, "src", "dashboard.css"), "utf8");
   const entry = await readFile(join(packageRoot, "src", "dashboard-entry.jsx"), "utf8");
 
   assert.equal(packageJson.name, "@devflow/web");
@@ -244,7 +245,13 @@ test("web package declares a Vite React build boundary", async () => {
   assert.match(html, /<div id="root"><\/div>/);
   assert.match(entry, /createRoot/);
   assert.match(entry, /DashboardApp/);
+  assert.match(entry, /dashboard\.css/);
   assert.match(app, /export function DashboardApp/);
+  assert.match(app, /className="dashboard-app"/);
+  assert.match(app, /className="dashboard-card"/);
+  assert.match(css, /\.dashboard-app/);
+  assert.match(css, /\.dashboard-card/);
+  assert.match(css, /\.dashboard-search/);
   assert.match(app, /\/dashboard\.json/);
 });
 

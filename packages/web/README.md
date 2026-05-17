@@ -22,6 +22,7 @@ The package also declares the first Vite/React build boundary:
 - `vite.config.js` keeps Vite output under `packages/web/dist`.
 - `index.html`, `src/dashboard-entry.jsx`, and `src/dashboard-app.jsx` define a
   React app shell that reads `/dashboard.json`.
+- `src/dashboard.css` owns the package-local styling for the built React app.
 - `src/dashboard-view-model.js` derives the first React dashboard view model for
   metrics, route links, latest evidence, active/blocked/ready work lists, and
   recent timeline events, plus detail panels for gates, sessions, handoffs, and
