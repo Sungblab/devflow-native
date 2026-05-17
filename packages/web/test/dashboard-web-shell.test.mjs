@@ -419,6 +419,7 @@ test("web package derives a React dashboard view model", async () => {
     kind: "section",
     title: "Gate evidence",
     count: 4,
+    emptyText: "No gate evidence.",
     items: [{ href: "/gates/unit", title: "unit failed", meta: "npm test", detail: "active-work" }],
   });
   assert.deepEqual(createDashboardRouteViewModel(viewModel, "/gates/unit"), {
@@ -436,6 +437,12 @@ test("web package derives a React dashboard view model", async () => {
     detail: "active-work",
     backHref: "/sessions",
     backLabel: "Sessions",
+  });
+  assert.deepEqual(createDashboardRouteViewModel(viewModel, "/gates/missing"), {
+    kind: "not_found",
+    title: "Gate not found",
+    backHref: "/gates",
+    backLabel: "Gate evidence",
   });
   assert.equal(createDashboardRouteViewModel(viewModel, "/"), null);
 });

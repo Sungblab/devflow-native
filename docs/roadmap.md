@@ -278,12 +278,13 @@ config, an HTML entrypoint, a React entrypoint, and a dashboard app that reads
 `/dashboard.json` and derives metrics, route links, latest evidence, work
 lists, recent timeline events, gates/sessions/handoffs/maps detail panels, and
 client-side filtering through a package-local view model, including route-level
-section/detail view models for the built app. After `npm --prefix packages/web run build`,
+section/detail view models with route-specific empty and not-found states for
+the built app. After `npm --prefix packages/web run build`,
 `devflow dashboard serve --web-build` can serve the bundled app from
 `packages/web/dist` while preserving the no-build fallback and existing
 dashboard JSON/slice/detail JSON routes; HTML dashboard routes return the React
-app shell in that mode. Building out deeper route interactions remains later
-Phase 8 work.
+app shell in that mode. Browser-level route smoke coverage remains later Phase
+8 work.
 
 ## Phase 9: GitHub Review Integration
 

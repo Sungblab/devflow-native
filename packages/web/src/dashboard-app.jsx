@@ -118,6 +118,15 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
 }
 
 function RouteView({ route }) {
+  if (route.kind === "not_found") {
+    return (
+      <section aria-label="Dashboard route not found">
+        <a href={route.backHref}>{route.backLabel}</a>
+        <h2>{route.title}</h2>
+      </section>
+    );
+  }
+
   if (route.kind === "detail") {
     return (
       <section aria-label="Dashboard route detail">
@@ -133,7 +142,7 @@ function RouteView({ route }) {
     <section aria-label="Dashboard route section">
       <h2>{route.title}</h2>
       <p>Total {route.count}</p>
-      <ItemList emptyText={`No ${route.title.toLowerCase()} items.`} items={route.items} />
+      <ItemList emptyText={route.emptyText} items={route.items} />
     </section>
   );
 }

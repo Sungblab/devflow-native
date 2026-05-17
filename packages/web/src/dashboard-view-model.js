@@ -111,24 +111,26 @@ export function filterDashboardViewModel(viewModel, query) {
 
 export function createDashboardRouteViewModel(viewModel, pathname) {
   const routeMap = new Map([
-    ["/gates", "Gate evidence"],
-    ["/sessions", "Sessions"],
-    ["/handoffs", "Handoffs"],
-    ["/maps", "Maps"],
+    ["/gates", { label: "Gate evidence", emptyText: "No gate evidence.", notFoundTitle: "Gate not found" }],
+    ["/sessions", { label: "Sessions", emptyText: "No sessions.", notFoundTitle: "Session not found" }],
+    ["/handoffs", { label: "Handoffs", emptyText: "No handoffs.", notFoundTitle: "Handoff not found" }],
+    ["/maps", { label: "Maps", emptyText: "No maps.", notFoundTitle: "Map not found" }],
   ]);
-  const sectionLabel = routeMap.get(pathname);
-  if (sectionLabel) {
-    const section = findDetailSection(viewModel, sectionLabel);
+  const sectionConfig = routeMap.get(pathname);
+  if (sectionConfig) {
+    const section = findDetailSection(viewModel, sectionConfig.label);
     return section
       ? {
           kind: "section",
           title: section.label,
           count: section.count,
+          emptyText: sectionConfig.emptyText,
           items: section.items,
         }
       : null;
   }
 
+  const detailConfig = findDetailRouteConfig(pathname, routeMap);
   for (const section of viewModel.detailSections) {
     const item = section.items.find((candidate) => candidate.href === pathname);
     if (item) {
@@ -141,6 +143,15 @@ export function createDashboardRouteViewModel(viewModel, pathname) {
         backLabel: section.label,
       };
     }
+  }
+
+  if (detailConfig) {
+    return {
+      kind: "not_found",
+      title: detailConfig.notFoundTitle,
+      backHref: detailConfig.href,
+      backLabel: detailConfig.label,
+    };
   }
 
   for (const section of viewModel.workSections) {
@@ -206,6 +217,15 @@ function createMapItems(items) {
 
 function findDetailSection(viewModel, label) {
   return viewModel.detailSections.find((section) => section.label === label);
+}
+
+function findDetailRouteConfig(pathname, routeMap) {
+  for (const [href, config] of routeMap) {
+    if (pathname.startsWith(`${href}/`)) {
+      return { href, ...config };
+    }
+  }
+  return null;
 }
 
 function filterSections(sections, query) {
