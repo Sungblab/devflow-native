@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createServer } from "node:http";
 import { dirname, isAbsolute, join } from "node:path";
 import { cwd, exit } from "node:process";
 
@@ -53,6 +54,8 @@ try {
     await renderHealth(args.slice(1));
   } else if (command === "status") {
     await renderStatus(args.slice(1));
+  } else if (command === "dashboard" && args[1] === "serve") {
+    await renderDashboardServe(args.slice(2));
   } else if (command === "dashboard") {
     await renderDashboard(args.slice(1));
   } else if (command === "explain") {
@@ -182,6 +185,57 @@ async function renderDashboard(argsForCommand) {
   }
 
   renderDashboardText(summary);
+}
+
+async function renderDashboardServe(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const port = options.port === undefined ? 8787 : Number.parseInt(options.port, 10);
+  const host = options.host ?? "127.0.0.1";
+
+  if (Number.isNaN(port) || port < 0 || port > 65535) {
+    throw new Error("dashboard serve requires --port <0-65535>");
+  }
+
+  const server = createServer(async (request, response) => {
+    const state = await readDevflowState(repoPath);
+    const summary = createDashboardSummary({
+      repo: readGitRepo(repoPath),
+      state,
+    });
+
+    if (request.url === "/dashboard.json") {
+      response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      response.end(`${JSON.stringify(summary, null, 2)}\n`, () => closeServerOnce(server, options.once));
+      return;
+    }
+
+    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    response.end(createDashboardHtml(summary), () => closeServerOnce(server, options.once));
+  });
+
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(port, host, () => {
+      server.off("error", reject);
+      resolve();
+    });
+  });
+
+  const address = server.address();
+  const resolvedPort = typeof address === "object" && address ? address.port : port;
+  render(
+    {
+      schemaVersion: "0.1",
+      command: "dashboard_serve",
+      url: `http://${host}:${resolvedPort}/`,
+      jsonUrl: `http://${host}:${resolvedPort}/dashboard.json`,
+      repo: {
+        absolutePath: repoPath,
+      },
+    },
+    options.json,
+  );
 }
 
 function renderExplain(argsForCommand) {
@@ -726,6 +780,12 @@ function renderDashboardText(summary) {
   process.stdout.write(`${lines.join("\n")}\n`);
 }
 
+function closeServerOnce(server, once) {
+  if (once) {
+    server.close();
+  }
+}
+
 function extractNextTask(prompt) {
   const match = prompt.match(/^Next task:\s*(.+)$/m);
   return match?.[1] ?? "Inspect devflow status and choose the next slice.";
@@ -747,7 +807,7 @@ function parseOptionsAndPositionals(rawArgs) {
     }
 
     const key = arg.slice(2);
-    if (key === "json" || key === "simple" || key === "guided" || key === "confirm" || key === "register" || key === "start") {
+    if (key === "json" || key === "simple" || key === "guided" || key === "confirm" || key === "register" || key === "start" || key === "once") {
       options[key] = true;
       continue;
     }

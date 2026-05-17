@@ -260,8 +260,10 @@ ready-to-finish work counts, item lists, latest gate evidence, latest handoff
 state, stale handoff counts, attached/manual session counts, recent sessions,
 agent breakdown, and one next-action recommendation from
 `.devflow/state/events.jsonl`. `devflow dashboard --html <path>` now writes a
-static browser shell from the same summary. A local web server, timeline, maps,
-and dedicated gates/sessions/handoffs views remain later Phase 8 work.
+static browser shell from the same summary, and `devflow dashboard serve`
+serves that shell plus `/dashboard.json` over local HTTP. A richer Vite/React
+dashboard, timeline, maps, and dedicated gates/sessions/handoffs views remain
+later Phase 8 work.
 
 ## Phase 9: GitHub Review Integration
 

@@ -33,6 +33,7 @@ devflow sessions attach
 devflow sessions list
 devflow sessions note
 devflow dashboard
+devflow dashboard serve
 devflow doctor
 ```
 
@@ -1058,6 +1059,7 @@ Example:
 ```powershell
 devflow dashboard --json
 devflow dashboard --html .devflow/state/dashboard.html --json
+devflow dashboard serve --repo . --port 8787 --json
 ```
 
 Outputs:
@@ -1074,6 +1076,9 @@ Outputs:
 Without `--json`, the command prints a compact terminal dashboard. With
 `--html <path>`, the command writes a static browser shell from the same core
 summary and returns a `dashboard_html` JSON wrapper when `--json` is present.
+`devflow dashboard serve` starts a local HTTP server for the same browser shell
+and exposes `/dashboard.json` for the raw summary contract. Use `--port 0` when
+the caller should choose an available port.
 
 Initial browser views:
 

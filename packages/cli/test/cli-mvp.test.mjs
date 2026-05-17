@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -985,6 +985,64 @@ test("CLI dashboard writes a static browser shell", async () => {
   assert.equal(parsed.path, htmlPath);
   assert.match(html, /Devflow Dashboard/);
   assert.match(html, /Active work/);
+});
+
+test("CLI dashboard serve exposes the browser shell over HTTP", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "served-work",
+    "--title",
+    "Served work",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "start",
+    "served-work",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+
+  const child = spawn(
+    "node",
+    [
+      "packages/cli/src/index.js",
+      "dashboard",
+      "serve",
+      "--repo",
+      repoPath,
+      "--port",
+      "0",
+      "--once",
+      "--json",
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+
+  try {
+    const url = await waitForOutputMatch(child, /http:\/\/127\.0\.0\.1:\d+\//);
+    const response = await fetch(url);
+    const html = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.match(html, /Devflow Dashboard/);
+    assert.match(html, /Served work/);
+    assert.equal(await waitForExit(child), 0);
+  } finally {
+    child.kill();
+  }
 });
 
 test("CLI gates run executes configured gate and writes evidence", async () => {
@@ -1997,4 +2055,47 @@ async function createTempGitRepo() {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-cli-"));
   await execFileAsync("git", ["init"], { cwd: repoPath });
   return repoPath;
+}
+
+function waitForOutputMatch(child, pattern) {
+  return new Promise((resolve, reject) => {
+    let output = "";
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error(`Timed out waiting for output matching ${pattern}. Output: ${output}`));
+    }, 5000);
+
+    const onData = (chunk) => {
+      output += chunk.toString();
+      const match = output.match(pattern);
+      if (match) {
+        cleanup();
+        resolve(match[0]);
+      }
+    };
+    const onExit = (code) => {
+      cleanup();
+      reject(new Error(`Process exited before output matched ${pattern}. Code: ${code}. Output: ${output}`));
+    };
+    const cleanup = () => {
+      clearTimeout(timeout);
+      child.stdout.off("data", onData);
+      child.stderr.off("data", onData);
+      child.off("exit", onExit);
+    };
+
+    child.stdout.on("data", onData);
+    child.stderr.on("data", onData);
+    child.on("exit", onExit);
+  });
+}
+
+function waitForExit(child) {
+  return new Promise((resolve) => {
+    if (child.exitCode !== null) {
+      resolve(child.exitCode);
+      return;
+    }
+    child.on("exit", (code) => resolve(code));
+  });
 }

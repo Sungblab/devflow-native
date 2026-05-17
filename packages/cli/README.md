@@ -50,6 +50,7 @@ packages/cli/
 
 - `devflow status`
 - `devflow dashboard`
+- `devflow dashboard serve`
 - `devflow init`
 - `devflow health`
 - `devflow work create`
@@ -82,6 +83,8 @@ idempotent by id, returning the existing event instead of appending duplicates.
 gate evidence, session summaries, and handoff state from the same local state
 as a compact terminal or JSON dashboard summary. `devflow dashboard --html
 <path>` writes a static browser shell from that same summary for local review.
+`devflow dashboard serve --port <port>` serves that browser shell over local
+HTTP and exposes `/dashboard.json` for the raw summary contract.
 `devflow split` renders local worktree-session plans, and `devflow split
 --register --start` can append the generated sessions as active work items
 without manual re-entry. The
