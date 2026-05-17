@@ -1,7 +1,7 @@
 # First Loop Demo
 
 This example shows the smallest useful Solo Devflow OS loop. It is designed for
-the current local CLI prototype, before hosted sync or the dashboard exist.
+the current local CLI prototype, before hosted sync or generated artifacts exist.
 
 ## Goal
 
@@ -28,7 +28,7 @@ node packages/cli/src/index.js finish `
   --title "README first loop" `
   --intent "Make the first Devflow loop obvious from the repo entrypoint." `
   --gate "docs:npm run docs:check:passed" `
-  --risk "No dashboard demo exists yet." `
+  --risk "No generated artifact demo exists yet." `
   --next-task "Add a captured example of finish output and next prompt." `
   --guided
 ```
@@ -39,7 +39,7 @@ Then generate the prompt for the next session:
 node packages/cli/src/index.js prompt next `
   --objective "Continue Solo Devflow OS from the recorded first loop." `
   --command "npm run docs:check" `
-  --risk "No dashboard demo exists yet." `
+  --risk "No generated artifact demo exists yet." `
   --next-task "Add a captured example of finish output and next prompt."
 ```
 
@@ -127,7 +127,7 @@ Commands run:
 - npm run docs:check
 
 Risks:
-- No dashboard demo exists yet.
+- No generated artifact demo exists yet.
 
 Next task: Add a captured example of finish output and next prompt.
 ```

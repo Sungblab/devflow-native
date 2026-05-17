@@ -32,7 +32,6 @@ devflow sessions attach-plan
 devflow sessions attach
 devflow sessions list
 devflow sessions note
-devflow dashboard
 devflow doctor
 ```
 
@@ -66,7 +65,6 @@ minimum project contract and skips existing files instead of overwriting them.
 evidence.
 `devflow work create/start/ready/block/list` provides the first local work item
 registry.
-`devflow dashboard` stays in the broad contract.
 `doctor` is included early because plugin/skill-first workflows need a cheap
 way to avoid repeated local-environment mistakes.
 `devflow sessions codex` is included as a read-only adapter probe. It requires
@@ -1048,15 +1046,9 @@ Example:
 git fetch origin && git worktree add .worktrees/worker-static-quality -b codex/worker-static-quality origin/main
 ```
 
-## `devflow dashboard`
+## Generated artifacts
 
-Starts the local dashboard.
-
-Initial views:
-
-- active work
-- gates
-- parallel sessions
-- maps
-- handoffs
-- sessions
+The MVP no longer exposes a persistent `devflow dashboard` command. Visual
+surfaces should be generated on demand from structured state when a maintainer
+asks for a review sheet, split board, timeline, or handoff view. HTML artifacts
+are views, not state, and should not be fed back into agent context by default.

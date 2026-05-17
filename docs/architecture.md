@@ -2,9 +2,9 @@
 
 ## System Overview
 
-Solo Devflow OS is a local application with a repo-aware CLI, a small database,
-a local MCP server, agent integrations, a local web dashboard, and project
-scaffolding templates.
+Solo Devflow OS is a local application with repo-aware plugin hooks, a CLI
+fallback, a small database, a local MCP server, agent integrations, generated
+artifact views, and project scaffolding templates.
 
 ```text
              AI tools / terminals / IDEs
@@ -18,7 +18,7 @@ scaffolding templates.
                        |
                   core event store
                        |
-     CLI commands      MCP server      local dashboard
+     plugin hooks      MCP server      CLI fallback
                        |
              repo scaffold + handoff docs
 ```
@@ -29,7 +29,7 @@ scaffolding templates.
 - Runtime: Node.js first, Bun optional
 - CLI: `commander` or `cac`
 - Storage: SQLite
-- Dashboard: Vite + React
+- Visual artifacts: single-file HTML generated from structured state on demand
 - Graphs: Mermaid first, React Flow later
 - Git: direct `git` process calls first, library later if useful
 - GitHub: `gh` CLI first, Octokit later if needed
@@ -44,7 +44,7 @@ packages/core
   project model, event store, gate runner, git scanner, handoff generator
 
 packages/cli
-  devflow init/status/split/finish/doctor/gates/dashboard/session/review
+  devflow init/status/split/finish/doctor/gates/session/review
 
 packages/mcp
   devflow.status/devflow.split/devflow.finish/devflow.doctor/devflow.next_prompt/devflow.rewrite_prompt/devflow.sessions_codex/devflow.sessions_attach_plan/devflow.sessions_attach/devflow.sessions_list/devflow.sessions_note tools
@@ -53,11 +53,8 @@ packages/integrations
   Claude Code plugin, Codex MCP config, Gemini MCP config, editor hooks
 
 plugins/devflow
-  repo-local Codex and Claude Code plugin drafts that wrap the same CLI/MCP
-  contracts as skills
-
-packages/web
-  local dashboard for timeline, maps, sessions, gates, and prompts
+  repo-local Codex and Claude Code plugin drafts with hooks, skills, and MCP
+  config over the same core contracts
 
 packages/adapters
   Codex, Claude, Gemini, Copilot, OpenCode, Goose, Aider, GitHub,
@@ -131,7 +128,6 @@ devflow gates run
 devflow review import
 devflow finish
 devflow prompt next
-devflow dashboard
 devflow doctor
 ```
 
@@ -244,15 +240,19 @@ Platform adapters handle shell and path differences.
 The core model stores normalized paths and commands with platform metadata.
 Command generation should produce platform-specific variants when necessary.
 
-## Dashboard Views
+## Generated Artifact Views
 
-- Home: active work, blocked gates, stale handoffs.
-- Timeline: session events, git changes, checks, reviews, decisions.
-- Gates: configured commands and latest pass/fail evidence.
-- Map: docs -> features -> owning paths -> verification commands.
-- Sessions: Codex/Claude/Gemini/manual session history.
-- Handoffs: next-session prompts and task closure summaries.
-- Project Contract: docs, agent instructions, health checks, workflow policy.
+Devflow should not maintain a persistent dashboard in the MVP. When the state is
+too dense for compact text, plugin skills or MCP tools may generate single-file
+HTML artifacts from structured `.devflow` state:
+
+- review sheets for changed files, gate evidence, skipped checks, and risks
+- split boards for worktree/session planning
+- timeline views for session, gate, review, and handoff events
+- handoff views for next-session prompts and unresolved risks
+
+Generated artifacts are views. They must not become the source of truth, and
+agents should not read full HTML back into context by default.
 
 ## Project Scaffold
 
@@ -271,9 +271,9 @@ scripts/project-health.*
 
 ## Boundaries
 
-The core must not depend on the dashboard. The CLI and dashboard both depend on
-core. Adapters are replaceable and should emit normalized events rather than
-leaking provider-specific formats through the system.
+The core must not depend on generated artifact rendering. CLI, MCP, and plugin
+hooks depend on core. Adapters are replaceable and should emit normalized events
+rather than leaking provider-specific formats through the system.
 
 ## Security
 

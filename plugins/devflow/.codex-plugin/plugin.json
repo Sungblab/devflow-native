@@ -9,6 +9,7 @@
   "keywords": ["devflow", "agents", "workflow", "handoff", "superpowers"],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
+  "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "Devflow",
     "shortDescription": "Project truth, handoffs, gates, and local execution rules for agent workflows.",

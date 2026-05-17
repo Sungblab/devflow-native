@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { cwd, exit } from "node:process";
 
 import {
@@ -663,7 +664,15 @@ function parseOptionsAndPositionals(rawArgs) {
     }
 
     const key = arg.slice(2);
-    if (key === "json" || key === "simple" || key === "guided" || key === "confirm" || key === "register" || key === "start") {
+    if (
+      key === "json" ||
+      key === "simple" ||
+      key === "guided" ||
+      key === "confirm" ||
+      key === "register" ||
+      key === "start" ||
+      key === "once"
+    ) {
       options[key] = true;
       continue;
     }

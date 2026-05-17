@@ -1171,6 +1171,7 @@ function createDoctorRecommendations(platform, mistakes) {
   return recommendations;
 }
 
+
 function deriveStateFromEvents(events, warnings = []) {
   const completedWork = events.filter(
     (event) => event.type === "work.completed" && event.payload?.command === "finish",
