@@ -1045,6 +1045,62 @@ test("CLI dashboard serve exposes the browser shell over HTTP", async () => {
   }
 });
 
+test("CLI dashboard serve exposes a dedicated gates view", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "served-gates",
+    "--title",
+    "Served gates",
+    "--intent",
+    "Serve gates.",
+    "--gate",
+    "unit:npm test:failed",
+    "--json",
+  ]);
+
+  const child = spawn(
+    "node",
+    [
+      "packages/cli/src/index.js",
+      "dashboard",
+      "serve",
+      "--repo",
+      repoPath,
+      "--port",
+      "0",
+      "--json",
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+
+  try {
+    const url = await waitForOutputMatch(child, /http:\/\/127\.0\.0\.1:\d+\//);
+    const gatesResponse = await fetch(`${url}gates`);
+    const gatesHtml = await gatesResponse.text();
+    const gatesJsonResponse = await fetch(`${url}gates.json`);
+    const gatesJson = await gatesJsonResponse.json();
+
+    assert.equal(gatesResponse.status, 200);
+    assert.match(gatesHtml, /Devflow Gates/);
+    assert.match(gatesHtml, /unit/);
+    assert.match(gatesHtml, /failed/);
+    assert.equal(gatesJson.counts.failed, 1);
+    assert.equal(gatesJson.latest[0].id, "unit");
+  } finally {
+    child.kill();
+    await waitForExit(child);
+  }
+});
+
 test("CLI gates run executes configured gate and writes evidence", async () => {
   const repoPath = await createTempGitRepo();
   const scriptPath = join(repoPath, "gate-script.mjs");

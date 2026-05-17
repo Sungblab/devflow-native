@@ -198,15 +198,28 @@ async function renderDashboardServe(argsForCommand) {
   }
 
   const server = createServer(async (request, response) => {
+    const requestPath = request.url?.split("?")[0] ?? "/";
     const state = await readDevflowState(repoPath);
     const summary = createDashboardSummary({
       repo: readGitRepo(repoPath),
       state,
     });
 
-    if (request.url === "/dashboard.json") {
+    if (requestPath === "/dashboard.json") {
       response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
       response.end(`${JSON.stringify(summary, null, 2)}\n`, () => closeServerOnce(server, options.once));
+      return;
+    }
+
+    if (requestPath === "/gates.json") {
+      response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      response.end(`${JSON.stringify(summary.gates, null, 2)}\n`, () => closeServerOnce(server, options.once));
+      return;
+    }
+
+    if (requestPath === "/gates") {
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      response.end(renderDashboardGatesPage(summary), () => closeServerOnce(server, options.once));
       return;
     }
 
@@ -780,10 +793,58 @@ function renderDashboardText(summary) {
   process.stdout.write(`${lines.join("\n")}\n`);
 }
 
+function renderDashboardGatesPage(summary) {
+  const gateRows = summary.gates.latest
+    .map(
+      (gate) => `<tr><td>${escapeHtml(gate.id)}</td><td>${escapeHtml(gate.status)}</td><td>${escapeHtml(gate.command)}</td><td>${escapeHtml(gate.workItemId ?? "none")}</td></tr>`,
+    )
+    .join("");
+  const rows = gateRows || '<tr><td colspan="4">No gate evidence.</td></tr>';
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devflow Gates</title>
+  <style>
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f7f9; color: #171a1f; }
+    main { max-width: 960px; margin: 0 auto; padding: 32px 20px 48px; }
+    h1 { margin: 0 0 8px; font-size: 32px; }
+    p { margin: 0 0 20px; color: #5b6270; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #d9dde5; border-radius: 8px; overflow: hidden; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eceff3; vertical-align: top; }
+    th { font-size: 13px; color: #5b6270; text-transform: uppercase; }
+    td { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Devflow Gates</h1>
+    <p>${escapeHtml(summary.gates.counts.passed)} passed / ${escapeHtml(summary.gates.counts.failed)} failed / ${escapeHtml(summary.gates.counts.total)} total</p>
+    <table>
+      <thead><tr><th>Gate</th><th>Status</th><th>Command</th><th>Work</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </main>
+</body>
+</html>
+`;
+}
+
 function closeServerOnce(server, once) {
   if (once) {
     server.close();
   }
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function extractNextTask(prompt) {

@@ -1078,8 +1078,9 @@ Without `--json`, the command prints a compact terminal dashboard. With
 `--html <path>`, the command writes a static browser shell from the same core
 summary and returns a `dashboard_html` JSON wrapper when `--json` is present.
 `devflow dashboard serve` starts a local HTTP server for the same browser shell
-and exposes `/dashboard.json` for the raw summary contract. Use `--port 0` when
-the caller should choose an available port.
+and exposes `/dashboard.json` for the raw summary contract. It also exposes a
+dedicated gates view at `/gates` and the same gate slice as JSON at
+`/gates.json`. Use `--port 0` when the caller should choose an available port.
 
 Initial browser views:
 
