@@ -266,9 +266,9 @@ serves that shell plus `/dashboard.json` over local HTTP. The server also
 includes dedicated `/gates`, `/sessions`, `/handoffs`, and `/maps` HTML views
 plus `/gates.json`, `/sessions.json`, `/handoffs.json`, and `/maps.json`
 slices, plus latest gate detail routes at `/gates/<id>` and `/gates/<id>.json`
-and first work item detail routes at `/work/<id>` and `/work/<id>.json`. A
-richer Vite/React dashboard and deeper linked detail pages remain later Phase 8
-work.
+map detail routes at `/maps/<id>` and `/maps/<id>.json`, and first work item
+detail routes at `/work/<id>` and `/work/<id>.json`. A richer Vite/React
+dashboard and deeper linked detail pages remain later Phase 8 work.
 
 ## Phase 9: GitHub Review Integration
 

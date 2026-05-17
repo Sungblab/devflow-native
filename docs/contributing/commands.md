@@ -1085,8 +1085,9 @@ dedicated gates view at `/gates` and the same gate slice as JSON at
 `/gates/<id>.json`. A dedicated sessions view is available at `/sessions` and
 the same session slice as JSON at `/sessions.json`. The latest and stale
 handoffs are available at `/handoffs` and `/handoffs.json`. Architecture maps
-are available at `/maps` and `/maps.json`. Work item detail pages are available
-at `/work/<id>` and `/work/<id>.json` for active, blocked, and ready-to-finish
+are available at `/maps` and `/maps.json`, with map detail pages at
+`/maps/<id>` and `/maps/<id>.json`. Work item detail pages are available at
+`/work/<id>` and `/work/<id>.json` for active, blocked, and ready-to-finish
 items. Use `--port 0` when the caller should choose an available port.
 
 Initial browser views:

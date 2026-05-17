@@ -90,7 +90,8 @@ HTTP, exposes `/dashboard.json` for the raw summary contract, and exposes
 dedicated gate views at `/gates` and `/gates.json`, gate detail routes at
 `/gates/<id>` and `/gates/<id>.json`, session views at `/sessions` and
 `/sessions.json`, handoff views at `/handoffs` and `/handoffs.json`, map views
-at `/maps` and `/maps.json`, and work item detail routes at `/work/<id>` and
+at `/maps` and `/maps.json`, map detail routes at `/maps/<id>` and
+`/maps/<id>.json`, and work item detail routes at `/work/<id>` and
 `/work/<id>.json`.
 `devflow split` renders local worktree-session plans, and `devflow split
 --register --start` can append the generated sessions as active work items

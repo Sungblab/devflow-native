@@ -294,6 +294,36 @@ async function renderDashboardServe(argsForCommand) {
       return;
     }
 
+    const mapJsonMatch = requestPath.match(/^\/maps\/([^/]+)\.json$/);
+    if (mapJsonMatch) {
+      const map = findDashboardMap(summary, decodeURIComponent(mapJsonMatch[1]));
+      if (!map) {
+        response.writeHead(404, { "content-type": "application/json; charset=utf-8" });
+        response.end(`${JSON.stringify({ error: "map not found" })}\n`, () =>
+          closeServerOnce(server, options.once),
+        );
+        return;
+      }
+      response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      response.end(`${JSON.stringify(map, null, 2)}\n`, () => closeServerOnce(server, options.once));
+      return;
+    }
+
+    const mapHtmlMatch = requestPath.match(/^\/maps\/([^/]+)$/);
+    if (mapHtmlMatch) {
+      const map = findDashboardMap(summary, decodeURIComponent(mapHtmlMatch[1]));
+      if (!map) {
+        response.writeHead(404, { "content-type": "text/html; charset=utf-8" });
+        response.end(renderDashboardNotFoundPage("Map not found"), () =>
+          closeServerOnce(server, options.once),
+        );
+        return;
+      }
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      response.end(renderDashboardMapPage(map), () => closeServerOnce(server, options.once));
+      return;
+    }
+
     const workJsonMatch = requestPath.match(/^\/work\/([^/]+)\.json$/);
     if (workJsonMatch) {
       const workItem = findDashboardWorkItem(summary, decodeURIComponent(workJsonMatch[1]));
@@ -1089,6 +1119,40 @@ function renderDashboardMapsPage(summary) {
       <thead><tr><th>Title</th><th>ID</th><th>Path</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
+  </main>
+</body>
+</html>
+`;
+}
+
+function findDashboardMap(summary, id) {
+  return (summary.maps.items ?? []).find((map) => map.id === id);
+}
+
+function renderDashboardMapPage(map) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devflow Map Detail</title>
+  <style>
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f7f9; color: #171a1f; }
+    main { max-width: 880px; margin: 0 auto; padding: 32px 20px 48px; }
+    h1 { margin: 0 0 8px; font-size: 32px; }
+    dl { display: grid; grid-template-columns: 140px 1fr; gap: 10px 16px; background: #fff; border: 1px solid #d9dde5; border-radius: 8px; padding: 16px; }
+    dt { color: #5b6270; font-weight: 700; }
+    dd { margin: 0; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Devflow Map Detail</h1>
+    <dl>
+      <dt>ID</dt><dd>${escapeHtml(map.id)}</dd>
+      <dt>Title</dt><dd>${escapeHtml(map.title)}</dd>
+      <dt>Path</dt><dd>${escapeHtml(map.path)}</dd>
+    </dl>
   </main>
 </body>
 </html>

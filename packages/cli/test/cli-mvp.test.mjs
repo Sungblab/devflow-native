@@ -1314,6 +1314,52 @@ test("CLI dashboard serve exposes a dedicated maps view", async () => {
   }
 });
 
+test("CLI dashboard serve exposes a map detail view", async () => {
+  const repoPath = await createTempGitRepo();
+  await mkdir(join(repoPath, "docs", "architecture", "maps"), { recursive: true });
+  await writeFile(
+    join(repoPath, "docs", "architecture", "maps", "workflow-map.md"),
+    "# Workflow Map\n\n```mermaid\ngraph LR\n  Start --> Finish\n```\n",
+    "utf8",
+  );
+
+  const child = spawn(
+    "node",
+    [
+      "packages/cli/src/index.js",
+      "dashboard",
+      "serve",
+      "--repo",
+      repoPath,
+      "--port",
+      "0",
+      "--json",
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+
+  try {
+    const url = await waitForOutputMatch(child, /http:\/\/127\.0\.0\.1:\d+\//);
+    const detailResponse = await fetch(`${url}maps/workflow-map`);
+    const detailHtml = await detailResponse.text();
+    const detailJsonResponse = await fetch(`${url}maps/workflow-map.json`);
+    const detailJson = await detailJsonResponse.json();
+
+    assert.equal(detailResponse.status, 200);
+    assert.match(detailHtml, /Devflow Map Detail/);
+    assert.match(detailHtml, /Workflow Map/);
+    assert.equal(detailJson.id, "workflow-map");
+    assert.equal(detailJson.title, "Workflow Map");
+    assert.equal(detailJson.path, "docs/architecture/maps/workflow-map.md");
+  } finally {
+    child.kill();
+    await waitForExit(child);
+  }
+});
+
 test("CLI dashboard serve exposes a work item detail view", async () => {
   const repoPath = await createTempGitRepo();
 
