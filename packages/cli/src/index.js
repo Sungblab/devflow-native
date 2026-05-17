@@ -11,6 +11,7 @@ import {
 import {
   createFinishSummary,
   createDoctorSummary,
+  createInitPlan,
   createNextPrompt,
   createPromptRewrite,
   createSessionAttachPlan,
@@ -22,19 +23,25 @@ import {
   parseSessionListLimit,
   parseSessionListSince,
   parseSessionListSort,
+  readProjectHealth,
   readDevflowConfig,
   readDevflowState,
   readMistakeMemory,
   recordFinishEvent,
   recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
+  writeInitPlan,
 } from "../../core/src/index.js";
 
 const args = process.argv.slice(2);
 const command = args[0];
 
 try {
-  if (command === "status") {
+  if (command === "init") {
+    await renderInit(args.slice(1));
+  } else if (command === "health") {
+    await renderHealth(args.slice(1));
+  } else if (command === "status") {
     await renderStatus(args.slice(1));
   } else if (command === "explain") {
     renderExplain(args.slice(1));
@@ -66,17 +73,46 @@ try {
   exit(1);
 }
 
+async function renderInit(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const plan = createInitPlan({
+    repo: repoPath,
+    profile: options.profile,
+    platform: options.platform ?? defaultPlatformName(),
+  });
+
+  if (options.confirm) {
+    const result = await writeInitPlan(repoPath, plan, { confirmed: true });
+    render({ ...plan, result }, options.json);
+    return;
+  }
+
+  render(plan, options.json);
+}
+
+async function renderHealth(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const config = await readDevflowConfig(repoPath);
+  const summary = await readProjectHealth(repoPath, config);
+
+  render(summary, options.json);
+}
+
 async function renderStatus(argsForCommand) {
   const options = parseOptions(argsForCommand);
   const repoPath = options.repo ?? cwd();
   const state = await readDevflowState(repoPath);
+  const config = await readDevflowConfig(repoPath);
   const summary = createStatusSummary({
     repo: readGitRepo(repoPath),
     changedFiles: readChangedFiles(repoPath),
     state,
     workItemId: options.work,
     agent: options.agent,
-    gates: [{ id: "docs-check", command: "npm run docs:check", recommended: true }],
+    gates: config.gates ?? [{ id: "docs-check", command: "npm run docs:check", recommended: true }],
+    warnings: config.warnings,
   });
 
   if (options.simple) {
@@ -532,16 +568,17 @@ function readGitRepo(repoPath) {
 }
 
 function readChangedFiles(repoPath) {
-  return parseGitStatusLines(runGit(repoPath, ["status", "--short", "-uall"]));
+  return parseGitStatusLines(runGit(repoPath, ["status", "--short", "-uall"], { trim: false }));
 }
 
-function runGit(repoPath, gitArgs) {
+function runGit(repoPath, gitArgs, options = {}) {
   try {
-    return execFileSync("git", gitArgs, {
+    const output = execFileSync("git", gitArgs, {
       cwd: repoPath,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
+    });
+    return options.trim === false ? output : output.trim();
   } catch {
     return "";
   }

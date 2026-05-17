@@ -16,6 +16,7 @@ This is the documentation router for Solo Devflow OS.
 | Context and handoff rules | [contributing/context-rules.md](./contributing/context-rules.md) |
 | CLI command contract | [contributing/commands.md](./contributing/commands.md) |
 | Architecture map index | [architecture/maps/README.md](./architecture/maps/README.md) |
+| First local black-box-recorder loop | [examples/first-loop-demo.md](./examples/first-loop-demo.md) |
 | OpenCairn split example | [examples/opencairn-parallel-split.md](./examples/opencairn-parallel-split.md) |
 | Simple status output example | [examples/simple-status-output.md](./examples/simple-status-output.md) |
 | Session list filter examples | [examples/session-list-filters.md](./examples/session-list-filters.md) |

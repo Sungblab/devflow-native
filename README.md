@@ -1,12 +1,69 @@
 # Solo Devflow OS
 
-Solo Devflow OS is a local-first operating layer for solo developers who build
-with AI coding agents. It is not another coding agent. It records, verifies,
-visualizes, and resumes the development process around agents.
+Solo Devflow OS is a local-first black box recorder for AI-assisted
+development.
 
-The core idea: AI can write code quickly, but solo maintainers still need an
-external memory system for project contracts, active work, quality gates,
-review feedback, and next-session handoffs.
+It is not another coding agent. Codex, Claude Code, Gemini, and shell sessions
+do the work. Devflow records the project truth they need to share: what changed,
+what was verified, what was skipped, what risk remains, and what the next
+session should do.
+
+## First Loop
+
+The first useful loop is intentionally small:
+
+```powershell
+node packages/cli/src/index.js doctor --platform windows-powershell --json
+node packages/cli/src/index.js status --simple
+
+# Work in Codex, Claude Code, Gemini, or a terminal.
+
+node packages/cli/src/index.js finish `
+  --work readme-first-loop `
+  --title "README first loop" `
+  --intent "Make the first Devflow loop obvious from the repo entrypoint." `
+  --gate "docs:npm run docs:check:passed" `
+  --risk "No dashboard demo exists yet." `
+  --next-task "Add a captured example of finish output and next prompt." `
+  --guided
+
+node packages/cli/src/index.js prompt next `
+  --objective "Continue Solo Devflow OS from the recorded first loop." `
+  --command "npm run docs:check" `
+  --risk "No dashboard demo exists yet." `
+  --next-task "Add a captured example of finish output and next prompt."
+```
+
+That loop answers the daily questions a solo maintainer loses across agent
+tabs:
+
+- What local shell, path, and tool rules should the agent follow?
+- What is the current repo/work/gate state?
+- What evidence closes this slice?
+- What exact prompt should the next session start with?
+
+## Example Handoff Shape
+
+`devflow finish` records local evidence in `.devflow/state/events.jsonl`.
+`devflow prompt next` emits a copy-paste handoff that should include:
+
+```text
+Objective: Continue Solo Devflow OS from the recorded first loop.
+
+Changed files:
+- README.md
+
+Commands run:
+- npm run docs:check
+
+Risks:
+- No dashboard demo exists yet.
+
+Next task: Add a captured example of finish output and next prompt.
+```
+
+For a fuller terminal walkthrough, see the
+[first loop demo](docs/examples/first-loop-demo.md).
 
 ## Product Thesis
 
@@ -42,7 +99,11 @@ Devflow OS optimizes for continuity:
 ## Current MVP
 
 ```powershell
+node packages/cli/src/index.js init --json
+node packages/cli/src/index.js init --confirm --json
+node packages/cli/src/index.js health --json
 node packages/cli/src/index.js status --json
+node packages/cli/src/index.js status --simple
 node packages/cli/src/index.js doctor --platform windows-powershell --json
 node packages/cli/src/index.js finish --json
 node packages/cli/src/index.js prompt next
@@ -56,8 +117,9 @@ documentation impact, respects host goal state when available, and asks whether
 to commit, PR, continue, or generate a next-session prompt.
 
 The MCP package exposes the same core contracts through `devflow.doctor`,
-`devflow.finish`, and `devflow.next_prompt` handlers, plus a minimal stdio
-JSON-RPC transport for host integration experiments.
+`devflow.status`, `devflow.finish`, `devflow.record_gate`, and
+`devflow.next_prompt` handlers, plus a minimal stdio JSON-RPC transport for
+host integration experiments.
 
 The Codex plugin manifest points to `plugins/devflow/.mcp.json`, which launches
 the local stdio transport with `node packages/mcp/src/stdio.js`.

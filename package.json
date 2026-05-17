@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "devflow": "packages/cli/src/index.js"
+  },
   "scripts": {
     "docs:check": "node scripts/check-doc-links.mjs",
     "mcp:stdio": "node packages/mcp/src/stdio.js",
