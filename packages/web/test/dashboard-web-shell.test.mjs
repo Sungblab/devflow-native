@@ -328,15 +328,45 @@ test("web package derives a React dashboard view model", async () => {
   assert.deepEqual(viewModel.workSections, [
     {
       label: "Active",
-      items: [{ href: "/work/active-work", title: "Active work", meta: "active-work" }],
+      items: [
+        {
+          href: "/work/active-work",
+          title: "Active work",
+          meta: "active-work",
+          facts: [
+            { label: "Status", value: "active" },
+            { label: "Work", value: "active-work" },
+          ],
+        },
+      ],
     },
     {
       label: "Blocked",
-      items: [{ href: "/work/blocked-work", title: "Blocked work", meta: "Waiting on review." }],
+      items: [
+        {
+          href: "/work/blocked-work",
+          title: "Blocked work",
+          meta: "Waiting on review.",
+          facts: [
+            { label: "Status", value: "blocked" },
+            { label: "Work", value: "blocked-work" },
+          ],
+        },
+      ],
     },
     {
       label: "Ready",
-      items: [{ href: "/work/ready-work", title: "Ready work", meta: "ready-work" }],
+      items: [
+        {
+          href: "/work/ready-work",
+          title: "Ready work",
+          meta: "ready-work",
+          facts: [
+            { label: "Status", value: "ready-to-finish" },
+            { label: "Work", value: "ready-work" },
+          ],
+        },
+      ],
     },
   ]);
   assert.deepEqual(viewModel.timeline, {
@@ -355,7 +385,18 @@ test("web package derives a React dashboard view model", async () => {
       label: "Gate evidence",
       count: 4,
       href: "/gates",
-      items: [{ href: "/gates/unit", title: "unit failed", meta: "npm test", detail: "active-work" }],
+      items: [
+        {
+          href: "/gates/unit",
+          title: "unit failed",
+          meta: "npm test",
+          detail: "active-work",
+          facts: [
+            { label: "Command", value: "npm test" },
+            { label: "Work", value: "active-work" },
+          ],
+        },
+      ],
     },
     {
       label: "Sessions",
@@ -367,6 +408,10 @@ test("web package derives a React dashboard view model", async () => {
           title: "Attached the latest Codex session.",
           meta: "Codex",
           detail: "active-work",
+          facts: [
+            { label: "Agent", value: "Codex" },
+            { label: "Work", value: "active-work" },
+          ],
         },
       ],
     },
@@ -380,6 +425,10 @@ test("web package derives a React dashboard view model", async () => {
           title: "Refresh stale handoff",
           meta: "Refresh this handoff.",
           detail: "stale-work",
+          facts: [
+            { label: "Prompt", value: "Refresh this handoff." },
+            { label: "Work", value: "stale-work" },
+          ],
         },
       ],
     },
@@ -393,6 +442,10 @@ test("web package derives a React dashboard view model", async () => {
           title: "Workflow Map",
           meta: "docs/architecture/maps/workflow-map.md",
           detail: "workflow-map",
+          facts: [
+            { label: "Path", value: "docs/architecture/maps/workflow-map.md" },
+            { label: "Map", value: "workflow-map" },
+          ],
         },
       ],
     },
@@ -409,7 +462,18 @@ test("web package derives a React dashboard view model", async () => {
     },
   ]);
   assert.deepEqual(filtered.detailSections.map((section) => section.items), [
-    [{ href: "/gates/unit", title: "unit failed", meta: "npm test", detail: "active-work" }],
+    [
+      {
+        href: "/gates/unit",
+        title: "unit failed",
+        meta: "npm test",
+        detail: "active-work",
+        facts: [
+          { label: "Command", value: "npm test" },
+          { label: "Work", value: "active-work" },
+        ],
+      },
+    ],
     [],
     [],
     [],
@@ -420,13 +484,28 @@ test("web package derives a React dashboard view model", async () => {
     title: "Gate evidence",
     count: 4,
     emptyText: "No gate evidence.",
-    items: [{ href: "/gates/unit", title: "unit failed", meta: "npm test", detail: "active-work" }],
+    items: [
+      {
+        href: "/gates/unit",
+        title: "unit failed",
+        meta: "npm test",
+        detail: "active-work",
+        facts: [
+          { label: "Command", value: "npm test" },
+          { label: "Work", value: "active-work" },
+        ],
+      },
+    ],
   });
   assert.deepEqual(createDashboardRouteViewModel(viewModel, "/gates/unit"), {
     kind: "detail",
     title: "unit failed",
     meta: "npm test",
     detail: "active-work",
+    facts: [
+      { label: "Command", value: "npm test" },
+      { label: "Work", value: "active-work" },
+    ],
     backHref: "/gates",
     backLabel: "Gate evidence",
   });
@@ -435,8 +514,24 @@ test("web package derives a React dashboard view model", async () => {
     title: "Attached the latest Codex session.",
     meta: "Codex",
     detail: "active-work",
+    facts: [
+      { label: "Agent", value: "Codex" },
+      { label: "Work", value: "active-work" },
+    ],
     backHref: "/sessions",
     backLabel: "Sessions",
+  });
+  assert.deepEqual(createDashboardRouteViewModel(viewModel, "/work/active-work"), {
+    kind: "detail",
+    title: "Active work",
+    meta: "active-work",
+    detail: "Active",
+    facts: [
+      { label: "Status", value: "active" },
+      { label: "Work", value: "active-work" },
+    ],
+    backHref: "/",
+    backLabel: "Dashboard",
   });
   assert.deepEqual(createDashboardRouteViewModel(viewModel, "/gates/missing"), {
     kind: "not_found",

@@ -279,7 +279,7 @@ config, an HTML entrypoint, a React entrypoint, and a dashboard app that reads
 lists, recent timeline events, gates/sessions/handoffs/maps detail panels, and
 client-side filtering through a package-local view model, including route-level
 section/detail view models with route-specific empty and not-found states for
-the built app. After `npm --prefix packages/web run build`,
+the built app plus structured detail facts. After `npm --prefix packages/web run build`,
 `devflow dashboard serve --web-build` can serve the bundled app from
 `packages/web/dist` while preserving the no-build fallback and existing
 dashboard JSON/slice/detail JSON routes; HTML dashboard routes return the React

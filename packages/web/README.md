@@ -28,7 +28,8 @@ The package also declares the first Vite/React build boundary:
   architecture maps. The same module exports a small client-side filter helper
   used by the React app's search input, plus route-level section/detail view
   models with route-specific empty and not-found states for built dashboard
-  HTML routes.
+  HTML routes. Detail views carry structured fact rows for command, agent,
+  prompt, path, status, and work-item context when available.
 
 By default, `devflow dashboard serve` still serves the no-build shell so
 Windows PowerShell dogfooding remains dependency light. After running

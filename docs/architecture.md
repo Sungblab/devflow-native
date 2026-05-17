@@ -304,7 +304,8 @@ entrypoint, React entrypoint, and a dashboard app that reads `/dashboard.json`
 and derives metrics, route links, latest evidence, work lists, timeline events,
 gates/sessions/handoffs/maps detail panels, and client-side filtering through a
 package-local view model, including route-level section/detail view models for
-the built app with route-specific empty and not-found states. The default CLI path still serves the no-build shell for
+the built app with route-specific empty and not-found states plus structured
+detail facts. The default CLI path still serves the no-build shell for
 dependency-light Windows dogfooding. When the package has been built,
 `devflow dashboard serve --web-build` serves `packages/web/dist/index.html` and
 its Vite assets while keeping `/dashboard.json`, no-build dashboard assets, and

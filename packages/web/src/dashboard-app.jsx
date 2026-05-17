@@ -134,6 +134,7 @@ function RouteView({ route }) {
         <h2>{route.title}</h2>
         <p>{route.meta}</p>
         <p>{route.detail}</p>
+        <FactList facts={route.facts} />
       </section>
     );
   }
@@ -144,6 +145,23 @@ function RouteView({ route }) {
       <p>Total {route.count}</p>
       <ItemList emptyText={route.emptyText} items={route.items} />
     </section>
+  );
+}
+
+function FactList({ facts }) {
+  if (!facts || facts.length === 0) {
+    return null;
+  }
+
+  return (
+    <dl>
+      {facts.map((fact) => (
+        <div key={`${fact.label}-${fact.value}`}>
+          <dt>{fact.label}</dt>
+          <dd>{fact.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

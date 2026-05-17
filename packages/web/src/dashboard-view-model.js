@@ -139,6 +139,7 @@ export function createDashboardRouteViewModel(viewModel, pathname) {
         title: item.title,
         meta: item.meta,
         detail: item.detail,
+        facts: item.facts ?? [],
         backHref: section.href,
         backLabel: section.label,
       };
@@ -162,6 +163,7 @@ export function createDashboardRouteViewModel(viewModel, pathname) {
         title: item.title,
         meta: item.meta,
         detail: section.label,
+        facts: item.facts ?? [],
         backHref: "/",
         backLabel: "Dashboard",
       };
@@ -176,6 +178,10 @@ function createWorkItems(items) {
     href: `/work/${encodeURIComponent(item.id)}`,
     title: item.title ?? item.id,
     meta: item.blockedReason ?? item.id,
+    facts: [
+      { label: "Status", value: item.status ?? "unknown" },
+      { label: "Work", value: item.id },
+    ],
   }));
 }
 
@@ -185,6 +191,10 @@ function createGateItems(items) {
     title: `${item.id} ${item.status ?? "unknown"}`,
     meta: item.command ?? "none",
     detail: item.workItemId ?? "no work item",
+    facts: [
+      { label: "Command", value: item.command ?? "none" },
+      { label: "Work", value: item.workItemId ?? "no work item" },
+    ],
   }));
 }
 
@@ -194,6 +204,10 @@ function createSessionItems(items) {
     title: item.summary ?? item.sessionId,
     meta: item.agent ?? item.kind ?? "unknown agent",
     detail: item.workItemId ?? "no work item",
+    facts: [
+      { label: "Agent", value: item.agent ?? item.kind ?? "unknown agent" },
+      { label: "Work", value: item.workItemId ?? "no work item" },
+    ],
   }));
 }
 
@@ -203,6 +217,10 @@ function createHandoffItems(items) {
     title: item.title ?? item.workItemId,
     meta: item.prompt ?? "no prompt",
     detail: item.workItemId,
+    facts: [
+      { label: "Prompt", value: item.prompt ?? "no prompt" },
+      { label: "Work", value: item.workItemId },
+    ],
   }));
 }
 
@@ -212,6 +230,10 @@ function createMapItems(items) {
     title: item.title ?? item.id,
     meta: item.path ?? "no path",
     detail: item.id,
+    facts: [
+      { label: "Path", value: item.path ?? "no path" },
+      { label: "Map", value: item.id },
+    ],
   }));
 }
 
