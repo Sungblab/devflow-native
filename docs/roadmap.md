@@ -88,7 +88,8 @@ Current implementation note: `devflow work create`, `devflow work start`, and
 `devflow status` now reads active work items from derived state.
 `devflow split --register --start` and MCP `devflow.split` with
 `register: true` and `start: true` can also register generated split sessions
-as active work items. Richer work item fields, blocking states, and
+as active work items. Repeated create/start and split registration writes are
+idempotent by work item id. Richer work item fields, blocking states, and
 ready-to-finish transitions remain later Phase 3 work.
 
 ## Phase 4: Gate Runner
