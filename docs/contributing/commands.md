@@ -1081,11 +1081,12 @@ summary and returns a `dashboard_html` JSON wrapper when `--json` is present.
 `devflow dashboard serve` starts a local HTTP server for the same browser shell
 and exposes `/dashboard.json` for the raw summary contract. It also exposes a
 dedicated gates view at `/gates` and the same gate slice as JSON at
-`/gates.json`, plus a dedicated sessions view at `/sessions` and the same
-session slice as JSON at `/sessions.json`. The latest and stale handoffs are
-available at `/handoffs` and `/handoffs.json`. Architecture maps are available
-at `/maps` and `/maps.json`. Work item detail pages are available at
-`/work/<id>` and `/work/<id>.json` for active, blocked, and ready-to-finish
+`/gates.json`, with latest gate detail pages at `/gates/<id>` and
+`/gates/<id>.json`. A dedicated sessions view is available at `/sessions` and
+the same session slice as JSON at `/sessions.json`. The latest and stale
+handoffs are available at `/handoffs` and `/handoffs.json`. Architecture maps
+are available at `/maps` and `/maps.json`. Work item detail pages are available
+at `/work/<id>` and `/work/<id>.json` for active, blocked, and ready-to-finish
 items. Use `--port 0` when the caller should choose an available port.
 
 Initial browser views:

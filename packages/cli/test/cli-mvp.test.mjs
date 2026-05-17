@@ -1101,6 +1101,63 @@ test("CLI dashboard serve exposes a dedicated gates view", async () => {
   }
 });
 
+test("CLI dashboard serve exposes a gate detail view", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "served-gate-detail",
+    "--title",
+    "Served gate detail",
+    "--intent",
+    "Serve gate detail.",
+    "--gate",
+    "unit:npm test:failed",
+    "--json",
+  ]);
+
+  const child = spawn(
+    "node",
+    [
+      "packages/cli/src/index.js",
+      "dashboard",
+      "serve",
+      "--repo",
+      repoPath,
+      "--port",
+      "0",
+      "--json",
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+
+  try {
+    const url = await waitForOutputMatch(child, /http:\/\/127\.0\.0\.1:\d+\//);
+    const detailResponse = await fetch(`${url}gates/unit`);
+    const detailHtml = await detailResponse.text();
+    const detailJsonResponse = await fetch(`${url}gates/unit.json`);
+    const detailJson = await detailJsonResponse.json();
+
+    assert.equal(detailResponse.status, 200);
+    assert.match(detailHtml, /Devflow Gate Detail/);
+    assert.match(detailHtml, /npm test/);
+    assert.match(detailHtml, /failed/);
+    assert.equal(detailJson.id, "unit");
+    assert.equal(detailJson.command, "npm test");
+    assert.equal(detailJson.status, "failed");
+  } finally {
+    child.kill();
+    await waitForExit(child);
+  }
+});
+
 test("CLI dashboard serve exposes a dedicated sessions view", async () => {
   const repoPath = await createTempGitRepo();
 
