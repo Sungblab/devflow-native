@@ -39,8 +39,8 @@ while preserving the same core JSON contract used by the CLI.
 `devflow.dashboard` returns the first local dashboard contract: active,
 blocked, and ready-to-finish work counts, matching work item lists, latest gate
 evidence counts and entries, attached/manual session counts, recent sessions,
-agent breakdown, latest handoff state, and a single recommendation for the
-maintainer's next dashboard action.
+agent breakdown, recent timeline events, latest handoff state, and a single
+recommendation for the maintainer's next dashboard action.
 
 `devflow.health` checks the local project scaffold. It reports required files,
 missing files, configured gates, invalid gate definitions, and recommendations

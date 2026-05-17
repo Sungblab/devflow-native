@@ -1070,6 +1070,7 @@ Outputs:
 - latest gate evidence counts and entries
 - attached/manual session counts, latest session, recent sessions, and agent
   breakdown
+- recent timeline event count and entries from `.devflow/state/events.jsonl`
 - latest handoff and stale handoff count
 - first dashboard recommendation
 

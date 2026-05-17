@@ -68,6 +68,7 @@ export function createDashboardSummary(input = {}) {
   const readyToFinish = work.readyToFinish ?? [];
   const gates = createDashboardGateSummary(state.gates?.latestById ?? {});
   const sessions = createDashboardSessionSummary(state.sessions?.attached ?? []);
+  const timeline = createDashboardTimelineSummary(state.events ?? []);
   const handoffs = {
     latest: input.handoffs?.latest ?? state.handoffs?.latest ?? null,
     stale: input.handoffs?.stale ?? state.handoffs?.stale ?? [],
@@ -94,6 +95,7 @@ export function createDashboardSummary(input = {}) {
     },
     gates,
     sessions,
+    timeline,
     handoffs: {
       latest: handoffs.latest,
       stale: handoffs.stale,
@@ -111,6 +113,7 @@ export function createDashboardHtml(summary) {
   const work = summary.work ?? {};
   const gates = summary.gates ?? { latest: [], counts: {} };
   const sessions = summary.sessions ?? { recent: [], counts: {} };
+  const timeline = summary.timeline ?? { recent: [], counts: {} };
   const handoffs = summary.handoffs ?? { latest: null, counts: {} };
   const recommendation = summary.recommendations?.[0]?.message ?? "No recommendation.";
 
@@ -175,6 +178,7 @@ export function createDashboardHtml(summary) {
       ${renderGatePanel(gates.latest ?? [])}
       ${renderSessionPanel(sessions.recent ?? [], sessions.counts ?? {})}
       ${renderHandoffPanel(handoffs)}
+      ${renderTimelinePanel(timeline.recent ?? [], timeline.counts ?? {})}
       <section class="panel wide">
         <h2>Next</h2>
         <p>${escapeHtml(recommendation)}</p>
@@ -1334,6 +1338,20 @@ function createDashboardSessionSummary(sessions) {
   };
 }
 
+function createDashboardTimelineSummary(events) {
+  const normalized = events.map(createTimelineItem).filter(Boolean);
+  const recent = normalized
+    .toSorted((left, right) => String(right.observedAt).localeCompare(String(left.observedAt)))
+    .slice(0, 5);
+
+  return {
+    counts: {
+      total: normalized.length,
+    },
+    recent,
+  };
+}
+
 function createDashboardRecommendations({ active, blocked, readyToFinish, gates }) {
   const failedGate = gates.latest.find((gate) => gate.status === "failed");
   if (failedGate) {
@@ -1431,6 +1449,19 @@ function renderHandoffPanel(handoffs) {
   </section>`;
 }
 
+function renderTimelinePanel(events, counts) {
+  return `<section class="panel wide">
+    <h2>Timeline</h2>
+    <p class="item-meta">Total ${escapeHtml(counts.total ?? 0)}</p>
+    ${renderList(
+      events,
+      (event) =>
+        `<li><p class="item-title">${escapeHtml(event.title)}</p><p class="item-meta">${escapeHtml(event.observedAt ?? "unknown time")} | ${escapeHtml(event.detail ?? event.type)}</p></li>`,
+      "No timeline events.",
+    )}
+  </section>`;
+}
+
 function renderList(items, renderItem, emptyText) {
   if (items.length === 0) {
     return `<p class="item-meta">${escapeHtml(emptyText)}</p>`;
@@ -1447,6 +1478,85 @@ function gateStatusClass(status) {
     return "status-failed";
   }
   return "status-unknown";
+}
+
+function createTimelineItem(event) {
+  if (!event?.type) {
+    return null;
+  }
+
+  const observedAt = event.observedAt ?? event.payload?.observedAt ?? null;
+  if (event.type === "work.created") {
+    return {
+      type: event.type,
+      observedAt,
+      workItemId: event.payload?.id ?? null,
+      title: `Created ${event.payload?.id ?? "work"}`,
+      detail: event.payload?.title ?? null,
+    };
+  }
+  if (event.type === "work.started") {
+    return {
+      type: event.type,
+      observedAt,
+      workItemId: event.payload?.id ?? null,
+      title: `Started ${event.payload?.id ?? "work"}`,
+      detail: "Work item started.",
+    };
+  }
+  if (event.type === "work.ready") {
+    return {
+      type: event.type,
+      observedAt,
+      workItemId: event.payload?.id ?? null,
+      title: `Ready ${event.payload?.id ?? "work"}`,
+      detail: "Ready to finish.",
+    };
+  }
+  if (event.type === "work.blocked") {
+    return {
+      type: event.type,
+      observedAt,
+      workItemId: event.payload?.id ?? null,
+      title: `Blocked ${event.payload?.id ?? "work"}`,
+      detail: event.payload?.reason ?? "Blocked.",
+    };
+  }
+  if (event.type === "work.completed") {
+    return {
+      type: event.type,
+      observedAt,
+      workItemId: event.payload?.workItem?.id ?? null,
+      title: `Completed ${event.payload?.workItem?.id ?? "work"}`,
+      detail: event.payload?.summary?.intent ?? event.payload?.workItem?.title ?? null,
+    };
+  }
+  if (event.type === "gate.finished") {
+    return {
+      type: event.type,
+      observedAt,
+      workItemId: event.payload?.workItemId ?? null,
+      title: `${event.payload?.id ?? "gate"} ${event.payload?.status ?? "finished"}`,
+      detail: event.payload?.summary ?? event.payload?.command ?? null,
+    };
+  }
+  if (event.type === "session.message" || event.type === "session.attached") {
+    return {
+      type: event.type,
+      observedAt,
+      workItemId: event.payload?.workItemId ?? null,
+      title: `${event.payload?.agent ?? "session"} ${event.payload?.kind ?? "session"}`,
+      detail: event.payload?.summary ?? event.payload?.sessionId ?? null,
+    };
+  }
+
+  return {
+    type: event.type,
+    observedAt,
+    workItemId: event.payload?.workItemId ?? event.payload?.id ?? null,
+    title: event.type,
+    detail: null,
+  };
 }
 
 function escapeHtml(value) {

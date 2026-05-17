@@ -449,6 +449,46 @@ test("dashboard summary includes attached session summary", async () => {
   assert.equal(dashboard.sessions.recent[0].agent, "manual");
 });
 
+test("dashboard summary and HTML include recent timeline events", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-dashboard-timeline-"));
+  await recordWorkCreatedEvent(
+    repoPath,
+    { id: "timeline-work", title: "Timeline work" },
+    { observedAt: "2026-05-17T11:00:00+09:00" },
+  );
+  await recordWorkStartedEvent(
+    repoPath,
+    { id: "timeline-work" },
+    { observedAt: "2026-05-17T11:01:00+09:00" },
+  );
+  await recordGateEvent(
+    repoPath,
+    {
+      id: "unit",
+      command: "npm test",
+      status: "passed",
+      summary: "139 tests passed.",
+      workItemId: "timeline-work",
+    },
+    { observedAt: "2026-05-17T11:02:00+09:00" },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const dashboard = createDashboardSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+  const html = createDashboardHtml(dashboard);
+
+  assert.equal(dashboard.timeline.counts.total, 3);
+  assert.equal(dashboard.timeline.recent[0].type, "gate.finished");
+  assert.equal(dashboard.timeline.recent[0].title, "unit passed");
+  assert.equal(dashboard.timeline.recent[0].workItemId, "timeline-work");
+  assert.match(html, /Timeline/);
+  assert.match(html, /unit passed/);
+  assert.match(html, /139 tests passed/);
+});
+
 test("dashboard HTML renders the dashboard summary as a browser shell", () => {
   const summary = createDashboardSummary({
     repo: { absolutePath: "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os" },
