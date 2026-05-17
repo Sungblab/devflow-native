@@ -301,8 +301,9 @@ bundled Vite/React app grows behind the same JSON contract, plus dedicated
 `packages/web` owns the dashboard HTML renderers used by CLI routing and the
 first Vite/React scaffold: package-local build/dev scripts, Vite config, HTML
 entrypoint, React entrypoint, and a dashboard app that reads `/dashboard.json`
-and derives metrics, route links, latest evidence, work lists, and timeline
-events through a package-local view model. The default CLI path still serves the no-build shell for
+and derives metrics, route links, latest evidence, work lists, timeline events,
+and gates/sessions/handoffs/maps detail panels through a package-local view
+model. The default CLI path still serves the no-build shell for
 dependency-light Windows dogfooding. When the package has been built,
 `devflow dashboard serve --web-build` serves `packages/web/dist/index.html` and
 its Vite assets while keeping `/dashboard.json`, no-build dashboard assets, and

@@ -80,6 +80,15 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
         <p>Total {viewModel.timeline.count}</p>
         <ItemList emptyText="No timeline events." items={viewModel.timeline.items} />
       </section>
+      <section aria-label="Dashboard detail panels">
+        {viewModel.detailSections.map((section) => (
+          <section key={section.label}>
+            <h2><a href={section.href}>{section.label}</a></h2>
+            <p>Total {section.count}</p>
+            <ItemList emptyText={`No ${section.label.toLowerCase()} items.`} items={section.items} />
+          </section>
+        ))}
+      </section>
     </main>
   );
 }

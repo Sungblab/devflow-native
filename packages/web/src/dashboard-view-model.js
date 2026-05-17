@@ -63,6 +63,32 @@ export function createDashboardViewModel(dashboard) {
         href: event.workItemId ? `/work/${encodeURIComponent(event.workItemId)}` : null,
       })),
     },
+    detailSections: [
+      {
+        label: "Gate evidence",
+        count: gates.total ?? 0,
+        href: "/gates",
+        items: createGateItems(dashboard.gates?.latest ?? []),
+      },
+      {
+        label: "Sessions",
+        count: sessions.total ?? 0,
+        href: "/sessions",
+        items: createSessionItems(dashboard.sessions?.recent ?? []),
+      },
+      {
+        label: "Handoffs",
+        count: handoffs.stale ?? 0,
+        href: "/handoffs",
+        items: createHandoffItems(dashboard.handoffs?.stale ?? []),
+      },
+      {
+        label: "Maps",
+        count: maps.total ?? 0,
+        href: "/maps",
+        items: createMapItems(dashboard.maps?.items ?? []),
+      },
+    ],
   };
 }
 
@@ -71,5 +97,41 @@ function createWorkItems(items) {
     href: `/work/${encodeURIComponent(item.id)}`,
     title: item.title ?? item.id,
     meta: item.blockedReason ?? item.id,
+  }));
+}
+
+function createGateItems(items) {
+  return items.map((item) => ({
+    href: `/gates/${encodeURIComponent(item.id)}`,
+    title: `${item.id} ${item.status ?? "unknown"}`,
+    meta: item.command ?? "none",
+    detail: item.workItemId ?? "no work item",
+  }));
+}
+
+function createSessionItems(items) {
+  return items.map((item) => ({
+    href: `/sessions/${encodeURIComponent(item.sessionId)}`,
+    title: item.summary ?? item.sessionId,
+    meta: item.agent ?? item.kind ?? "unknown agent",
+    detail: item.workItemId ?? "no work item",
+  }));
+}
+
+function createHandoffItems(items) {
+  return items.map((item) => ({
+    href: `/handoffs/${encodeURIComponent(item.workItemId)}`,
+    title: item.title ?? item.workItemId,
+    meta: item.prompt ?? "no prompt",
+    detail: item.workItemId,
+  }));
+}
+
+function createMapItems(items) {
+  return items.map((item) => ({
+    href: `/maps/${encodeURIComponent(item.id)}`,
+    title: item.title ?? item.id,
+    meta: item.path ?? "no path",
+    detail: item.id,
   }));
 }

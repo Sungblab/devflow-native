@@ -266,17 +266,31 @@ test("web package derives a React dashboard view model", async () => {
     },
     gates: {
       counts: { failing: 1, total: 4 },
-      latest: [{ id: "unit", status: "failed", command: "npm test" }],
+      latest: [
+        { id: "unit", status: "failed", command: "npm test", workItemId: "active-work" },
+      ],
     },
     sessions: {
       counts: { total: 5 },
       latest: { summary: "Attached the latest Codex session.", sessionId: "session-1" },
+      recent: [
+        {
+          summary: "Attached the latest Codex session.",
+          sessionId: "session-1",
+          agent: "Codex",
+          workItemId: "active-work",
+        },
+      ],
     },
     handoffs: {
       counts: { stale: 2 },
       latest: { prompt: "Continue the dashboard UI.", workItemId: "dashboard-ui" },
+      stale: [{ title: "Refresh stale handoff", prompt: "Refresh this handoff.", workItemId: "stale-work" }],
     },
-    maps: { counts: { total: 6 } },
+    maps: {
+      counts: { total: 6 },
+      items: [{ id: "workflow-map", title: "Workflow Map", path: "docs/architecture/maps/workflow-map.md" }],
+    },
     timeline: {
       counts: { total: 2 },
       recent: [
@@ -336,4 +350,51 @@ test("web package derives a React dashboard view model", async () => {
       },
     ],
   });
+  assert.deepEqual(viewModel.detailSections, [
+    {
+      label: "Gate evidence",
+      count: 4,
+      href: "/gates",
+      items: [{ href: "/gates/unit", title: "unit failed", meta: "npm test", detail: "active-work" }],
+    },
+    {
+      label: "Sessions",
+      count: 5,
+      href: "/sessions",
+      items: [
+        {
+          href: "/sessions/session-1",
+          title: "Attached the latest Codex session.",
+          meta: "Codex",
+          detail: "active-work",
+        },
+      ],
+    },
+    {
+      label: "Handoffs",
+      count: 2,
+      href: "/handoffs",
+      items: [
+        {
+          href: "/handoffs/stale-work",
+          title: "Refresh stale handoff",
+          meta: "Refresh this handoff.",
+          detail: "stale-work",
+        },
+      ],
+    },
+    {
+      label: "Maps",
+      count: 6,
+      href: "/maps",
+      items: [
+        {
+          href: "/maps/workflow-map",
+          title: "Workflow Map",
+          meta: "docs/architecture/maps/workflow-map.md",
+          detail: "workflow-map",
+        },
+      ],
+    },
+  ]);
 });
