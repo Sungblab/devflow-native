@@ -55,6 +55,7 @@ packages/cli/
 - `devflow work start`
 - `devflow work ready`
 - `devflow work block`
+- `devflow work unblock`
 - `devflow work list`
 - `devflow split`
 - `devflow finish`
@@ -73,10 +74,11 @@ includes `.devflow/config.json`, `AGENTS.md`, a docs router, workflow notes,
 testing strategy, and an architecture map index. Existing files are skipped
 instead of overwritten. `devflow health` checks that the same scaffold files
 and at least one configured gate are present. `devflow work create`,
-`devflow work start`, `devflow work ready`, `devflow work block`, and
-`devflow work list` provide the first local work item registry over append-only
-`.devflow/state/events.jsonl` events. Work create and start writes are
-idempotent by id, returning the existing event instead of appending duplicates.
+`devflow work start`, `devflow work ready`, `devflow work block`,
+`devflow work unblock`, and `devflow work list` provide the first local work
+item registry over append-only `.devflow/state/events.jsonl` events.
+Work create and start writes are idempotent by id, returning the existing event
+instead of appending duplicates.
 `devflow split` renders local worktree-session plans, and `devflow split
 --register --start` can append the generated sessions as active work items
 without manual re-entry. The

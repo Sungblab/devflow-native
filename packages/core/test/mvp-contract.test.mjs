@@ -35,6 +35,7 @@ import {
   recordWorkCreatedEvent,
   recordWorkReadyEvent,
   recordWorkStartedEvent,
+  recordWorkUnblockedEvent,
 } from "../src/index.js";
 
 test("status summary captures repo, dirty files, gates, and prompt recommendation", () => {
@@ -322,6 +323,43 @@ test("work lifecycle events can mark items ready and blocked", async () => {
   assert.equal(state.work.blocked[0].blockedReason, "Waiting for review.");
   assert.equal(status.work.readyToFinish[0].id, "ready-work");
   assert.equal(status.work.blocked[0].id, "blocked-work");
+});
+
+test("work lifecycle events can unblock blocked items", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-work-unblock-"));
+
+  await recordWorkCreatedEvent(repoPath, {
+    id: "blocked-work",
+    title: "Blocked work",
+  });
+  await recordWorkBlockedEvent(
+    repoPath,
+    {
+      id: "blocked-work",
+      reason: "Waiting for review.",
+    },
+    { observedAt: "2026-05-17T09:21:00.000Z" },
+  );
+  const unblocked = await recordWorkUnblockedEvent(
+    repoPath,
+    { id: "blocked-work" },
+    { observedAt: "2026-05-17T09:22:00.000Z" },
+  );
+
+  assert.equal(unblocked.type, "work.unblocked");
+  assert.equal(unblocked.payload.status, "active");
+
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(state.work.active[0].id, "blocked-work");
+  assert.equal(state.work.active[0].blockedReason, null);
+  assert.equal(state.work.blocked.length, 0);
+  assert.equal(status.work.active[0].id, "blocked-work");
+  assert.equal(status.work.blocked.length, 0);
 });
 
 test("project health scanner surfaces invalid gates from config", async () => {

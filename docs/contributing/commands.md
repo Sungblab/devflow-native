@@ -20,6 +20,7 @@ devflow work create
 devflow work start
 devflow work ready
 devflow work block
+devflow work unblock
 devflow work list
 devflow status
 devflow split
@@ -64,8 +65,8 @@ minimum project contract and skips existing files instead of overwriting them.
 `devflow health` checks those scaffold files and configured gates.
 `devflow gates run` executes one configured gate and records pass/fail
 evidence.
-`devflow work create/start/ready/block/list` provides the first local work item
-registry.
+`devflow work create/start/ready/block/unblock/list` provides the first local
+work item registry.
 `devflow dashboard` stays in the broad contract.
 `doctor` is included early because plugin/skill-first workflows need a cheap
 way to avoid repeated local-environment mistakes.
@@ -93,10 +94,11 @@ The event log is local-first project state and is ignored by git by default in
 this repository.
 `devflow work create` appends `work.created`, `devflow work start` appends
 `work.started`, `devflow work ready` appends `work.ready`, `devflow work block`
-appends `work.blocked`, and `devflow work list` derives current work item state
-from the same log. Work item create/start writes are idempotent by id: creating
-or starting an already recorded work item returns the existing event with
-`existing: true` instead of appending another line.
+appends `work.blocked`, `devflow work unblock` appends `work.unblocked`, and
+`devflow work list` derives current work item state from the same log. Work
+item create/start writes are idempotent by id: creating or starting an already
+recorded work item returns the existing event with `existing: true` instead of
+appending another line.
 
 ## Shared CLI Rules
 
@@ -455,6 +457,25 @@ Outputs:
 - appended `work.blocked` event
 
 Blocked items appear under `work.blocked` in `devflow status`.
+
+## `devflow work unblock`
+
+Returns a blocked local work item to active status.
+
+Example:
+
+```powershell
+devflow work unblock phase-3-work-registry --json
+```
+
+Outputs:
+
+- `work_unblock` JSON wrapper
+- unblocked work item payload
+- appended `work.unblocked` event
+
+Unblocked items appear under `work.active` in `devflow status` and no longer
+carry `blockedReason`.
 
 ## `devflow work list`
 
