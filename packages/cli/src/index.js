@@ -15,6 +15,7 @@ import {
   DASHBOARD_WEB_CSS,
   DASHBOARD_WEB_JS,
   renderDashboardGatesPage,
+  renderDashboardHandoffsPage,
   renderDashboardSessionsPage,
 } from "../../web/src/index.js";
 import {
@@ -1069,55 +1070,6 @@ function renderDashboardSessionPage(session) {
       <dt>Observed</dt><dd>${escapeHtml(session.observedAt ?? "unknown")}</dd>
       <dt>Summary</dt><dd>${escapeHtml(session.summary ?? "none")}</dd>
     </dl>
-  </main>
-</body>
-</html>
-`;
-}
-
-function renderDashboardHandoffsPage(summary) {
-  const latest = summary.handoffs.latest;
-  const latestRows = latest
-    ? `<tr><td>${escapeHtml(latest.workItemId)}</td><td>${escapeHtml(latest.title ?? "Untitled handoff")}</td><td>${escapeHtml(latest.prompt ?? "none")}</td></tr>`
-    : '<tr><td colspan="3">No handoff evidence.</td></tr>';
-  const staleRows = summary.handoffs.stale
-    .map(
-      (handoff) => `<tr><td>${escapeHtml(handoff.workItemId)}</td><td>${escapeHtml(handoff.title ?? "Untitled handoff")}</td><td>${escapeHtml(handoff.prompt ?? "none")}</td></tr>`,
-    )
-    .join("");
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Devflow Handoffs</title>
-  <style>
-    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f7f9; color: #171a1f; }
-    main { max-width: 960px; margin: 0 auto; padding: 32px 20px 48px; }
-    h1 { margin: 0 0 8px; font-size: 32px; }
-    h2 { margin: 28px 0 12px; font-size: 18px; }
-    p { margin: 0 0 20px; color: #5b6270; }
-    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #d9dde5; border-radius: 8px; overflow: hidden; }
-    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eceff3; vertical-align: top; }
-    th { font-size: 13px; color: #5b6270; text-transform: uppercase; }
-    td { overflow-wrap: anywhere; }
-  </style>
-</head>
-<body>
-  <main>
-    <h1>Devflow Handoffs</h1>
-    <p>${escapeHtml(summary.handoffs.counts.stale)} stale handoffs</p>
-    <h2>Latest</h2>
-    <table>
-      <thead><tr><th>Work</th><th>Title</th><th>Prompt</th></tr></thead>
-      <tbody>${latestRows}</tbody>
-    </table>
-    <h2>Stale</h2>
-    <table>
-      <thead><tr><th>Work</th><th>Title</th><th>Prompt</th></tr></thead>
-      <tbody>${staleRows || '<tr><td colspan="3">No stale handoffs.</td></tr>'}</tbody>
-    </table>
   </main>
 </body>
 </html>

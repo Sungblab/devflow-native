@@ -9,6 +9,7 @@ import {
   renderDashboardRouteLinks,
   renderDashboardGatesPage,
   renderDashboardSessionsPage,
+  renderDashboardHandoffsPage,
 } from "../src/index.js";
 
 test("web package owns the no-build dashboard shell assets", () => {
@@ -143,4 +144,31 @@ test("web package renders the sessions slice page", () => {
   assert.match(html, /Moved session rendering into the web package/);
   assert.match(html, /Claude/);
   assert.match(html, /session-2/);
+});
+
+test("web package renders the handoffs slice page", () => {
+  const html = renderDashboardHandoffsPage({
+    handoffs: {
+      counts: { stale: 1 },
+      latest: {
+        workItemId: "dashboard-handoff-latest",
+        title: "Latest dashboard handoff",
+        prompt: "Continue from the latest handoff.",
+      },
+      stale: [
+        {
+          workItemId: "dashboard-handoff-stale",
+          title: "Stale dashboard handoff",
+          prompt: "Refresh this handoff.",
+        },
+      ],
+    },
+  });
+
+  assert.match(html, /Devflow Handoffs/);
+  assert.match(html, /1 stale handoffs/);
+  assert.match(html, /Latest dashboard handoff/);
+  assert.match(html, /Continue from the latest handoff/);
+  assert.match(html, /Stale dashboard handoff/);
+  assert.match(html, /Refresh this handoff/);
 });
