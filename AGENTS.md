@@ -29,7 +29,7 @@ The core product owns:
 - quality gates
 - docs/code/test maps
 - handoff and next-session prompts
-- local dashboard views
+- optional generated artifact views
 
 It should not become dependent on any single external methodology or runtime.
 Superpowers, gstack, OpenHarness, Hermes, Codex, Claude, and Gemini are

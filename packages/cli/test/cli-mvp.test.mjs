@@ -459,7 +459,7 @@ test("CLI split reads project-specific tasks from devflow config", async () => {
           {
             id: "configured-cli",
             ownedPaths: ["packages/cli/**"],
-            avoidPaths: ["packages/web/**"],
+            avoidPaths: ["packages/artifacts/**"],
             verification: [{ cwd: ".", command: "npm test" }],
           },
         ],
@@ -1905,5 +1905,11 @@ test("CLI sessions list text output surfaces state warnings", async () => {
 async function createTempGitRepo() {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-cli-"));
   await execFileAsync("git", ["init"], { cwd: repoPath });
+  await execFileAsync("git", ["config", "user.email", "devflow@example.test"], { cwd: repoPath });
+  await execFileAsync("git", ["config", "user.name", "Devflow Test"], { cwd: repoPath });
+  await writeFile(join(repoPath, "README.md"), "# Temp repo\n", "utf8");
+  await execFileAsync("git", ["add", "README.md"], { cwd: repoPath });
+  await execFileAsync("git", ["commit", "-m", "init"], { cwd: repoPath });
   return repoPath;
 }
+

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
 import test from "node:test";
 
 test("repo-local Codex plugin exposes devflow start skill and marketplace entry", async () => {
@@ -12,6 +13,7 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   const marketplace = JSON.parse(
     await readFile(".agents/plugins/marketplace.json", "utf8"),
   );
+  const hooks = JSON.parse(await readFile("plugins/devflow/hooks/hooks.json", "utf8"));
   const mcpConfig = JSON.parse(await readFile("plugins/devflow/.mcp.json", "utf8"));
   const geminiConfig = JSON.parse(await readFile("templates/gemini/settings.json", "utf8"));
   const startSkill = await readFile("plugins/devflow/skills/start/SKILL.md", "utf8");
@@ -25,10 +27,16 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.equal(manifest.name, "devflow");
   assert.equal(manifest.skills, "./skills/");
   assert.equal(manifest.mcpServers, "./.mcp.json");
+  assert.equal(manifest.hooks, "./hooks/hooks.json");
   assert.match(manifest.interface.shortDescription, /project truth/i);
   assert.equal(claudeManifest.name, "devflow");
+  assert.equal(claudeManifest.hooks, "./hooks/hooks.json");
   assert.match(claudeManifest.description, /continuity/i);
   assert.ok(claudeManifest.keywords.includes("handoff"));
+  assert.equal(hooks.hooks.SessionStart[0].matcher, "startup|resume");
+  assert.match(hooks.hooks.SessionStart[0].hooks[0].command, /session-start\.mjs/);
+  assert.match(hooks.hooks.UserPromptSubmit[0].hooks[0].command, /user-prompt-submit\.mjs/);
+  assert.match(hooks.hooks.Stop[0].hooks[0].command, /stop\.mjs/);
   assert.deepEqual(mcpConfig.mcpServers.devflow.command, "node");
   assert.deepEqual(mcpConfig.mcpServers.devflow.args, ["packages/mcp/src/stdio.js"]);
   assert.deepEqual(geminiConfig.mcpServers.devflow.command, "node");
@@ -88,3 +96,48 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.match(finishSkill, /gh CLI/);
   assert.match(finishSkill, /commit, PR, continue, or next-session prompt/);
 });
+
+test("repo-local plugin hooks emit compact context for agent sessions", async () => {
+  const sessionStart = await runHook("plugins/devflow/hooks/session-start.mjs", {
+    hook_event_name: "SessionStart",
+    source: "startup",
+    cwd: process.cwd(),
+  });
+  const userPrompt = await runHook("plugins/devflow/hooks/user-prompt-submit.mjs", {
+    hook_event_name: "UserPromptSubmit",
+    cwd: process.cwd(),
+    prompt: "ㄱㄱ",
+  });
+
+  assert.equal(sessionStart.hookSpecificOutput.hookEventName, "SessionStart");
+  assert.match(sessionStart.hookSpecificOutput.additionalContext, /Devflow start context/);
+  assert.match(sessionStart.hookSpecificOutput.additionalContext, /Use structured state and compact summaries/);
+  assert.equal(userPrompt.hookSpecificOutput.hookEventName, "UserPromptSubmit");
+  assert.match(userPrompt.hookSpecificOutput.additionalContext, /continue_or_start/);
+  assert.match(userPrompt.hookSpecificOutput.additionalContext, /Do not generate HTML unless requested/);
+});
+
+async function runHook(path, payload) {
+  const child = spawn(process.execPath, [path], {
+    cwd: process.cwd(),
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  let stdout = "";
+  let stderr = "";
+
+  child.stdout.on("data", (chunk) => {
+    stdout += chunk;
+  });
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk;
+  });
+
+  child.stdin.end(`${JSON.stringify(payload)}\n`);
+
+  const exitCode = await new Promise((resolve) => {
+    child.on("close", resolve);
+  });
+
+  assert.equal(exitCode, 0, stderr);
+  return JSON.parse(stdout);
+}

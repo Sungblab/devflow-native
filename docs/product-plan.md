@@ -30,6 +30,8 @@ projects without forcing every project into a hosted SaaS.
 - Do not hide git, tests, or PR review behind vague AI summaries.
 - Do not make orchestration the first product center.
 - Do not assume the user wants many parallel agents by default.
+- Do not make a persistent visual dashboard the MVP. Visual output should be
+  generated only when it helps the maintainer inspect dense state.
 
 ## Target User
 
@@ -102,23 +104,26 @@ beginner profile should translate those concepts into plain language.
 
 ## Product Shape
 
-The product has five surfaces:
+The product has five surfaces, ordered by MVP priority:
 
-- CLI: fast commands from PowerShell, WSL, or any terminal.
+- Agent plugins: Codex and Claude Code hooks/skills that restore context inside
+  the agent the maintainer already uses.
 - MCP server: agent-neutral tools that Codex, Claude Code, Gemini, and other
   MCP-capable hosts can call.
+- CLI: fallback and debug commands from PowerShell, WSL, or any terminal.
 - Agent integrations: Claude Code plugin/slash commands, Codex MCP config,
   Gemini MCP config, and future host-specific adapters.
-- Local dashboard: browser UI for timeline, maps, gates, sessions, and prompts.
+- Generated artifacts: optional HTML/text views for dense reviews, split
+  boards, timelines, or handoffs.
 - Repo scaffold: templates and health checks committed into each project.
 
-The CLI is the durable local interface and debugging surface. The strongest
-daily workflow should happen inside the coding agents the user already uses.
+The plugin experience is the front door. The strongest daily workflow should
+happen inside the coding agents the user already uses. The CLI is the durable
+local debugging surface, not the thing the maintainer should have to remember.
 
-The first daily UX should be plugin-friendly. Superpowers, Claude Code plugins,
-Codex skills, and future agent hosts should call the same local contracts
-instead of forking their own state model. The plugin experience is the front
-door; local CLI, state files, and MCP tools are the durable shared machinery.
+Superpowers, Claude Code plugins, Codex skills, and future agent hosts should
+call the same local contracts instead of forking their own state model. Local
+CLI, state files, and MCP tools are the durable shared machinery.
 
 Workflow systems such as Superpowers are profiles, not dependencies. Devflow
 should work well beside them while still supporting plain Codex, Claude Code,
@@ -193,6 +198,9 @@ Idea
   recording must work from local files, git, docs, and agent history. AI assist
   features such as term explanation, prompt rewriting, and session summarization
   can use configured providers later.
+- HTML is not source of truth. Structured `.devflow` state and compact
+  summaries feed agents by default; HTML artifacts are generated on demand for
+  human inspection.
 
 ## Competitive Position
 
@@ -216,6 +224,8 @@ The product should own:
 - next-session prompts
 - environment and repeated-mistake memory
 - beginner-friendly term and prompt translation
+- optional generated artifacts for dense review, split, timeline, and handoff
+  views
 - adapter-neutral integration points
 
 This allows Solo Devflow OS to integrate with Codex, Claude Code, Gemini,

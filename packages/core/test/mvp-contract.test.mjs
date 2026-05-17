@@ -66,7 +66,7 @@ test("finish summary records evidence, skipped checks, risks, and next-session p
     intent: "Start the first useful Solo Devflow OS loop.",
     changedFiles: [{ path: "packages/core/src/index.js", status: "added" }],
     gates: [{ id: "unit", command: "npm test", status: "passed" }],
-    skipped: [{ id: "dashboard-smoke", reason: "No dashboard exists in this slice." }],
+    skipped: [{ id: "artifact-smoke", reason: "No artifact view exists in this slice." }],
     risks: [{ severity: "low", message: "No persistent SQLite store yet." }],
     nextTask: "Add file-backed .devflow state persistence.",
     nextPrompt: "Continue Solo Devflow OS by adding file-backed state persistence.",
@@ -75,7 +75,7 @@ test("finish summary records evidence, skipped checks, risks, and next-session p
   assert.equal(summary.command, "finish");
   assert.equal(summary.workItem.status, "completed");
   assert.equal(summary.evidence.gates[0].status, "passed");
-  assert.equal(summary.evidence.skipped[0].id, "dashboard-smoke");
+  assert.equal(summary.evidence.skipped[0].id, "artifact-smoke");
   assert.match(summary.nextSession.prompt, /file-backed state persistence/);
 });
 

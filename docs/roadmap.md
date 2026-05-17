@@ -9,7 +9,7 @@ Deliverables:
 - research notes
 - roadmap
 - initial command contract
-- dashboard information architecture
+- plugin-first information architecture
 
 Exit criteria:
 
@@ -25,6 +25,8 @@ Build:
 - `devflow finish`
 - `devflow doctor`
 - `devflow prompt next`
+- repo-local Codex/Claude plugin hooks for start, prompt intent, and finish
+  guard context
 - local `.devflow/` state files
 - git dirty-file capture
 - gate evidence capture
@@ -41,7 +43,7 @@ Exit criteria:
 - a completed task can record changed files, commands run, skipped checks,
   risks, and a next-session prompt
 - the product's first daily loop works from plugin skills, CLI, or future MCP
-  tools without dashboard or hosted sync
+  tools without a dashboard or hosted sync
 
 ## Phase 2: Repo Scaffold And Health
 
@@ -186,7 +188,8 @@ Build:
 Exit criteria:
 
 - active and historical agent sessions can be attached to a task
-- dashboard can show what each session did and where it stopped
+- compact status and optional artifacts can show what each session did and
+  where it stopped
 
 Current implementation note: `packages/adapters` has first read-only Codex
 session discovery helpers. `findCodexSessionFiles` locates candidate JSONL
@@ -240,20 +243,28 @@ Exit criteria:
 - simple/guided output remains a renderer over the same core state, not a
   separate product model
 
-## Phase 8: Local Dashboard
+## Phase 8: Generated Artifacts
 
 Build:
 
-- active work view
-- timeline
-- gates view
-- maps view
-- sessions view
-- handoffs view
+- on-demand HTML/text artifact generation from structured `.devflow` state
+- review sheet artifacts for changed files, gates, skipped checks, and risks
+- split board artifacts for parallel work planning
+- timeline artifacts for sessions, gates, and handoffs
+- handoff artifacts for next-session prompts and unresolved risks
 
 Exit criteria:
 
-- the maintainer can open one local dashboard and understand project state
+- the maintainer can request a visual artifact only when the state is too dense
+  for compact text
+- generated HTML is never the source of truth and is not fed back to agents by
+  default
+- artifact templates are local, deterministic, and cheap compared with asking
+  the model to regenerate layout every turn
+
+Current implementation note: the earlier dashboard package was removed from
+the MVP. Phase 8 is now an on-demand artifact layer rather than a persistent
+web app.
 
 ## Phase 9: GitHub Review Integration
 
