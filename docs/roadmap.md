@@ -262,9 +262,9 @@ agent breakdown, recent timeline events, and one next-action recommendation from
 `.devflow/state/events.jsonl`. `devflow dashboard --html <path>` now writes a
 static browser shell from the same summary, and `devflow dashboard serve`
 serves that shell plus `/dashboard.json` over local HTTP. The server also
-includes a dedicated `/gates` HTML view and `/gates.json` slice. A richer
-Vite/React dashboard, maps, and dedicated sessions/handoffs views remain later
-Phase 8 work.
+includes dedicated `/gates` and `/sessions` HTML views plus `/gates.json` and
+`/sessions.json` slices. A richer Vite/React dashboard, maps, and dedicated
+handoffs views remain later Phase 8 work.
 
 ## Phase 9: GitHub Review Integration
 

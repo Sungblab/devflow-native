@@ -1101,6 +1101,61 @@ test("CLI dashboard serve exposes a dedicated gates view", async () => {
   }
 });
 
+test("CLI dashboard serve exposes a dedicated sessions view", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "note",
+    "--repo",
+    repoPath,
+    "--work",
+    "served-sessions",
+    "--agent",
+    "Codex",
+    "--summary",
+    "Served session note.",
+    "--json",
+  ]);
+
+  const child = spawn(
+    "node",
+    [
+      "packages/cli/src/index.js",
+      "dashboard",
+      "serve",
+      "--repo",
+      repoPath,
+      "--port",
+      "0",
+      "--json",
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+
+  try {
+    const url = await waitForOutputMatch(child, /http:\/\/127\.0\.0\.1:\d+\//);
+    const sessionsResponse = await fetch(`${url}sessions`);
+    const sessionsHtml = await sessionsResponse.text();
+    const sessionsJsonResponse = await fetch(`${url}sessions.json`);
+    const sessionsJson = await sessionsJsonResponse.json();
+
+    assert.equal(sessionsResponse.status, 200);
+    assert.match(sessionsHtml, /Devflow Sessions/);
+    assert.match(sessionsHtml, /Codex/);
+    assert.match(sessionsHtml, /Served session note/);
+    assert.equal(sessionsJson.counts.total, 1);
+    assert.equal(sessionsJson.recent[0].agent, "Codex");
+  } finally {
+    child.kill();
+    await waitForExit(child);
+  }
+});
+
 test("CLI gates run executes configured gate and writes evidence", async () => {
   const repoPath = await createTempGitRepo();
   const scriptPath = join(repoPath, "gate-script.mjs");

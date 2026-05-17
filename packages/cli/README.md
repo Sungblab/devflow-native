@@ -86,7 +86,8 @@ from the same local state as a compact terminal or JSON dashboard summary.
 summary for local review.
 `devflow dashboard serve --port <port>` serves that browser shell over local
 HTTP, exposes `/dashboard.json` for the raw summary contract, and exposes
-dedicated gate views at `/gates` and `/gates.json`.
+dedicated gate views at `/gates` and `/gates.json` plus session views at
+`/sessions` and `/sessions.json`.
 `devflow split` renders local worktree-session plans, and `devflow split
 --register --start` can append the generated sessions as active work items
 without manual re-entry. The
