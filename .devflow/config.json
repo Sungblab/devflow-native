@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "defaultProfile": "standard",
+  "defaultPlatform": "windows-powershell",
+  "gates": [
+    {
+      "id": "docs-check",
+      "command": "npm run docs:check"
+    },
+    {
+      "id": "unit",
+      "command": "npm test"
+    }
+  ]
+}
