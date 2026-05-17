@@ -81,6 +81,14 @@ Exit criteria:
   self-contained prompt per session
 - work items can be registered and listed from local state
 
+Current implementation note: `devflow work create`, `devflow work start`, and
+`devflow work list` now append and derive local work item state from
+`.devflow/state/events.jsonl`. MCP exposes the same contract as
+`devflow.work_create`, `devflow.work_start`, and `devflow.work_list`, and
+`devflow status` now reads active work items from derived state. Richer work
+item fields, blocking states, ready-to-finish transitions, and automatic links
+from split tasks remain later Phase 3 work.
+
 ## Phase 4: Gate Runner
 
 Build:
@@ -121,6 +129,9 @@ Build:
 - `devflow.sessions_attach` MCP tool
 - `devflow.sessions_list` MCP tool
 - `devflow.sessions_note` MCP tool
+- `devflow.work_create` MCP tool
+- `devflow.work_start` MCP tool
+- `devflow.work_list` MCP tool
 - Claude Code plugin draft with slash commands
 - Codex MCP config template
 - Gemini MCP config template
@@ -141,7 +152,8 @@ Current implementation note: `packages/mcp` has testable handler functions for
 `devflow.sessions_codex` and
 dry-run `devflow.sessions_attach_plan`, confirmed-write
 `devflow.sessions_attach`, read-only `devflow.sessions_list`, manual
-`devflow.sessions_note`, and a
+`devflow.sessions_note`, local work item tools `devflow.work_create`,
+`devflow.work_start`, and `devflow.work_list`, and a
 minimal stdio JSON-RPC transport. The CLI also has thin `devflow split --json`
 and `devflow explain` renderers, plus `devflow prompt rewrite` for converting
 vague maintainer intent into agent-ready requirements. Host-specific Codex and

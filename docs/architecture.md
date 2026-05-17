@@ -121,6 +121,7 @@ devflow init
 devflow status
 devflow work create
 devflow work start
+devflow work list
 devflow session attach
 devflow gates run
 devflow review import
@@ -153,6 +154,9 @@ devflow.sessions_attach_plan
 devflow.sessions_attach
 devflow.sessions_list
 devflow.sessions_note
+devflow.work_create
+devflow.work_start
+devflow.work_list
 ```
 
 Rules:

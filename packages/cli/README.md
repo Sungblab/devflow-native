@@ -51,6 +51,9 @@ packages/cli/
 - `devflow status`
 - `devflow init`
 - `devflow health`
+- `devflow work create`
+- `devflow work start`
+- `devflow work list`
 - `devflow split`
 - `devflow finish`
 - `devflow doctor`
@@ -67,8 +70,10 @@ minimum project contract only when `--confirm` is provided. The first scaffold
 includes `.devflow/config.json`, `AGENTS.md`, a docs router, workflow notes,
 testing strategy, and an architecture map index. Existing files are skipped
 instead of overwritten. `devflow health` checks that the same scaffold files
-and at least one configured gate are present. `devflow split` currently renders
-the first local worktree-session plan. The
+and at least one configured gate are present. `devflow work create`,
+`devflow work start`, and `devflow work list` provide the first local work item
+registry over append-only `.devflow/state/events.jsonl` events. `devflow split`
+currently renders the first local worktree-session plan. The
 `devflow sessions codex` is read-only and requires an explicit
 `--codex-home <path>` before it reads local Codex session candidates.
 `devflow sessions attach-plan` is a dry-run planner over an explicit JSON input

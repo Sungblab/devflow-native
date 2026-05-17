@@ -45,11 +45,7 @@ export function createStatusSummary(input = {}) {
       changedFiles,
       worktrees: input.worktrees ?? [],
     },
-    work: {
-      active: input.work?.active ?? [],
-      blocked: input.work?.blocked ?? [],
-      readyToFinish: input.work?.readyToFinish ?? [],
-    },
+    work: input.work ?? state.work,
     sessions: {
       discovered: input.sessions?.discovered ?? state.sessions?.discovered ?? [],
       attached: attachedSessions,
@@ -384,6 +380,53 @@ export async function writeInitPlan(repoPath, plan, options = {}) {
   };
 }
 
+export async function recordWorkCreatedEvent(repoPath, workItem, options = {}) {
+  if (!workItem?.id) {
+    throw new Error("work create requires id.");
+  }
+
+  if (!workItem.title) {
+    throw new Error("work create requires title.");
+  }
+
+  const observedAt = options.observedAt ?? new Date().toISOString();
+  const event = {
+    schemaVersion: "0.1",
+    type: "work.created",
+    observedAt,
+    payload: {
+      id: workItem.id,
+      title: workItem.title,
+      description: workItem.description ?? null,
+      ownedPaths: workItem.ownedPaths ?? [],
+      status: "created",
+    },
+  };
+
+  await appendDevflowEvent(repoPath, event);
+  return event;
+}
+
+export async function recordWorkStartedEvent(repoPath, workItem, options = {}) {
+  if (!workItem?.id) {
+    throw new Error("work start requires id.");
+  }
+
+  const observedAt = options.observedAt ?? new Date().toISOString();
+  const event = {
+    schemaVersion: "0.1",
+    type: "work.started",
+    observedAt,
+    payload: {
+      id: workItem.id,
+      status: "active",
+    },
+  };
+
+  await appendDevflowEvent(repoPath, event);
+  return event;
+}
+
 export function createSessionAttachPlan(input = {}) {
   const workItems = input.workItems ?? [];
   const sessions = input.sessions ?? [];
@@ -701,9 +744,7 @@ export async function recordFinishEvent(repoPath, finishSummary, options = {}) {
     payload: finishSummary,
   };
 
-  const stateDir = join(repoPath, ".devflow", "state");
-  await mkdir(stateDir, { recursive: true });
-  await appendFile(join(stateDir, "events.jsonl"), `${JSON.stringify(event)}\n`, "utf8");
+  await appendDevflowEvent(repoPath, event);
 
   return event;
 }
@@ -727,11 +768,31 @@ export async function recordGateEvent(repoPath, gateEvidence, options = {}) {
     },
   };
 
-  const stateDir = join(repoPath, ".devflow", "state");
-  await mkdir(stateDir, { recursive: true });
-  await appendFile(join(stateDir, "events.jsonl"), `${JSON.stringify(event)}\n`, "utf8");
+  await appendDevflowEvent(repoPath, event);
 
   return event;
+}
+
+export function createWorkListSummary(input = {}) {
+  const state = input.state ?? emptyDevflowState();
+  const status = input.status ?? null;
+  const allItems = input.items ?? state.work?.items ?? [];
+  const items = status ? allItems.filter((item) => item.status === status) : allItems;
+
+  return {
+    schemaVersion: "0.1",
+    command: "work_list",
+    repo: {
+      absolutePath: input.repo?.absolutePath ?? process.cwd(),
+    },
+    filters: {
+      status,
+    },
+    items,
+    count: items.length,
+    totalCount: allItems.length,
+    warnings: [...(input.warnings ?? []), ...(state.warnings ?? [])],
+  };
 }
 
 export async function runConfiguredGate(repoPath, input = {}) {
@@ -833,9 +894,7 @@ export async function recordSessionAttachedEvent(repoPath, proposal, options = {
     },
   };
 
-  const stateDir = join(repoPath, ".devflow", "state");
-  await mkdir(stateDir, { recursive: true });
-  await appendFile(join(stateDir, "events.jsonl"), `${JSON.stringify(event)}\n`, "utf8");
+  await appendDevflowEvent(repoPath, event);
 
   return event;
 }
@@ -898,6 +957,12 @@ export async function readDevflowState(repoPath) {
   }
 
   return deriveStateFromEvents(events, warnings);
+}
+
+async function appendDevflowEvent(repoPath, event) {
+  const stateDir = join(repoPath, ".devflow", "state");
+  await mkdir(stateDir, { recursive: true });
+  await appendFile(join(stateDir, "events.jsonl"), `${JSON.stringify(event)}\n`, "utf8");
 }
 
 function normalizePlatform(platform = {}) {
@@ -996,6 +1061,7 @@ function deriveStateFromEvents(events, warnings = []) {
     gates: {
       latestById: createLatestGateEvidence(events),
     },
+    work: createWorkState(events),
     sessions: {
       discovered: [],
       attached: createAttachedSessionEvidence(events),
@@ -1048,6 +1114,73 @@ function createLatestGateEvidence(events) {
   }
 
   return latestById;
+}
+
+function createWorkState(events) {
+  const itemsById = new Map();
+  const order = [];
+
+  for (const event of events) {
+    if (event.type === "work.created") {
+      const item = {
+        id: event.payload.id,
+        title: event.payload.title,
+        description: event.payload.description ?? null,
+        ownedPaths: event.payload.ownedPaths ?? [],
+        status: "created",
+        createdAt: event.observedAt,
+        startedAt: null,
+        completedAt: null,
+      };
+      itemsById.set(item.id, item);
+      if (!order.includes(item.id)) {
+        order.push(item.id);
+      }
+      continue;
+    }
+
+    if (event.type === "work.started") {
+      const item = ensureWorkItem(itemsById, order, event.payload.id);
+      item.status = "active";
+      item.startedAt = event.observedAt;
+      continue;
+    }
+
+    if (event.type === "work.completed" && event.payload?.command === "finish") {
+      const id = event.payload.workItem.id;
+      const item = ensureWorkItem(itemsById, order, id);
+      item.title = event.payload.workItem.title ?? item.title;
+      item.status = "completed";
+      item.completedAt = event.observedAt;
+    }
+  }
+
+  const items = order.map((id) => itemsById.get(id));
+
+  return {
+    items,
+    active: items.filter((item) => item.status === "active"),
+    blocked: items.filter((item) => item.status === "blocked"),
+    readyToFinish: items.filter((item) => item.status === "ready-to-finish"),
+  };
+}
+
+function ensureWorkItem(itemsById, order, id) {
+  if (!itemsById.has(id)) {
+    itemsById.set(id, {
+      id,
+      title: id,
+      description: null,
+      ownedPaths: [],
+      status: "created",
+      createdAt: null,
+      startedAt: null,
+      completedAt: null,
+    });
+    order.push(id);
+  }
+
+  return itemsById.get(id);
 }
 
 function createAttachedSessionEvidence(events) {
@@ -1354,6 +1487,12 @@ function emptyDevflowState() {
     },
     gates: {
       latestById: {},
+    },
+    work: {
+      items: [],
+      active: [],
+      blocked: [],
+      readyToFinish: [],
     },
     sessions: {
       discovered: [],

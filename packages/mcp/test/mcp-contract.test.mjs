@@ -25,6 +25,9 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.sessions_attach"));
   assert.ok(names.includes("devflow.sessions_list"));
   assert.ok(names.includes("devflow.sessions_note"));
+  assert.ok(names.includes("devflow.work_create"));
+  assert.ok(names.includes("devflow.work_start"));
+  assert.ok(names.includes("devflow.work_list"));
 });
 
 test("MCP health reports missing scaffold files", async () => {
@@ -228,6 +231,29 @@ test("MCP record_gate records standalone gate evidence", async () => {
   const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
   assert.match(log, /"type":"gate.finished"/);
   assert.match(log, /docs-check/);
+});
+
+test("MCP work tools create, start, and list work items", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-work-"));
+  const created = await callTool("devflow.work_create", {
+    repo: repoPath,
+    id: "phase-3-work-registry",
+    title: "Phase 3 work registry",
+    ownedPaths: ["packages/core/**", "packages/mcp/**"],
+  });
+  const started = await callTool("devflow.work_start", {
+    repo: repoPath,
+    id: "phase-3-work-registry",
+  });
+  const listed = await callTool("devflow.work_list", {
+    repo: repoPath,
+  });
+
+  assert.equal(created.structuredContent.command, "work_create");
+  assert.equal(started.structuredContent.command, "work_start");
+  assert.equal(listed.structuredContent.command, "work_list");
+  assert.equal(listed.structuredContent.items[0].status, "active");
+  assert.deepEqual(listed.structuredContent.items[0].ownedPaths, ["packages/core/**", "packages/mcp/**"]);
 });
 
 test("MCP gates_run executes configured gate and records evidence", async () => {

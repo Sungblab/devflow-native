@@ -10,6 +10,7 @@ import {
   createDoctorSummary,
   createInitPlan,
   createSessionAttachPlan,
+  createWorkListSummary,
   createTermExplanation,
   createNextPrompt,
   createPromptRewrite,
@@ -29,6 +30,8 @@ import {
   writeInitPlan,
   recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
+  recordWorkCreatedEvent,
+  recordWorkStartedEvent,
 } from "../src/index.js";
 
 test("status summary captures repo, dirty files, gates, and prompt recommendation", () => {
@@ -200,6 +203,51 @@ test("health summary reports invalid gate definitions", () => {
   assert.ok(summary.invalidGates.some((gate) => gate.reason === "missing-id"));
   assert.ok(summary.invalidGates.some((gate) => gate.reason === "missing-command"));
   assert.ok(summary.recommendations.some((item) => item.kind === "invalid-gate"));
+});
+
+test("work item events can create, start, list, and feed status", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-work-"));
+
+  const created = await recordWorkCreatedEvent(
+    repoPath,
+    {
+      id: "phase-3-work-registry",
+      title: "Phase 3 work registry",
+      description: "Persist work items in local state.",
+      ownedPaths: ["packages/core/**", "packages/cli/**"],
+    },
+    { observedAt: "2026-05-17T08:00:00.000Z" },
+  );
+  const started = await recordWorkStartedEvent(
+    repoPath,
+    { id: "phase-3-work-registry" },
+    { observedAt: "2026-05-17T08:01:00.000Z" },
+  );
+
+  assert.equal(created.type, "work.created");
+  assert.equal(started.type, "work.started");
+
+  const state = await readDevflowState(repoPath);
+  const list = createWorkListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(list.command, "work_list");
+  assert.equal(list.items.length, 1);
+  assert.equal(list.items[0].id, "phase-3-work-registry");
+  assert.equal(list.items[0].status, "active");
+  assert.deepEqual(list.items[0].ownedPaths, ["packages/core/**", "packages/cli/**"]);
+
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+  assert.equal(status.work.active[0].id, "phase-3-work-registry");
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.match(log, /"type":"work.created"/);
+  assert.match(log, /"type":"work.started"/);
 });
 
 test("project health scanner surfaces invalid gates from config", async () => {
