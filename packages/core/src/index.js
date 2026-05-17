@@ -443,6 +443,47 @@ export async function recordWorkStartedEvent(repoPath, workItem, options = {}) {
   return event;
 }
 
+export async function recordWorkReadyEvent(repoPath, workItem, options = {}) {
+  if (!workItem?.id) {
+    throw new Error("work ready requires id.");
+  }
+
+  const observedAt = options.observedAt ?? new Date().toISOString();
+  const event = {
+    schemaVersion: "0.1",
+    type: "work.ready",
+    observedAt,
+    payload: {
+      id: workItem.id,
+      status: "ready-to-finish",
+    },
+  };
+
+  await appendDevflowEvent(repoPath, event);
+  return event;
+}
+
+export async function recordWorkBlockedEvent(repoPath, workItem, options = {}) {
+  if (!workItem?.id) {
+    throw new Error("work block requires id.");
+  }
+
+  const observedAt = options.observedAt ?? new Date().toISOString();
+  const event = {
+    schemaVersion: "0.1",
+    type: "work.blocked",
+    observedAt,
+    payload: {
+      id: workItem.id,
+      status: "blocked",
+      reason: workItem.reason ?? null,
+    },
+  };
+
+  await appendDevflowEvent(repoPath, event);
+  return event;
+}
+
 export async function recordSplitWorkEvents(repoPath, splitPlan, options = {}) {
   const sessions = splitPlan?.sessions ?? [];
   const created = [];
@@ -1229,6 +1270,22 @@ function createWorkState(events) {
       const item = ensureWorkItem(itemsById, order, event.payload.id);
       item.status = "active";
       item.startedAt = event.observedAt;
+      continue;
+    }
+
+    if (event.type === "work.ready") {
+      const item = ensureWorkItem(itemsById, order, event.payload.id);
+      item.status = "ready-to-finish";
+      item.readyAt = event.observedAt;
+      item.blockedReason = null;
+      continue;
+    }
+
+    if (event.type === "work.blocked") {
+      const item = ensureWorkItem(itemsById, order, event.payload.id);
+      item.status = "blocked";
+      item.blockedAt = event.observedAt;
+      item.blockedReason = event.payload.reason ?? null;
       continue;
     }
 
