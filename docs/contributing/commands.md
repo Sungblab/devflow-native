@@ -1085,7 +1085,8 @@ dedicated gates view at `/gates` and the same gate slice as JSON at
 `/gates/<id>.json`. A dedicated sessions view is available at `/sessions` and
 the same session slice as JSON at `/sessions.json`, with session detail pages
 at `/sessions/<id>` and `/sessions/<id>.json`. The latest and stale
-handoffs are available at `/handoffs` and `/handoffs.json`. Architecture maps
+handoffs are available at `/handoffs` and `/handoffs.json`, with handoff detail
+pages at `/handoffs/<work-item-id>` and `/handoffs/<work-item-id>.json`. Architecture maps
 are available at `/maps` and `/maps.json`, with map detail pages at
 `/maps/<id>` and `/maps/<id>.json`. Work item detail pages are available at
 `/work/<id>` and `/work/<id>.json` for active, blocked, and ready-to-finish

@@ -312,6 +312,36 @@ async function renderDashboardServe(argsForCommand) {
       return;
     }
 
+    const handoffJsonMatch = requestPath.match(/^\/handoffs\/([^/]+)\.json$/);
+    if (handoffJsonMatch) {
+      const handoff = findDashboardHandoff(summary, decodeURIComponent(handoffJsonMatch[1]));
+      if (!handoff) {
+        response.writeHead(404, { "content-type": "application/json; charset=utf-8" });
+        response.end(`${JSON.stringify({ error: "handoff not found" })}\n`, () =>
+          closeServerOnce(server, options.once),
+        );
+        return;
+      }
+      response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      response.end(`${JSON.stringify(handoff, null, 2)}\n`, () => closeServerOnce(server, options.once));
+      return;
+    }
+
+    const handoffHtmlMatch = requestPath.match(/^\/handoffs\/([^/]+)$/);
+    if (handoffHtmlMatch) {
+      const handoff = findDashboardHandoff(summary, decodeURIComponent(handoffHtmlMatch[1]));
+      if (!handoff) {
+        response.writeHead(404, { "content-type": "text/html; charset=utf-8" });
+        response.end(renderDashboardNotFoundPage("Handoff not found"), () =>
+          closeServerOnce(server, options.once),
+        );
+        return;
+      }
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      response.end(renderDashboardHandoffPage(handoff), () => closeServerOnce(server, options.once));
+      return;
+    }
+
     if (requestPath === "/maps.json") {
       response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
       response.end(`${JSON.stringify(summary.maps, null, 2)}\n`, () => closeServerOnce(server, options.once));
@@ -1147,6 +1177,43 @@ function renderDashboardHandoffsPage(summary) {
       <thead><tr><th>Work</th><th>Title</th><th>Prompt</th></tr></thead>
       <tbody>${staleRows || '<tr><td colspan="3">No stale handoffs.</td></tr>'}</tbody>
     </table>
+  </main>
+</body>
+</html>
+`;
+}
+
+function findDashboardHandoff(summary, workItemId) {
+  return [summary.handoffs.latest, ...(summary.handoffs.stale ?? [])]
+    .filter(Boolean)
+    .find((handoff) => handoff.workItemId === workItemId);
+}
+
+function renderDashboardHandoffPage(handoff) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devflow Handoff Detail</title>
+  <style>
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f7f9; color: #171a1f; }
+    main { max-width: 880px; margin: 0 auto; padding: 32px 20px 48px; }
+    h1 { margin: 0 0 8px; font-size: 32px; }
+    dl { display: grid; grid-template-columns: 140px 1fr; gap: 10px 16px; background: #fff; border: 1px solid #d9dde5; border-radius: 8px; padding: 16px; }
+    dt { color: #5b6270; font-weight: 700; }
+    dd { margin: 0; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Devflow Handoff Detail</h1>
+    <dl>
+      <dt>Work</dt><dd>${escapeHtml(handoff.workItemId)}</dd>
+      <dt>Title</dt><dd>${escapeHtml(handoff.title ?? "Untitled handoff")}</dd>
+      <dt>Observed</dt><dd>${escapeHtml(handoff.observedAt ?? "unknown")}</dd>
+      <dt>Prompt</dt><dd>${escapeHtml(handoff.prompt ?? "none")}</dd>
+    </dl>
   </main>
 </body>
 </html>

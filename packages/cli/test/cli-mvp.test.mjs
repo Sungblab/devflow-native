@@ -1338,6 +1338,61 @@ test("CLI dashboard serve exposes a dedicated handoffs view", async () => {
   }
 });
 
+test("CLI dashboard serve exposes a handoff detail view", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "served-handoff-detail",
+    "--title",
+    "Served handoff detail",
+    "--intent",
+    "Serve handoff detail evidence.",
+    "--next-task",
+    "Continue served handoff detail.",
+    "--json",
+  ]);
+
+  const child = spawn(
+    "node",
+    [
+      "packages/cli/src/index.js",
+      "dashboard",
+      "serve",
+      "--repo",
+      repoPath,
+      "--port",
+      "0",
+      "--json",
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+
+  try {
+    const url = await waitForOutputMatch(child, /http:\/\/127\.0\.0\.1:\d+\//);
+    const detailResponse = await fetch(`${url}handoffs/served-handoff-detail`);
+    const detailHtml = await detailResponse.text();
+    const detailJsonResponse = await fetch(`${url}handoffs/served-handoff-detail.json`);
+    const detailJson = await detailJsonResponse.json();
+
+    assert.equal(detailResponse.status, 200);
+    assert.match(detailHtml, /Devflow Handoff Detail/);
+    assert.match(detailHtml, /Continue served handoff detail/);
+    assert.equal(detailJson.workItemId, "served-handoff-detail");
+    assert.match(detailJson.prompt, /Continue served handoff detail/);
+  } finally {
+    child.kill();
+    await waitForExit(child);
+  }
+});
+
 test("CLI dashboard serve exposes a dedicated maps view", async () => {
   const repoPath = await createTempGitRepo();
   await mkdir(join(repoPath, "docs", "architecture", "maps"), { recursive: true });

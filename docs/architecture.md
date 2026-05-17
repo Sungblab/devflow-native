@@ -287,7 +287,8 @@ that shell in a local HTTP server and serves `/dashboard.json` for callers that
 need the raw contract, plus dedicated `/gates`, `/sessions`, `/handoffs`, and
 `/maps` HTML/JSON slices, latest gate detail routes at `/gates/<id>` and
 `/gates/<id>.json`, session detail routes at `/sessions/<id>` and
-`/sessions/<id>.json`, map detail routes at `/maps/<id>` and
+`/sessions/<id>.json`, handoff detail routes at `/handoffs/<work-item-id>` and
+`/handoffs/<work-item-id>.json`, map detail routes at `/maps/<id>` and
 `/maps/<id>.json`, and first work item detail routes at `/work/<id>` and
 `/work/<id>.json`.
 
