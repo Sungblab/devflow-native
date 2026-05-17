@@ -60,6 +60,37 @@ export function createStatusSummary(input = {}) {
   };
 }
 
+export function createDashboardSummary(input = {}) {
+  const state = input.state ?? emptyDevflowState();
+  const work = input.work ?? state.work ?? emptyDevflowState().work;
+  const active = work.active ?? [];
+  const blocked = work.blocked ?? [];
+  const readyToFinish = work.readyToFinish ?? [];
+
+  return {
+    schemaVersion: "0.1",
+    command: "dashboard",
+    repo: {
+      absolutePath: input.repo?.absolutePath ?? process.cwd(),
+      branch: input.repo?.branch ?? null,
+      head: input.repo?.head ?? null,
+    },
+    work: {
+      counts: {
+        active: active.length,
+        blocked: blocked.length,
+        readyToFinish: readyToFinish.length,
+        open: active.length + blocked.length + readyToFinish.length,
+      },
+      active,
+      blocked,
+      readyToFinish,
+    },
+    recommendations: createDashboardRecommendations({ active, blocked, readyToFinish }),
+    warnings: [...(input.warnings ?? []), ...(state.warnings ?? [])],
+  };
+}
+
 export function createFinishSummary(input) {
   const nextTask = input.nextTask ?? "Continue from the recorded handoff.";
   const nextPrompt =
@@ -1169,6 +1200,42 @@ function createDoctorRecommendations(platform, mistakes) {
   }
 
   return recommendations;
+}
+
+function createDashboardRecommendations({ active, blocked, readyToFinish }) {
+  if (blocked.length > 0) {
+    return [
+      {
+        kind: "work",
+        message: "Review blocked work before starting more active work.",
+      },
+    ];
+  }
+
+  if (readyToFinish.length > 0) {
+    return [
+      {
+        kind: "work",
+        message: "Finish ready work and record evidence.",
+      },
+    ];
+  }
+
+  if (active.length > 0) {
+    return [
+      {
+        kind: "work",
+        message: "Continue the active work item or record a handoff.",
+      },
+    ];
+  }
+
+  return [
+    {
+      kind: "work",
+      message: "Create or start a work item to make the dashboard actionable.",
+    },
+  ];
 }
 
 function deriveStateFromEvents(events, warnings = []) {

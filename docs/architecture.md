@@ -246,7 +246,8 @@ Command generation should produce platform-specific variants when necessary.
 
 ## Dashboard Views
 
-- Home: active work, blocked gates, stale handoffs.
+- Home: active work, blocked work, ready-to-finish work, blocked gates, stale
+  handoffs.
 - Timeline: session events, git changes, checks, reviews, decisions.
 - Gates: configured commands and latest pass/fail evidence.
 - Map: docs -> features -> owning paths -> verification commands.
@@ -274,6 +275,10 @@ scripts/project-health.*
 The core must not depend on the dashboard. The CLI and dashboard both depend on
 core. Adapters are replaceable and should emit normalized events rather than
 leaking provider-specific formats through the system.
+
+The initial dashboard surface is a shared summary contract exposed by
+`devflow dashboard` and MCP `devflow.dashboard`. It renders active, blocked,
+and ready-to-finish work from local state before a browser UI exists.
 
 ## Security
 

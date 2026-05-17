@@ -9,6 +9,7 @@ import {
   parseCodexSessionJsonl,
 } from "../../adapters/src/index.js";
 import {
+  createDashboardSummary,
   createFinishSummary,
   createDoctorSummary,
   createInitPlan,
@@ -50,6 +51,8 @@ try {
     await renderHealth(args.slice(1));
   } else if (command === "status") {
     await renderStatus(args.slice(1));
+  } else if (command === "dashboard") {
+    await renderDashboard(args.slice(1));
   } else if (command === "explain") {
     renderExplain(args.slice(1));
   } else if (command === "split") {
@@ -140,6 +143,23 @@ async function renderStatus(argsForCommand) {
   }
 
   render(summary, options.json);
+}
+
+async function renderDashboard(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const state = await readDevflowState(repoPath);
+  const summary = createDashboardSummary({
+    repo: readGitRepo(repoPath),
+    state,
+  });
+
+  if (options.json) {
+    render(summary, true);
+    return;
+  }
+
+  renderDashboardText(summary);
 }
 
 function renderExplain(argsForCommand) {
@@ -637,6 +657,34 @@ function renderWorkListText(summary) {
 
   for (const item of summary.items) {
     lines.push(`${item.status} ${item.id} ${item.title}`);
+  }
+
+  process.stdout.write(`${lines.join("\n")}\n`);
+}
+
+function renderDashboardText(summary) {
+  const lines = [
+    "Devflow dashboard",
+    `Active work: ${summary.work.counts.active}`,
+    `Blocked work: ${summary.work.counts.blocked}`,
+    `Ready to finish: ${summary.work.counts.readyToFinish}`,
+  ];
+
+  for (const item of summary.work.active) {
+    lines.push(`active ${item.id} ${item.title}`);
+  }
+
+  for (const item of summary.work.blocked) {
+    const reason = item.blockedReason ? ` reason:${item.blockedReason}` : "";
+    lines.push(`blocked ${item.id} ${item.title}${reason}`);
+  }
+
+  for (const item of summary.work.readyToFinish) {
+    lines.push(`ready ${item.id} ${item.title}`);
+  }
+
+  if (summary.recommendations.length > 0) {
+    lines.push(`Next: ${summary.recommendations[0].message}`);
   }
 
   process.stdout.write(`${lines.join("\n")}\n`);

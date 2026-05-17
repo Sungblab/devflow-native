@@ -49,6 +49,7 @@ packages/cli/
 ## Initial Commands
 
 - `devflow status`
+- `devflow dashboard`
 - `devflow init`
 - `devflow health`
 - `devflow work create`
@@ -77,6 +78,8 @@ and at least one configured gate are present. `devflow work create`,
 `devflow work list` provide the first local work item registry over append-only
 `.devflow/state/events.jsonl` events. Work create and start writes are
 idempotent by id, returning the existing event instead of appending duplicates.
+`devflow dashboard` renders active, blocked, and ready-to-finish work from the
+same local state as a compact terminal or JSON dashboard summary.
 `devflow split` renders local worktree-session plans, and `devflow split
 --register --start` can append the generated sessions as active work items
 without manual re-entry. The

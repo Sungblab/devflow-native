@@ -844,6 +844,70 @@ test("CLI work ready and block update lifecycle state", async () => {
   assert.equal(statusJson.work.blocked[0].blockedReason, "Waiting for review.");
 });
 
+test("CLI dashboard renders active work view JSON", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "active-work",
+    "--title",
+    "Active work",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "blocked-work",
+    "--title",
+    "Blocked work",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "start",
+    "active-work",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "block",
+    "blocked-work",
+    "--repo",
+    repoPath,
+    "--reason",
+    "Waiting for review.",
+    "--json",
+  ]);
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "dashboard",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+
+  const dashboard = JSON.parse(stdout);
+  assert.equal(dashboard.command, "dashboard");
+  assert.equal(dashboard.work.counts.active, 1);
+  assert.equal(dashboard.work.counts.blocked, 1);
+  assert.equal(dashboard.work.active[0].id, "active-work");
+  assert.equal(dashboard.work.blocked[0].blockedReason, "Waiting for review.");
+});
+
 test("CLI gates run executes configured gate and writes evidence", async () => {
   const repoPath = await createTempGitRepo();
   const scriptPath = join(repoPath, "gate-script.mjs");

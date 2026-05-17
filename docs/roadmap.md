@@ -242,6 +242,7 @@ Exit criteria:
 
 Build:
 
+- `devflow dashboard` local summary contract
 - active work view
 - timeline
 - gates view
@@ -252,6 +253,12 @@ Build:
 Exit criteria:
 
 - the maintainer can open one local dashboard and understand project state
+
+Current implementation note: `devflow dashboard` and MCP `devflow.dashboard`
+now render the first local dashboard contract: active, blocked, and
+ready-to-finish work counts, item lists, and one next-action recommendation
+from `.devflow/state/events.jsonl`. A browser UI, timeline, gates, maps,
+sessions, and handoffs remain later Phase 8 work.
 
 ## Phase 9: GitHub Review Integration
 

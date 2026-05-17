@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 import {
+  createDashboardSummary,
   createFinishSummary,
   createHealthSummary,
   createDoctorSummary,
@@ -322,6 +323,44 @@ test("work lifecycle events can mark items ready and blocked", async () => {
   assert.equal(state.work.blocked[0].blockedReason, "Waiting for review.");
   assert.equal(status.work.readyToFinish[0].id, "ready-work");
   assert.equal(status.work.blocked[0].id, "blocked-work");
+});
+
+test("dashboard summary highlights active, blocked, and ready work", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-dashboard-"));
+
+  await recordWorkCreatedEvent(repoPath, {
+    id: "active-work",
+    title: "Active work",
+  });
+  await recordWorkCreatedEvent(repoPath, {
+    id: "ready-work",
+    title: "Ready work",
+  });
+  await recordWorkCreatedEvent(repoPath, {
+    id: "blocked-work",
+    title: "Blocked work",
+  });
+  await recordWorkStartedEvent(repoPath, { id: "active-work" });
+  await recordWorkReadyEvent(repoPath, { id: "ready-work" });
+  await recordWorkBlockedEvent(repoPath, {
+    id: "blocked-work",
+    reason: "Waiting for review.",
+  });
+
+  const state = await readDevflowState(repoPath);
+  const dashboard = createDashboardSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(dashboard.command, "dashboard");
+  assert.equal(dashboard.work.counts.active, 1);
+  assert.equal(dashboard.work.counts.blocked, 1);
+  assert.equal(dashboard.work.counts.readyToFinish, 1);
+  assert.equal(dashboard.work.active[0].id, "active-work");
+  assert.equal(dashboard.work.blocked[0].blockedReason, "Waiting for review.");
+  assert.equal(dashboard.work.readyToFinish[0].id, "ready-work");
+  assert.equal(dashboard.recommendations[0].kind, "work");
 });
 
 test("project health scanner surfaces invalid gates from config", async () => {

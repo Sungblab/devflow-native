@@ -309,6 +309,38 @@ test("MCP work lifecycle tools mark items ready and blocked", async () => {
   assert.equal(status.structuredContent.work.blocked[0].blockedReason, "Waiting for review.");
 });
 
+test("MCP dashboard renders active work view", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-dashboard-"));
+  await callTool("devflow.work_create", {
+    repo: repoPath,
+    id: "active-work",
+    title: "Active work",
+  });
+  await callTool("devflow.work_create", {
+    repo: repoPath,
+    id: "ready-work",
+    title: "Ready work",
+  });
+  await callTool("devflow.work_start", {
+    repo: repoPath,
+    id: "active-work",
+  });
+  await callTool("devflow.work_ready", {
+    repo: repoPath,
+    id: "ready-work",
+  });
+
+  const dashboard = await callTool("devflow.dashboard", {
+    repo: repoPath,
+  });
+
+  assert.equal(dashboard.structuredContent.command, "dashboard");
+  assert.equal(dashboard.structuredContent.work.counts.active, 1);
+  assert.equal(dashboard.structuredContent.work.counts.readyToFinish, 1);
+  assert.equal(dashboard.structuredContent.work.active[0].id, "active-work");
+  assert.equal(dashboard.structuredContent.work.readyToFinish[0].id, "ready-work");
+});
+
 test("MCP gates_run executes configured gate and records evidence", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-gates-run-"));
   const scriptPath = join(repoPath, "gate-script.mjs");
