@@ -19,6 +19,7 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.sessions_note`
 - `devflow.finish`
 - `devflow.record_gate`
+- `devflow.gates_run`
 - `devflow.next_prompt`
 
 Handlers call `packages/core` or `packages/adapters` and return structured
@@ -58,6 +59,11 @@ unchanged. `limit` must be a positive integer, `since` must parse as a date, and
 
 `devflow.sessions_note` writes a manual session note as a local
 `session.message` event so external work can appear beside agent sessions.
+
+`devflow.gates_run` reads `.devflow/config.json`, finds a configured gate by
+`id`, executes its command without a shell, and appends a `gate.finished` event
+with status, command, exit code, and stdout/stderr summaries. Hosts can pass
+`work` or `workItemId` to associate the evidence with a work item.
 
 ## Stdio Transport
 

@@ -15,6 +15,7 @@ This document defines the intended CLI shape before implementation.
 ```text
 devflow init
 devflow health
+devflow gates run
 devflow status
 devflow split
 devflow explain
@@ -56,6 +57,8 @@ slices. `devflow init` now has a first guarded scaffold implementation:
 without `--confirm`, it renders the plan only; with `--confirm`, it writes the
 minimum project contract and skips existing files instead of overwriting them.
 `devflow health` checks those scaffold files and configured gates.
+`devflow gates run` executes one configured gate and records pass/fail
+evidence.
 `devflow dashboard` stays in the broad contract.
 `doctor` is included early because plugin/skill-first workflows need a cheap
 way to avoid repeated local-environment mistakes.
@@ -76,11 +79,11 @@ The MVP loop stores local evidence in an append-only JSONL event log:
 ```
 
 `devflow finish` appends one `work.completed` event containing the finish JSON
-contract. Agent hosts may also record standalone `gate.finished` evidence
-through the MCP layer before a work item is closed. `devflow status` reads the
-same log and derives the latest handoff and latest gate evidence from it. The
-event log is local-first project state and is ignored by git by default in this
-repository.
+contract. `devflow gates run` and agent hosts may also record standalone
+`gate.finished` evidence before a work item is closed. `devflow status` reads
+the same log and derives the latest handoff and latest gate evidence from it.
+The event log is local-first project state and is ignored by git by default in
+this repository.
 
 ## Shared CLI Rules
 
@@ -179,6 +182,64 @@ Health status values:
 - `ok`: scaffold files are present and configured gates are valid
 - `missing`: required scaffold files or gates are missing
 - `invalid`: at least one configured gate is malformed
+
+## `devflow gates run`
+
+Runs one configured gate from `.devflow/config.json` and records the command
+result as local gate evidence.
+
+Example:
+
+```powershell
+devflow gates run docs-check --repo C:\path\to\repo --json
+```
+
+Inputs:
+
+- gate id
+- repository path
+- configured `.devflow/config.json` gates
+
+Outputs:
+
+- `passed` or `failed` status
+- configured command
+- process exit code
+- stdout/stderr summaries with truncation flags
+- append-only `.devflow/state/events.jsonl` `gate.finished` event
+
+The MVP runner intentionally executes only a single process command. It parses
+the configured command into executable plus arguments and calls it without a
+shell. Shell operators such as pipes, redirection, `&&`, and `;` are rejected
+instead of being passed through. On Windows, common package-manager commands
+such as `npm` are resolved to their `.cmd` launcher so PowerShell-first projects
+can still use gates such as `npm run docs:check`.
+
+JSON output:
+
+```json
+{
+  "schemaVersion": "0.1",
+  "command": "gates_run",
+  "repo": {
+    "absolutePath": "C:\\path\\to\\repo"
+  },
+  "gate": {
+    "id": "docs-check",
+    "command": "npm run docs:check"
+  },
+  "status": "passed",
+  "exitCode": 0,
+  "stdout": {
+    "summary": "Documentation links OK.\n",
+    "truncated": false
+  },
+  "stderr": {
+    "summary": "",
+    "truncated": false
+  }
+}
+```
 
 ## `devflow status`
 

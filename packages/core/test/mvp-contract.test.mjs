@@ -23,6 +23,7 @@ import {
   readProjectHealth,
   readDevflowConfig,
   readDevflowState,
+  runConfiguredGate,
   recordGateEvent,
   recordFinishEvent,
   writeInitPlan,
@@ -882,6 +883,60 @@ test("status summary can derive gate evidence recorded independently", async () 
   assert.equal(status.gates[0].lastRun.status, "passed");
   assert.equal(status.gates[0].lastRun.summary, "Documentation link check passed.");
   assert.equal(status.gates[0].lastRun.workItemId, "docs-check");
+});
+
+test("configured gate runner executes a configured command and records evidence", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-gate-run-"));
+  const scriptPath = join(repoPath, "gate-script.mjs");
+  await writeFile(
+    scriptPath,
+    "console.log('gate stdout line'); console.error('gate stderr line');\n",
+    "utf8",
+  );
+
+  const summary = await runConfiguredGate(repoPath, {
+    id: "unit",
+    gates: [{ id: "unit", command: `${JSON.stringify(process.execPath)} ${JSON.stringify(scriptPath)}` }],
+  });
+
+  assert.equal(summary.command, "gates_run");
+  assert.equal(summary.gate.id, "unit");
+  assert.equal(summary.status, "passed");
+  assert.equal(summary.exitCode, 0);
+  assert.match(summary.stdout.summary, /gate stdout line/);
+  assert.match(summary.stderr.summary, /gate stderr line/);
+
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    gates: [{ id: "unit", command: "node gate-script.mjs", recommended: true }],
+  });
+  assert.equal(status.gates[0].lastRun.status, "passed");
+  assert.equal(status.gates[0].lastRun.exitCode, 0);
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.match(log, /"type":"gate.finished"/);
+  assert.match(log, /gate stdout line/);
+});
+
+test("configured gate runner records failed command evidence", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-gate-run-fail-"));
+  const scriptPath = join(repoPath, "gate-fail.mjs");
+  await writeFile(scriptPath, "console.error('gate failed'); process.exit(7);\n", "utf8");
+
+  const summary = await runConfiguredGate(repoPath, {
+    id: "unit",
+    gates: [{ id: "unit", command: `${JSON.stringify(process.execPath)} ${JSON.stringify(scriptPath)}` }],
+  });
+
+  assert.equal(summary.status, "failed");
+  assert.equal(summary.exitCode, 7);
+  assert.match(summary.stderr.summary, /gate failed/);
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.match(log, /"status":"failed"/);
+  assert.match(log, /"exitCode":7/);
 });
 
 test("doctor summary renders platform rules and repeated mistake memory", () => {

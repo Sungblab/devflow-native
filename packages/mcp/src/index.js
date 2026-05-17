@@ -26,6 +26,7 @@ import {
   recordGateEvent,
   recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
+  runConfiguredGate,
 } from "../../core/src/index.js";
 
 const tools = [
@@ -80,6 +81,10 @@ const tools = [
   {
     name: "devflow.record_gate",
     description: "Record standalone gate evidence without closing a work item.",
+  },
+  {
+    name: "devflow.gates_run",
+    description: "Run a configured verification gate and record command evidence.",
   },
   {
     name: "devflow.next_prompt",
@@ -142,6 +147,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.record_gate") {
     return callRecordGate(args);
+  }
+
+  if (name === "devflow.gates_run") {
+    return callGatesRun(args);
   }
 
   if (name === "devflow.next_prompt") {
@@ -410,6 +419,18 @@ async function callRecordGate(args) {
     },
     `devflow record_gate: ${event.payload.id}`,
   );
+}
+
+async function callGatesRun(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const config = await readDevflowConfig(repoPath);
+  const summary = await runConfiguredGate(repoPath, {
+    id: args.id,
+    gates: args.gates ?? config.gates,
+    workItemId: args.workItemId ?? args.work,
+  });
+
+  return toolResult(summary, `devflow gates_run: ${summary.gate.id} ${summary.status}`);
 }
 
 function callNextPrompt(args) {
