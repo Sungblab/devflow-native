@@ -35,6 +35,7 @@ import {
   recordWorkCreatedEvent,
   recordWorkReadyEvent,
   recordWorkStartedEvent,
+  recordWorkUnblockedEvent,
 } from "../src/index.js";
 
 test("status summary captures repo, dirty files, gates, and prompt recommendation", () => {
@@ -322,4 +323,881 @@ test("work lifecycle events can mark items ready and blocked", async () => {
   assert.equal(state.work.blocked[0].blockedReason, "Waiting for review.");
   assert.equal(status.work.readyToFinish[0].id, "ready-work");
   assert.equal(status.work.blocked[0].id, "blocked-work");
+});
+
+test("work lifecycle events can unblock blocked items", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-work-unblock-"));
+
+  await recordWorkCreatedEvent(repoPath, {
+    id: "blocked-work",
+    title: "Blocked work",
+  });
+  await recordWorkBlockedEvent(
+    repoPath,
+    {
+      id: "blocked-work",
+      reason: "Waiting for review.",
+    },
+    { observedAt: "2026-05-17T09:21:00.000Z" },
+  );
+  const unblocked = await recordWorkUnblockedEvent(
+    repoPath,
+    { id: "blocked-work" },
+    { observedAt: "2026-05-17T09:22:00.000Z" },
+  );
+
+  assert.equal(unblocked.type, "work.unblocked");
+  assert.equal(unblocked.payload.status, "active");
+
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(state.work.active[0].id, "blocked-work");
+  assert.equal(state.work.active[0].blockedReason, null);
+  assert.equal(state.work.blocked.length, 0);
+  assert.equal(status.work.active[0].id, "blocked-work");
+  assert.equal(status.work.blocked.length, 0);
+});
+
+test("project health scanner surfaces invalid gates from config", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-health-invalid-"));
+  const plan = createInitPlan({
+    repo: repoPath,
+    profile: "standard",
+    platform: "windows-powershell",
+  });
+  await writeInitPlan(repoPath, plan, { confirmed: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [
+        { id: "unit", command: "npm test" },
+        { id: "unit", command: "" },
+      ],
+    })}\n`,
+  );
+
+  const config = await readDevflowConfig(repoPath);
+  const summary = await readProjectHealth(repoPath, config);
+
+  assert.equal(summary.status, "invalid");
+  assert.equal(summary.missingFiles.length, 0);
+  assert.ok(summary.invalidGates.some((gate) => gate.reason === "duplicate-id"));
+  assert.ok(summary.invalidGates.some((gate) => gate.reason === "missing-command"));
+});
+
+test("session attach plan proposes confirmation-gated work links", () => {
+  const plan = createSessionAttachPlan({
+    workItems: [
+      {
+        id: "phase-6-session-import",
+        title: "Phase 6 session import",
+        ownedPaths: ["packages/adapters/**", "packages/cli/**"],
+      },
+    ],
+    sessions: [
+      {
+        sessionId: "high-confidence",
+        agent: "Codex",
+        project: { confidence: "high" },
+        events: [{ type: "git.diff.captured", changedFiles: ["packages/adapters/src/index.js"] }],
+      },
+      {
+        sessionId: "low-confidence",
+        agent: "Codex",
+        project: { confidence: "low" },
+        events: [],
+        warnings: ["No cwd metadata was available for this Codex session."],
+      },
+    ],
+  });
+
+  assert.equal(plan.schemaVersion, "0.1");
+  assert.equal(plan.command, "session_attach_plan");
+  assert.equal(plan.proposals.length, 2);
+  assert.equal(plan.proposals[0].sessionId, "high-confidence");
+  assert.equal(plan.proposals[0].recommendedWorkItemId, "phase-6-session-import");
+  assert.equal(plan.proposals[0].action, "attach-ready");
+  assert.equal(plan.proposals[0].requiresConfirmation, false);
+  assert.equal(plan.proposals[1].action, "confirmation-required");
+  assert.equal(plan.proposals[1].requiresConfirmation, true);
+  assert.match(plan.proposals[1].reason, /low confidence/);
+});
+
+test("session attach persistence records approved session links", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-attach-"));
+  const event = await recordSessionAttachedEvent(
+    repoPath,
+    {
+      sessionId: "high-confidence",
+      agent: "Codex",
+      recommendedWorkItemId: "phase-6-session-import",
+      action: "attach-ready",
+      requiresConfirmation: false,
+      confidence: "high",
+      changedFiles: ["packages/adapters/src/index.js"],
+      reason: "Session has high confidence.",
+      warnings: [],
+    },
+    {
+      confirmed: true,
+      observedAt: "2026-05-16T12:00:00+09:00",
+    },
+  );
+
+  const state = await readDevflowState(repoPath);
+
+  assert.equal(event.type, "session.attached");
+  assert.equal(event.payload.sessionId, "high-confidence");
+  assert.equal(event.payload.workItemId, "phase-6-session-import");
+  assert.equal(state.sessions.attached[0].sessionId, "high-confidence");
+  assert.equal(state.sessions.attached[0].workItemId, "phase-6-session-import");
+});
+
+test("session attach persistence reports existing links without duplicate events", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-attach-dedupe-"));
+  const proposal = {
+    sessionId: "high-confidence",
+    agent: "Codex",
+    recommendedWorkItemId: "phase-6-session-import",
+    action: "attach-ready",
+    requiresConfirmation: false,
+    confidence: "high",
+    changedFiles: ["packages/adapters/src/index.js"],
+    reason: "Session has high confidence.",
+    warnings: [],
+  };
+
+  await recordSessionAttachedEvent(repoPath, proposal, {
+    confirmed: true,
+    observedAt: "2026-05-16T12:00:00+09:00",
+  });
+  const second = await recordSessionAttachedEvent(repoPath, proposal, {
+    confirmed: true,
+    observedAt: "2026-05-16T12:01:00+09:00",
+  });
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+
+  assert.equal(log.trim().split("\n").length, 1);
+  assert.equal(second.existing, true);
+  assert.equal(second.observedAt, "2026-05-16T12:00:00+09:00");
+});
+
+test("session attach persistence requires explicit confirmation", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-attach-confirm-"));
+
+  await assert.rejects(
+    () =>
+      recordSessionAttachedEvent(repoPath, {
+        sessionId: "low-confidence",
+        recommendedWorkItemId: "phase-6-session-import",
+        requiresConfirmation: true,
+        confidence: "low",
+      }),
+    /requires explicit confirmation/,
+  );
+});
+
+test("session list summary renders attached session evidence", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-list-"));
+  await recordSessionAttachedEvent(
+    repoPath,
+    {
+      sessionId: "high-confidence",
+      agent: "Codex",
+      recommendedWorkItemId: "phase-6-session-import",
+      action: "attach-ready",
+      requiresConfirmation: false,
+      confidence: "high",
+      changedFiles: ["packages/adapters/src/index.js"],
+      reason: "Session has high confidence.",
+      warnings: [],
+    },
+    {
+      confirmed: true,
+      observedAt: "2026-05-16T12:00:00+09:00",
+    },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const summary = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(summary.command, "session_list");
+  assert.equal(summary.repo.absolutePath, repoPath);
+  assert.equal(summary.count, 1);
+  assert.equal(summary.sessions[0].sessionId, "high-confidence");
+  assert.equal(summary.sessions[0].workItemId, "phase-6-session-import");
+  assert.equal(summary.sessions[0].agent, "Codex");
+});
+
+test("manual session note persistence appears in session list state", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-manual-session-note-"));
+  const event = await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "manual",
+      summary: "Reviewed local session context outside an agent transcript.",
+    },
+    {
+      observedAt: "2026-05-16T13:00:00+09:00",
+    },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const summary = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(event.type, "session.message");
+  assert.equal(event.payload.workItemId, "phase-6-session-import");
+  assert.equal(summary.sessions[0].agent, "manual");
+  assert.equal(summary.sessions[0].kind, "manual-note");
+  assert.match(summary.sessions[0].summary, /Reviewed local session context/);
+});
+
+test("session list summary filters by work item", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-list-filter-"));
+  await recordManualSessionNoteEvent(repoPath, {
+    workItemId: "phase-6-session-import",
+    agent: "manual",
+    summary: "Session import note.",
+  });
+  await recordManualSessionNoteEvent(repoPath, {
+    workItemId: "phase-7-beginner-guidance",
+    agent: "manual",
+    summary: "Beginner guidance note.",
+  });
+
+  const state = await readDevflowState(repoPath);
+  const summary = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    workItemId: "phase-6-session-import",
+  });
+
+  assert.equal(summary.count, 1);
+  assert.equal(summary.filters.workItemId, "phase-6-session-import");
+  assert.equal(summary.sessions[0].workItemId, "phase-6-session-import");
+});
+
+test("session list summary limits after work item filtering", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-list-limit-"));
+  await recordManualSessionNoteEvent(repoPath, {
+    workItemId: "phase-6-session-import",
+    agent: "manual",
+    summary: "First import note.",
+  });
+  await recordManualSessionNoteEvent(repoPath, {
+    workItemId: "phase-7-beginner-guidance",
+    agent: "manual",
+    summary: "Beginner guidance note.",
+  });
+  await recordManualSessionNoteEvent(repoPath, {
+    workItemId: "phase-6-session-import",
+    agent: "manual",
+    summary: "Second import note.",
+  });
+
+  const state = await readDevflowState(repoPath);
+  const summary = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    workItemId: "phase-6-session-import",
+    limit: 1,
+  });
+
+  assert.equal(summary.count, 1);
+  assert.equal(summary.totalCount, 2);
+  assert.equal(summary.filters.workItemId, "phase-6-session-import");
+  assert.equal(summary.filters.limit, 1);
+  assert.match(summary.sessions[0].summary, /Second import note/);
+});
+
+test("session list summary filters by agent before work item and limit", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-list-agent-"));
+  await recordManualSessionNoteEvent(repoPath, {
+    workItemId: "phase-6-session-import",
+    agent: "manual",
+    summary: "Manual import note.",
+  });
+  await recordManualSessionNoteEvent(repoPath, {
+    workItemId: "phase-6-session-import",
+    agent: "Codex",
+    summary: "First Codex import note.",
+  });
+  await recordManualSessionNoteEvent(repoPath, {
+    workItemId: "phase-6-session-import",
+    agent: "Codex",
+    summary: "Second Codex import note.",
+  });
+
+  const state = await readDevflowState(repoPath);
+  const summary = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    agent: "Codex",
+    workItemId: "phase-6-session-import",
+    limit: 1,
+  });
+
+  assert.equal(summary.count, 1);
+  assert.equal(summary.totalCount, 2);
+  assert.equal(summary.filters.agent, "Codex");
+  assert.equal(summary.sessions[0].agent, "Codex");
+  assert.match(summary.sessions[0].summary, /Second Codex import note/);
+});
+
+test("session list summary filters by observed time before limit", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-list-since-"));
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "Codex",
+      summary: "Old Codex note.",
+    },
+    { observedAt: "2026-05-15T00:00:00.000Z" },
+  );
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "Codex",
+      summary: "New Codex note.",
+    },
+    { observedAt: "2026-05-16T00:00:00.000Z" },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const summary = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    agent: "Codex",
+    workItemId: "phase-6-session-import",
+    since: "2026-05-15T12:00:00.000Z",
+    limit: 1,
+  });
+
+  assert.equal(summary.count, 1);
+  assert.equal(summary.totalCount, 1);
+  assert.equal(summary.filters.since, "2026-05-15T12:00:00.000Z");
+  assert.match(summary.sessions[0].summary, /New Codex note/);
+});
+
+test("session list summary sorts by observed time before limit", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-session-list-sort-"));
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "Codex",
+      summary: "Middle Codex note.",
+    },
+    { observedAt: "2026-05-16T00:00:00.000Z" },
+  );
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "Codex",
+      summary: "Old Codex note.",
+    },
+    { observedAt: "2026-05-15T00:00:00.000Z" },
+  );
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "Codex",
+      summary: "New Codex note.",
+    },
+    { observedAt: "2026-05-17T00:00:00.000Z" },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const ascending = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    sort: "observedAt:asc",
+  });
+  const descendingLimited = createSessionListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    sort: "observedAt:desc",
+    limit: 1,
+  });
+
+  assert.deepEqual(
+    ascending.sessions.map((session) => session.summary),
+    ["Old Codex note.", "Middle Codex note.", "New Codex note."],
+  );
+  assert.equal(ascending.filters.sort, "observedAt:asc");
+  assert.equal(descendingLimited.count, 1);
+  assert.equal(descendingLimited.totalCount, 3);
+  assert.equal(descendingLimited.filters.sort, "observedAt:desc");
+  assert.match(descendingLimited.sessions[0].summary, /New Codex note/);
+});
+
+test("session list option parsers share CLI and MCP validation rules", () => {
+  assert.equal(parseSessionListLimit(undefined, "limit is required"), null);
+  assert.equal(parseSessionListLimit("3", "limit is invalid"), 3);
+  assert.equal(parseSessionListSince("", "since is invalid"), null);
+  assert.equal(parseSessionListSince("2026-05-16T00:00:00.000Z", "since is invalid"), "2026-05-16T00:00:00.000Z");
+  assert.equal(parseSessionListSort(null, "sort is invalid"), null);
+  assert.equal(parseSessionListSort("observedAt:desc", "sort is invalid"), "observedAt:desc");
+
+  assert.throws(() => parseSessionListLimit("0", "limit is invalid"), /limit is invalid/);
+  assert.throws(() => parseSessionListSince("not-a-date", "since is invalid"), /since is invalid/);
+  assert.throws(() => parseSessionListSort("observedAt:newest", "sort is invalid"), /sort is invalid/);
+});
+
+test("term explanation translates beginner-facing development terms", () => {
+  const explanation = createTermExplanation({
+    term: "toast notification",
+    context: "Agent said the save action should show a toast notification.",
+  });
+
+  assert.equal(explanation.schemaVersion, "0.1");
+  assert.equal(explanation.command, "explain");
+  assert.equal(explanation.term, "toast notification");
+  assert.match(explanation.plainExplanation, /small message/);
+  assert.match(explanation.projectContext, /save action/);
+  assert.ok(explanation.relatedTerms.includes("modal"));
+});
+
+test("split plan creates disjoint worktree sessions with prompts and commands", () => {
+  const plan = createSplitPlan({
+    runId: "2026-05-16-devflow-next",
+    goal: "Continue Solo Devflow OS MCP work.",
+    sessionCount: 2,
+    profile: "standard",
+    platform: "windows-powershell",
+    baseRef: "origin/main",
+    tasks: [
+      {
+        id: "mcp-split-tool",
+        role: "implementation",
+        ownedPaths: ["packages/mcp/**", "packages/core/**"],
+        avoidPaths: ["packages/web/**"],
+        verification: [{ cwd: ".", command: "npm test" }],
+      },
+      {
+        id: "docs-split-contract",
+        role: "audit",
+        ownedPaths: ["docs/**"],
+        avoidPaths: ["packages/**"],
+        verification: [{ cwd: ".", command: "npm run docs:check" }],
+      },
+    ],
+  });
+
+  assert.equal(plan.schemaVersion, "0.1");
+  assert.equal(plan.command, "split");
+  assert.equal(plan.platform.name, "windows-powershell");
+  assert.equal(plan.sessions.length, 2);
+  assert.equal(plan.sessions[0].branch, "codex/mcp-split-tool");
+  assert.equal(plan.sessions[0].worktreePath, ".worktrees/mcp-split-tool");
+  assert.match(plan.sessions[0].commands[0].variants.powershell, /git worktree add/);
+  assert.match(plan.sessions[0].prompt, /packages\/mcp\/\*\*/);
+  assert.deepEqual(plan.mergeOrder, ["docs-split-contract", "mcp-split-tool"]);
+  assert.equal(plan.collisionRisks.length, 0);
+});
+
+test("split plan can derive project-specific tasks from devflow config", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-config-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        defaultProfile: "superpowers",
+        defaultPlatform: "windows-powershell",
+        split: {
+          tasks: [
+            {
+              id: "configured-api",
+              role: "implementation",
+              ownedPaths: ["apps/api/**"],
+              avoidPaths: ["apps/web/**"],
+              verification: [{ cwd: "apps/api", command: "npm test" }],
+            },
+            {
+              id: "configured-docs",
+              role: "audit",
+              ownedPaths: ["docs/**"],
+              avoidPaths: ["apps/**"],
+              verification: [{ cwd: ".", command: "npm run docs:check" }],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  const config = await readDevflowConfig(repoPath);
+  const plan = createSplitPlan({
+    goal: "Use configured split tasks.",
+    config,
+  });
+
+  assert.equal(plan.profile.name, "superpowers");
+  assert.equal(plan.sessions[0].id, "configured-api");
+  assert.deepEqual(plan.sessions[0].ownedPaths, ["apps/api/**"]);
+  assert.equal(plan.sessions[0].verification[0].cwd, "apps/api");
+  assert.deepEqual(plan.mergeOrder, ["configured-docs", "configured-api"]);
+});
+
+test("split sessions can be registered as active work items", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-split-register-"));
+  const plan = createSplitPlan({
+    goal: "Connect split tasks to work registry",
+    tasks: [
+      {
+        id: "core-cli",
+        goal: "Wire CLI split registration.",
+        ownedPaths: ["packages/core/**", "packages/cli/**"],
+      },
+      {
+        id: "mcp-docs",
+        goal: "Expose split registration through MCP and docs.",
+        ownedPaths: ["packages/mcp/**", "docs/**"],
+      },
+    ],
+  });
+
+  const registration = await recordSplitWorkEvents(repoPath, plan, {
+    start: true,
+    observedAt: "2026-05-17T09:00:00.000Z",
+  });
+  const state = await readDevflowState(repoPath);
+  const list = createWorkListSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(registration.command, "split_register");
+  assert.equal(registration.created.length, 2);
+  assert.equal(registration.started.length, 2);
+  assert.deepEqual(
+    list.items.map((item) => item.id),
+    ["core-cli", "mcp-docs"],
+  );
+  assert.deepEqual(list.items[0].ownedPaths, ["packages/core/**", "packages/cli/**"]);
+  assert.equal(list.items[0].status, "active");
+  assert.equal(list.items[1].title, "Expose split registration through MCP and docs.");
+});
+
+test("split registration does not append duplicate work created events", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-split-idempotent-"));
+  const plan = createSplitPlan({
+    goal: "Idempotent split registration",
+    tasks: [
+      {
+        id: "core-cli",
+        goal: "Wire CLI split registration.",
+        ownedPaths: ["packages/core/**", "packages/cli/**"],
+      },
+    ],
+  });
+
+  await recordSplitWorkEvents(repoPath, plan, {
+    start: true,
+    observedAt: "2026-05-17T09:12:00.000Z",
+  });
+  const second = await recordSplitWorkEvents(repoPath, plan, {
+    start: true,
+    observedAt: "2026-05-17T09:13:00.000Z",
+  });
+
+  assert.equal(second.created[0].existing, true);
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  const lines = log.trim().split("\n");
+  assert.equal(lines.filter((line) => line.includes('"type":"work.created"')).length, 1);
+  assert.equal(lines.filter((line) => line.includes('"type":"work.started"')).length, 1);
+});
+
+test("split plan surfaces invalid config warnings while falling back to defaults", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-invalid-config-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(join(repoPath, ".devflow", "config.json"), "{ invalid json\n");
+
+  const config = await readDevflowConfig(repoPath);
+  const plan = createSplitPlan({
+    goal: "Fallback from invalid config.",
+    config,
+  });
+
+  assert.equal(plan.sessions[0].id, "implementation");
+  assert.match(plan.warnings[0], /Ignoring invalid .devflow\/config.json/);
+});
+
+test("git status parser preserves file-level untracked paths", () => {
+  const files = parseGitStatusLines("?? packages/core/test/mvp-contract.test.mjs\n M docs/roadmap.md");
+
+  assert.deepEqual(files, [
+    { status: "??", path: "packages/core/test/mvp-contract.test.mjs" },
+    { status: "M", path: "docs/roadmap.md" },
+  ]);
+});
+
+test("finish evidence is appended to the local devflow event log", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-state-"));
+  const summary = createFinishSummary({
+    workItem: { id: "state-persistence", title: "State persistence" },
+    intent: "Persist finish evidence.",
+    changedFiles: [{ path: "packages/core/src/index.js", status: "modified" }],
+    gates: [
+      {
+        id: "unit",
+        command: "npm test",
+        status: "passed",
+        observedAt: "2026-05-16T10:00:00+09:00",
+        summary: "node --test passed.",
+      },
+    ],
+    risks: [{ severity: "low", message: "JSONL only; no SQLite yet." }],
+    nextPrompt: "Continue with persisted status evidence.",
+  });
+
+  const event = await recordFinishEvent(repoPath, summary, {
+    observedAt: "2026-05-16T10:01:00+09:00",
+  });
+
+  const logPath = join(repoPath, ".devflow", "state", "events.jsonl");
+  const log = await readFile(logPath, "utf8");
+  const lines = log.trim().split("\n");
+
+  assert.equal(lines.length, 1);
+  assert.deepEqual(JSON.parse(lines[0]), event);
+  assert.equal(event.type, "work.completed");
+  assert.equal(event.payload.workItem.id, "state-persistence");
+});
+
+test("status summary can derive latest handoff and gate evidence from devflow state", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-status-"));
+  const finish = createFinishSummary({
+    workItem: { id: "state-persistence", title: "State persistence" },
+    intent: "Persist finish evidence.",
+    changedFiles: [{ path: "packages/core/src/index.js", status: "modified" }],
+    gates: [
+      {
+        id: "unit",
+        command: "npm test",
+        status: "passed",
+        observedAt: "2026-05-16T10:00:00+09:00",
+        summary: "node --test passed.",
+      },
+    ],
+    nextPrompt: "Continue with persisted status evidence.",
+  });
+  await recordFinishEvent(repoPath, finish, {
+    observedAt: "2026-05-16T10:01:00+09:00",
+  });
+
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath, branch: "main" },
+    state,
+    gates: [{ id: "unit", command: "npm test", recommended: true }],
+  });
+
+  assert.equal(status.handoffs.latest.workItemId, "state-persistence");
+  assert.match(status.handoffs.latest.prompt, /persisted status evidence/);
+  assert.equal(status.gates[0].lastRun.status, "passed");
+  assert.equal(status.gates[0].lastRun.observedAt, "2026-05-16T10:00:00+09:00");
+});
+
+test("status summary can focus attached sessions by work item", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-status-work-filter-"));
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "Codex",
+      summary: "Session import note.",
+    },
+    { observedAt: "2026-05-16T10:00:00.000Z" },
+  );
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-7-beginner-guidance",
+      agent: "Codex",
+      summary: "Beginner guidance note.",
+    },
+    { observedAt: "2026-05-16T11:00:00.000Z" },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath, branch: "main" },
+    state,
+    workItemId: "phase-6-session-import",
+  });
+
+  assert.equal(status.filters.workItemId, "phase-6-session-import");
+  assert.equal(status.sessions.attached.length, 1);
+  assert.equal(status.sessions.attached[0].workItemId, "phase-6-session-import");
+  assert.match(status.sessions.attached[0].summary, /Session import note/);
+});
+
+test("status summary can focus attached sessions by agent", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-status-agent-filter-"));
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "Codex",
+      summary: "Codex import note.",
+    },
+    { observedAt: "2026-05-16T10:00:00.000Z" },
+  );
+  await recordManualSessionNoteEvent(
+    repoPath,
+    {
+      workItemId: "phase-6-session-import",
+      agent: "manual",
+      summary: "Manual import note.",
+    },
+    { observedAt: "2026-05-16T11:00:00.000Z" },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath, branch: "main" },
+    state,
+    agent: "Codex",
+  });
+
+  assert.equal(status.filters.agent, "Codex");
+  assert.equal(status.sessions.attached.length, 1);
+  assert.equal(status.sessions.attached[0].agent, "Codex");
+  assert.match(status.sessions.attached[0].summary, /Codex import note/);
+});
+
+test("status summary can derive gate evidence recorded independently", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-gate-"));
+
+  await recordGateEvent(
+    repoPath,
+    {
+      id: "docs",
+      command: "npm run docs:check",
+      status: "passed",
+      summary: "Documentation link check passed.",
+      workItemId: "docs-check",
+    },
+    { observedAt: "2026-05-16T11:00:00+09:00" },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath, branch: "main" },
+    state,
+    gates: [{ id: "docs", command: "npm run docs:check", recommended: true }],
+  });
+
+  assert.equal(status.gates[0].lastRun.status, "passed");
+  assert.equal(status.gates[0].lastRun.summary, "Documentation link check passed.");
+  assert.equal(status.gates[0].lastRun.workItemId, "docs-check");
+});
+
+test("configured gate runner executes a configured command and records evidence", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-gate-run-"));
+  const scriptPath = join(repoPath, "gate-script.mjs");
+  await writeFile(
+    scriptPath,
+    "console.log('gate stdout line'); console.error('gate stderr line');\n",
+    "utf8",
+  );
+
+  const summary = await runConfiguredGate(repoPath, {
+    id: "unit",
+    gates: [{ id: "unit", command: `${JSON.stringify(process.execPath)} ${JSON.stringify(scriptPath)}` }],
+  });
+
+  assert.equal(summary.command, "gates_run");
+  assert.equal(summary.gate.id, "unit");
+  assert.equal(summary.status, "passed");
+  assert.equal(summary.exitCode, 0);
+  assert.match(summary.stdout.summary, /gate stdout line/);
+  assert.match(summary.stderr.summary, /gate stderr line/);
+
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    gates: [{ id: "unit", command: "node gate-script.mjs", recommended: true }],
+  });
+  assert.equal(status.gates[0].lastRun.status, "passed");
+  assert.equal(status.gates[0].lastRun.exitCode, 0);
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.match(log, /"type":"gate.finished"/);
+  assert.match(log, /gate stdout line/);
+});
+
+test("configured gate runner records failed command evidence", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-gate-run-fail-"));
+  const scriptPath = join(repoPath, "gate-fail.mjs");
+  await writeFile(scriptPath, "console.error('gate failed'); process.exit(7);\n", "utf8");
+
+  const summary = await runConfiguredGate(repoPath, {
+    id: "unit",
+    gates: [{ id: "unit", command: `${JSON.stringify(process.execPath)} ${JSON.stringify(scriptPath)}` }],
+  });
+
+  assert.equal(summary.status, "failed");
+  assert.equal(summary.exitCode, 7);
+  assert.match(summary.stderr.summary, /gate failed/);
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.match(log, /"status":"failed"/);
+  assert.match(log, /"exitCode":7/);
+});
+
+test("doctor summary renders platform rules and repeated mistake memory", () => {
+  const summary = createDoctorSummary({
+    repo: {
+      absolutePath: "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os",
+    },
+    platform: {
+      name: "windows-powershell",
+      shell: "pwsh",
+      pathStyle: "windows",
+    },
+    tools: {
+      git: { available: true, command: "git" },
+      rg: { available: true, command: "rg" },
+      gh: { available: false, command: "gh" },
+    },
+    mistakes: [
+      {
+        id: "powershell-literal-path",
+        symptom: "Agent used Bash-style path handling in PowerShell.",
+        correction: "Use Get-Content -LiteralPath and quote Windows paths.",
+        appliesTo: ["windows-powershell"],
+      },
+    ],
+  });
+
+  assert.equal(summary.command, "doctor");
+  assert.equal(summary.platform.shell, "pwsh");
+  assert.equal(summary.executionContract.preferredReadCommand, "Get-Content -LiteralPath");
+  assert.ok(summary.executionContract.avoid.includes("bash-specific syntax"));
+  assert.equal(summary.memory.repeatedMistakes[0].id, "powershell-literal-path");
+  assert.match(summary.recommendations[0].message, /Use Get-Content -LiteralPath/);
 });

@@ -484,6 +484,26 @@ export async function recordWorkBlockedEvent(repoPath, workItem, options = {}) {
   return event;
 }
 
+export async function recordWorkUnblockedEvent(repoPath, workItem, options = {}) {
+  if (!workItem?.id) {
+    throw new Error("work unblock requires id.");
+  }
+
+  const observedAt = options.observedAt ?? new Date().toISOString();
+  const event = {
+    schemaVersion: "0.1",
+    type: "work.unblocked",
+    observedAt,
+    payload: {
+      id: workItem.id,
+      status: "active",
+    },
+  };
+
+  await appendDevflowEvent(repoPath, event);
+  return event;
+}
+
 export async function recordSplitWorkEvents(repoPath, splitPlan, options = {}) {
   const sessions = splitPlan?.sessions ?? [];
   const created = [];
@@ -1287,6 +1307,14 @@ function createWorkState(events) {
       item.status = "blocked";
       item.blockedAt = event.observedAt;
       item.blockedReason = event.payload.reason ?? null;
+      continue;
+    }
+
+    if (event.type === "work.unblocked") {
+      const item = ensureWorkItem(itemsById, order, event.payload.id);
+      item.status = "active";
+      item.unblockedAt = event.observedAt;
+      item.blockedReason = null;
       continue;
     }
 

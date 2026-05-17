@@ -29,6 +29,7 @@ test("stdio transport lists tools over JSON-RPC", async () => {
   assert.ok(response.result.tools.some((tool) => tool.name === "devflow.work_start"));
   assert.ok(response.result.tools.some((tool) => tool.name === "devflow.work_ready"));
   assert.ok(response.result.tools.some((tool) => tool.name === "devflow.work_block"));
+  assert.ok(response.result.tools.some((tool) => tool.name === "devflow.work_unblock"));
   assert.ok(response.result.tools.some((tool) => tool.name === "devflow.work_list"));
 });
 
