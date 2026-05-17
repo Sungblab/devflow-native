@@ -347,6 +347,52 @@ test("MCP split reads project-specific tasks from devflow config", async () => {
   assert.deepEqual(result.structuredContent.sessions[0].ownedPaths, ["packages/mcp/**"]);
 });
 
+test("MCP split can register and start generated work items", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-split-register-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify(
+      {
+        schemaVersion: 1,
+        split: {
+          tasks: [
+            {
+              id: "core-cli",
+              goal: "Wire CLI split registration.",
+              ownedPaths: ["packages/core/**", "packages/cli/**"],
+            },
+            {
+              id: "mcp-docs",
+              goal: "Expose split registration through MCP and docs.",
+              ownedPaths: ["packages/mcp/**", "docs/**"],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  const split = await callTool("devflow.split", {
+    repo: repoPath,
+    register: true,
+    start: true,
+  });
+  const listed = await callTool("devflow.work_list", {
+    repo: repoPath,
+  });
+
+  assert.equal(split.structuredContent.registration.command, "split_register");
+  assert.equal(split.structuredContent.registration.created.length, 2);
+  assert.equal(split.structuredContent.registration.started.length, 2);
+  assert.deepEqual(
+    listed.structuredContent.items.map((item) => item.status),
+    ["active", "active"],
+  );
+});
+
 test("MCP explain_term returns beginner-friendly structured explanation", async () => {
   const result = await callTool("devflow.explain_term", {
     term: "middleware",

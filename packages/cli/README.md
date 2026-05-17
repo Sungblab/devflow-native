@@ -73,7 +73,8 @@ instead of overwritten. `devflow health` checks that the same scaffold files
 and at least one configured gate are present. `devflow work create`,
 `devflow work start`, and `devflow work list` provide the first local work item
 registry over append-only `.devflow/state/events.jsonl` events. `devflow split`
-currently renders the first local worktree-session plan. The
+renders local worktree-session plans, and `devflow split --register --start`
+can append the generated sessions as active work items without manual re-entry. The
 `devflow sessions codex` is read-only and requires an explicit
 `--codex-home <path>` before it reads local Codex session candidates.
 `devflow sessions attach-plan` is a dry-run planner over an explicit JSON input
