@@ -6,6 +6,7 @@ import {
   DASHBOARD_WEB_CSS,
   DASHBOARD_WEB_JS,
   renderDashboardLiveSection,
+  renderDashboardRouteLinks,
 } from "../src/index.js";
 
 test("web package owns the no-build dashboard shell assets", () => {
@@ -69,4 +70,24 @@ test("web package renders latest evidence details in the live section", () => {
   assert.match(html, /Rendered the dashboard panel/);
   assert.match(html, /Latest handoff/);
   assert.match(html, /Continue dashboard panel work/);
+});
+
+test("web package renders route-aware dashboard links", () => {
+  const html = renderDashboardRouteLinks({
+    gates: { counts: { total: 2 } },
+    sessions: { counts: { total: 3 } },
+    handoffs: { counts: { stale: 1 } },
+    maps: { counts: { total: 4 } },
+    work: { counts: { active: 5, blocked: 6, readyToFinish: 7 } },
+  });
+
+  assert.match(html, /href="\/gates"/);
+  assert.match(html, /Gates/);
+  assert.match(html, /2/);
+  assert.match(html, /href="\/sessions"/);
+  assert.match(html, /3/);
+  assert.match(html, /href="\/handoffs"/);
+  assert.match(html, /href="\/maps"/);
+  assert.match(html, /href="\/work"/);
+  assert.match(html, /18/);
 });

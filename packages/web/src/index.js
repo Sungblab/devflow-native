@@ -17,7 +17,7 @@ export const DASHBOARD_WEB_JS = `async function loadDashboard() {
   const dashboard = await response.json();
   const live = document.getElementById("devflow-dashboard-live");
   if (live) {
-    live.innerHTML = renderDashboardLiveSection(dashboard);
+    live.innerHTML = renderDashboardLiveSection(dashboard) + renderDashboardRouteLinks(dashboard);
   }
   document.documentElement.dataset.devflowDashboard = "ready";
   document.documentElement.dataset.devflowActiveWork = String(dashboard.work?.counts?.active ?? 0);
@@ -50,6 +50,20 @@ function renderDashboardLiveSection(dashboard) {
     .map(([label, value]) => '<article><span>' + label + '</span><strong>' + value + '</strong></article>')
     .join("");
   return metrics + details;
+}
+
+function renderDashboardRouteLinks(dashboard) {
+  const work = dashboard.work?.counts ?? {};
+  const workTotal = (work.active ?? 0) + (work.blocked ?? 0) + (work.readyToFinish ?? 0);
+  return [
+    ["/gates", "Gates", dashboard.gates?.counts?.total ?? 0],
+    ["/sessions", "Sessions", dashboard.sessions?.counts?.total ?? 0],
+    ["/handoffs", "Handoffs", dashboard.handoffs?.counts?.stale ?? 0],
+    ["/maps", "Maps", dashboard.maps?.counts?.total ?? 0],
+    ["/work", "Work", workTotal],
+  ]
+    .map(([href, label, count]) => '<a href="' + href + '"><span>' + label + '</span><strong>' + count + '</strong></a>')
+    .join("");
 }
 
 loadDashboard().catch((error) => {
@@ -96,6 +110,23 @@ export function renderDashboardLiveSection(dashboard) {
     .map(([label, value]) => `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`)
     .join("");
   return metrics + details;
+}
+
+export function renderDashboardRouteLinks(dashboard) {
+  const work = dashboard.work?.counts ?? {};
+  const workTotal = (work.active ?? 0) + (work.blocked ?? 0) + (work.readyToFinish ?? 0);
+  return [
+    ["/gates", "Gates", dashboard.gates?.counts?.total ?? 0],
+    ["/sessions", "Sessions", dashboard.sessions?.counts?.total ?? 0],
+    ["/handoffs", "Handoffs", dashboard.handoffs?.counts?.stale ?? 0],
+    ["/maps", "Maps", dashboard.maps?.counts?.total ?? 0],
+    ["/work", "Work", workTotal],
+  ]
+    .map(
+      ([href, label, count]) =>
+        `<a href="${escapeHtml(href)}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(count)}</strong></a>`,
+    )
+    .join("");
 }
 
 function escapeHtml(value) {
