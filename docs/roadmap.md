@@ -263,8 +263,9 @@ next-action recommendation from `.devflow/state/events.jsonl` plus
 `docs/architecture/maps/*.md`. `devflow dashboard --html <path>` now writes a
 static browser shell from the same summary, and `devflow dashboard serve`
 serves that shell plus `/dashboard.json`, `/assets/dashboard.css`, and
-`/assets/dashboard.js` over local HTTP. The server also includes dedicated
-`/gates`, `/sessions`, `/handoffs`, and `/maps` HTML views
+`/assets/dashboard.js` over local HTTP. The asset content is now owned by
+`packages/web` as a no-build stepping stone toward a richer dashboard package.
+The server also includes dedicated `/gates`, `/sessions`, `/handoffs`, and `/maps` HTML views
 plus `/gates.json`, `/sessions.json`, `/handoffs.json`, and `/maps.json`
 slices, plus latest gate detail routes at `/gates/<id>` and `/gates/<id>.json`,
 session detail routes at `/sessions/<id>` and `/sessions/<id>.json`, map detail

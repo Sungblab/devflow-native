@@ -58,6 +58,7 @@ plugins/devflow
 
 packages/web
   local dashboard for timeline, maps, sessions, gates, and prompts
+  first no-build dashboard shell assets consumed by `devflow dashboard serve`
 
 packages/adapters
   Codex, Claude, Gemini, Copilot, OpenCode, Goose, Aider, GitHub,
@@ -73,6 +74,7 @@ Initial implementation boundaries are documented in:
 - [`../packages/cli/README.md`](../packages/cli/README.md)
 - [`../packages/mcp/README.md`](../packages/mcp/README.md)
 - [`../packages/adapters/README.md`](../packages/adapters/README.md)
+- [`../packages/web/README.md`](../packages/web/README.md)
 
 ## Data Model
 
