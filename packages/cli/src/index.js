@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, isAbsolute, join } from "node:path";
 import { cwd, exit } from "node:process";
 
 import {
@@ -10,6 +11,7 @@ import {
 } from "../../adapters/src/index.js";
 import {
   createDashboardSummary,
+  createDashboardHtml,
   createFinishSummary,
   createDoctorSummary,
   createInitPlan,
@@ -153,6 +155,26 @@ async function renderDashboard(argsForCommand) {
     repo: readGitRepo(repoPath),
     state,
   });
+
+  if (options.html) {
+    const htmlPath = isAbsolute(options.html) ? options.html : join(repoPath, options.html);
+    const htmlParent = dirname(htmlPath);
+    if (htmlParent && htmlParent !== ".") {
+      await mkdir(htmlParent, { recursive: true });
+    }
+    await writeFile(htmlPath, createDashboardHtml(summary), "utf8");
+
+    render(
+      {
+        schemaVersion: "0.1",
+        command: "dashboard_html",
+        path: htmlPath,
+        dashboard: summary,
+      },
+      options.json,
+    );
+    return;
+  }
 
   if (options.json) {
     render(summary, true);

@@ -1057,6 +1057,7 @@ Example:
 
 ```powershell
 devflow dashboard --json
+devflow dashboard --html .devflow/state/dashboard.html --json
 ```
 
 Outputs:
@@ -1070,9 +1071,9 @@ Outputs:
 - latest handoff and stale handoff count
 - first dashboard recommendation
 
-Without `--json`, the command prints a compact terminal dashboard. This is the
-first dashboard contract; a browser dashboard can reuse the same core summary
-later.
+Without `--json`, the command prints a compact terminal dashboard. With
+`--html <path>`, the command writes a static browser shell from the same core
+summary and returns a `dashboard_html` JSON wrapper when `--json` is present.
 
 Initial browser views:
 

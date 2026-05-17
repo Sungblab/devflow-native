@@ -944,6 +944,49 @@ test("CLI dashboard renders active work view JSON", async () => {
   assert.equal(dashboard.sessions.byAgent[0].agent, "Codex");
 });
 
+test("CLI dashboard writes a static browser shell", async () => {
+  const repoPath = await createTempGitRepo();
+  const htmlPath = join(repoPath, "dashboard.html");
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "active-work",
+    "--title",
+    "Active work",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "start",
+    "active-work",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "dashboard",
+    "--repo",
+    repoPath,
+    "--html",
+    htmlPath,
+    "--json",
+  ]);
+
+  const parsed = JSON.parse(stdout);
+  const html = await readFile(htmlPath, "utf8");
+  assert.equal(parsed.command, "dashboard_html");
+  assert.equal(parsed.path, htmlPath);
+  assert.match(html, /Devflow Dashboard/);
+  assert.match(html, /Active work/);
+});
+
 test("CLI gates run executes configured gate and writes evidence", async () => {
   const repoPath = await createTempGitRepo();
   const scriptPath = join(repoPath, "gate-script.mjs");

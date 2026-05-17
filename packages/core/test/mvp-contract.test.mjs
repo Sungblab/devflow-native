@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 import {
+  createDashboardHtml,
   createDashboardSummary,
   createFinishSummary,
   createHealthSummary,
@@ -446,6 +447,46 @@ test("dashboard summary includes attached session summary", async () => {
     { agent: "manual", count: 1 },
   ]);
   assert.equal(dashboard.sessions.recent[0].agent, "manual");
+});
+
+test("dashboard HTML renders the dashboard summary as a browser shell", () => {
+  const summary = createDashboardSummary({
+    repo: { absolutePath: "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os" },
+    work: {
+      active: [{ id: "active-work", title: "Active work" }],
+      blocked: [],
+      readyToFinish: [],
+    },
+    state: {
+      warnings: [],
+      gates: {
+        latestById: {
+          unit: { id: "unit", command: "npm test", status: "passed" },
+        },
+      },
+      handoffs: { latest: null, stale: [] },
+      sessions: {
+        attached: [
+          {
+            sessionId: "manual:active-work",
+            workItemId: "active-work",
+            agent: "Codex",
+            kind: "manual-note",
+            observedAt: "2026-05-17T11:15:00+09:00",
+            summary: "Rendered dashboard shell.",
+          },
+        ],
+      },
+    },
+  });
+
+  const html = createDashboardHtml(summary);
+
+  assert.match(html, /<!doctype html>/i);
+  assert.match(html, /Devflow Dashboard/);
+  assert.match(html, /Active work/);
+  assert.match(html, /npm test/);
+  assert.match(html, /Rendered dashboard shell/);
 });
 
 test("project health scanner surfaces invalid gates from config", async () => {

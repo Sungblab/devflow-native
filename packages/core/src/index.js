@@ -106,6 +106,86 @@ export function createDashboardSummary(input = {}) {
   };
 }
 
+export function createDashboardHtml(summary) {
+  const repo = summary.repo ?? {};
+  const work = summary.work ?? {};
+  const gates = summary.gates ?? { latest: [], counts: {} };
+  const sessions = summary.sessions ?? { recent: [], counts: {} };
+  const handoffs = summary.handoffs ?? { latest: null, counts: {} };
+  const recommendation = summary.recommendations?.[0]?.message ?? "No recommendation.";
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devflow Dashboard</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f6f7f9;
+      color: #171a1f;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 1120px; margin: 0 auto; padding: 32px 20px 48px; }
+    header { margin-bottom: 24px; }
+    h1, h2 { margin: 0; line-height: 1.2; }
+    h1 { font-size: 32px; }
+    h2 { font-size: 18px; margin-bottom: 14px; }
+    p { margin: 0; }
+    .meta { margin-top: 8px; color: #5b6270; font-size: 14px; }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    .panel { background: #ffffff; border: 1px solid #d9dde5; border-radius: 8px; padding: 16px; }
+    .metric { font-size: 28px; font-weight: 700; }
+    .label { color: #5b6270; font-size: 13px; text-transform: uppercase; }
+    ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    li { border-top: 1px solid #eceff3; padding-top: 10px; }
+    li:first-child { border-top: 0; padding-top: 0; }
+    .item-title { font-weight: 650; }
+    .item-meta { color: #5b6270; font-size: 13px; margin-top: 3px; overflow-wrap: anywhere; }
+    .status { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 700; }
+    .status-passed { background: #dff4e8; color: #14532d; }
+    .status-failed { background: #fde2e2; color: #7f1d1d; }
+    .status-unknown { background: #e8ecf2; color: #344054; }
+    .wide { grid-column: 1 / -1; }
+    @media (max-width: 720px) {
+      main { padding: 24px 14px 36px; }
+      h1 { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Devflow Dashboard</h1>
+      <p class="meta">${escapeHtml(repo.absolutePath ?? ".")} | ${escapeHtml(repo.branch ?? "unknown branch")} | ${escapeHtml(repo.head ?? "unknown head")}</p>
+    </header>
+    <section class="grid" aria-label="Dashboard metrics">
+      ${renderMetric("Active", work.counts?.active ?? 0)}
+      ${renderMetric("Blocked", work.counts?.blocked ?? 0)}
+      ${renderMetric("Ready", work.counts?.readyToFinish ?? 0)}
+      ${renderMetric("Failing gates", gates.counts?.failed ?? 0)}
+    </section>
+    <section class="grid" style="margin-top: 16px;">
+      ${renderWorkPanel("Active work", work.active ?? [])}
+      ${renderWorkPanel("Blocked work", work.blocked ?? [])}
+      ${renderWorkPanel("Ready to finish", work.readyToFinish ?? [])}
+      ${renderGatePanel(gates.latest ?? [])}
+      ${renderSessionPanel(sessions.recent ?? [], sessions.counts ?? {})}
+      ${renderHandoffPanel(handoffs)}
+      <section class="panel wide">
+        <h2>Next</h2>
+        <p>${escapeHtml(recommendation)}</p>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
+`;
+}
+
 export function createFinishSummary(input) {
   const nextTask = input.nextTask ?? "Continue from the recorded handoff.";
   const nextPrompt =
@@ -1298,6 +1378,84 @@ function createDashboardRecommendations({ active, blocked, readyToFinish, gates 
       message: "Create or start a work item to make the dashboard actionable.",
     },
   ];
+}
+
+function renderMetric(label, value) {
+  return `<section class="panel"><p class="label">${escapeHtml(label)}</p><p class="metric">${escapeHtml(value)}</p></section>`;
+}
+
+function renderWorkPanel(title, items) {
+  return `<section class="panel">
+    <h2>${escapeHtml(title)}</h2>
+    ${renderList(
+      items,
+      (item) =>
+        `<li><p class="item-title">${escapeHtml(item.title ?? item.id ?? "Untitled work")}</p><p class="item-meta">${escapeHtml(item.id ?? "no-id")}${item.blockedReason ? ` | ${escapeHtml(item.blockedReason)}` : ""}</p></li>`,
+      "No work.",
+    )}
+  </section>`;
+}
+
+function renderGatePanel(gates) {
+  return `<section class="panel">
+    <h2>Gates</h2>
+    ${renderList(
+      gates,
+      (gate) =>
+        `<li><p class="item-title">${escapeHtml(gate.id ?? "gate")} <span class="status ${gateStatusClass(gate.status)}">${escapeHtml(gate.status ?? "unknown")}</span></p><p class="item-meta">${escapeHtml(gate.command ?? "no command")}</p></li>`,
+      "No gate evidence.",
+    )}
+  </section>`;
+}
+
+function renderSessionPanel(sessions, counts) {
+  return `<section class="panel">
+    <h2>Sessions</h2>
+    <p class="item-meta">Total ${escapeHtml(counts.total ?? 0)} | manual ${escapeHtml(counts.manualNotes ?? 0)}</p>
+    ${renderList(
+      sessions,
+      (session) =>
+        `<li><p class="item-title">${escapeHtml(session.agent ?? "unknown")} / ${escapeHtml(session.workItemId ?? "no work")}</p><p class="item-meta">${escapeHtml(session.summary ?? session.sessionId ?? "No summary.")}</p></li>`,
+      "No sessions.",
+    )}
+  </section>`;
+}
+
+function renderHandoffPanel(handoffs) {
+  const latest = handoffs.latest;
+  const latestText = latest ? `${latest.workItemId}: ${latest.title ?? "Untitled handoff"}` : "No handoff.";
+  return `<section class="panel">
+    <h2>Handoff</h2>
+    <p class="item-title">${escapeHtml(latestText)}</p>
+    <p class="item-meta">Stale ${escapeHtml(handoffs.counts?.stale ?? 0)}</p>
+  </section>`;
+}
+
+function renderList(items, renderItem, emptyText) {
+  if (items.length === 0) {
+    return `<p class="item-meta">${escapeHtml(emptyText)}</p>`;
+  }
+
+  return `<ul>${items.map(renderItem).join("")}</ul>`;
+}
+
+function gateStatusClass(status) {
+  if (status === "passed") {
+    return "status-passed";
+  }
+  if (status === "failed") {
+    return "status-failed";
+  }
+  return "status-unknown";
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function deriveStateFromEvents(events, warnings = []) {

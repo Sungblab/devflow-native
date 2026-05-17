@@ -259,8 +259,9 @@ now render the first local dashboard contract: active, blocked, and
 ready-to-finish work counts, item lists, latest gate evidence, latest handoff
 state, stale handoff counts, attached/manual session counts, recent sessions,
 agent breakdown, and one next-action recommendation from
-`.devflow/state/events.jsonl`. A browser UI, timeline, maps, and dedicated
-gates/sessions/handoffs views remain later Phase 8 work.
+`.devflow/state/events.jsonl`. `devflow dashboard --html <path>` now writes a
+static browser shell from the same summary. A local web server, timeline, maps,
+and dedicated gates/sessions/handoffs views remain later Phase 8 work.
 
 ## Phase 9: GitHub Review Integration
 
