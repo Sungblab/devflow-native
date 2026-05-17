@@ -270,6 +270,36 @@ async function renderDashboardServe(argsForCommand) {
       return;
     }
 
+    const sessionJsonMatch = requestPath.match(/^\/sessions\/(.+)\.json$/);
+    if (sessionJsonMatch) {
+      const session = findDashboardSession(summary, decodeURIComponent(sessionJsonMatch[1]));
+      if (!session) {
+        response.writeHead(404, { "content-type": "application/json; charset=utf-8" });
+        response.end(`${JSON.stringify({ error: "session not found" })}\n`, () =>
+          closeServerOnce(server, options.once),
+        );
+        return;
+      }
+      response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      response.end(`${JSON.stringify(session, null, 2)}\n`, () => closeServerOnce(server, options.once));
+      return;
+    }
+
+    const sessionHtmlMatch = requestPath.match(/^\/sessions\/(.+)$/);
+    if (sessionHtmlMatch) {
+      const session = findDashboardSession(summary, decodeURIComponent(sessionHtmlMatch[1]));
+      if (!session) {
+        response.writeHead(404, { "content-type": "text/html; charset=utf-8" });
+        response.end(renderDashboardNotFoundPage("Session not found"), () =>
+          closeServerOnce(server, options.once),
+        );
+        return;
+      }
+      response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      response.end(renderDashboardSessionPage(session), () => closeServerOnce(server, options.once));
+      return;
+    }
+
     if (requestPath === "/handoffs.json") {
       response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
       response.end(`${JSON.stringify(summary.handoffs, null, 2)}\n`, () => closeServerOnce(server, options.once));
@@ -1031,6 +1061,43 @@ function renderDashboardSessionsPage(summary) {
       <thead><tr><th>Agent</th><th>Kind</th><th>Work</th><th>Summary</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
+  </main>
+</body>
+</html>
+`;
+}
+
+function findDashboardSession(summary, sessionId) {
+  return (summary.sessions.recent ?? []).find((session) => session.sessionId === sessionId);
+}
+
+function renderDashboardSessionPage(session) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devflow Session Detail</title>
+  <style>
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f7f9; color: #171a1f; }
+    main { max-width: 880px; margin: 0 auto; padding: 32px 20px 48px; }
+    h1 { margin: 0 0 8px; font-size: 32px; }
+    dl { display: grid; grid-template-columns: 140px 1fr; gap: 10px 16px; background: #fff; border: 1px solid #d9dde5; border-radius: 8px; padding: 16px; }
+    dt { color: #5b6270; font-weight: 700; }
+    dd { margin: 0; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Devflow Session Detail</h1>
+    <dl>
+      <dt>ID</dt><dd>${escapeHtml(session.sessionId)}</dd>
+      <dt>Agent</dt><dd>${escapeHtml(session.agent)}</dd>
+      <dt>Kind</dt><dd>${escapeHtml(session.kind)}</dd>
+      <dt>Work</dt><dd>${escapeHtml(session.workItemId ?? "none")}</dd>
+      <dt>Observed</dt><dd>${escapeHtml(session.observedAt ?? "unknown")}</dd>
+      <dt>Summary</dt><dd>${escapeHtml(session.summary ?? "none")}</dd>
+    </dl>
   </main>
 </body>
 </html>

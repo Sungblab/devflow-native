@@ -1083,7 +1083,8 @@ and exposes `/dashboard.json` for the raw summary contract. It also exposes a
 dedicated gates view at `/gates` and the same gate slice as JSON at
 `/gates.json`, with latest gate detail pages at `/gates/<id>` and
 `/gates/<id>.json`. A dedicated sessions view is available at `/sessions` and
-the same session slice as JSON at `/sessions.json`. The latest and stale
+the same session slice as JSON at `/sessions.json`, with session detail pages
+at `/sessions/<id>` and `/sessions/<id>.json`. The latest and stale
 handoffs are available at `/handoffs` and `/handoffs.json`. Architecture maps
 are available at `/maps` and `/maps.json`, with map detail pages at
 `/maps/<id>` and `/maps/<id>.json`. Work item detail pages are available at

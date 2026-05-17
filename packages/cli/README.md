@@ -89,7 +89,8 @@ summary for local review.
 HTTP, exposes `/dashboard.json` for the raw summary contract, and exposes
 dedicated gate views at `/gates` and `/gates.json`, gate detail routes at
 `/gates/<id>` and `/gates/<id>.json`, session views at `/sessions` and
-`/sessions.json`, handoff views at `/handoffs` and `/handoffs.json`, map views
+`/sessions.json`, session detail routes at `/sessions/<id>` and
+`/sessions/<id>.json`, handoff views at `/handoffs` and `/handoffs.json`, map views
 at `/maps` and `/maps.json`, map detail routes at `/maps/<id>` and
 `/maps/<id>.json`, and work item detail routes at `/work/<id>` and
 `/work/<id>.json`.

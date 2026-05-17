@@ -1213,6 +1213,75 @@ test("CLI dashboard serve exposes a dedicated sessions view", async () => {
   }
 });
 
+test("CLI dashboard serve exposes a session detail view", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "note",
+    "--repo",
+    repoPath,
+    "--work",
+    "served-session-detail",
+    "--agent",
+    "Codex",
+    "--summary",
+    "Served session detail note.",
+    "--json",
+  ]);
+
+  const dashboard = JSON.parse(
+    (
+      await execFileAsync("node", [
+        "packages/cli/src/index.js",
+        "dashboard",
+        "--repo",
+        repoPath,
+        "--json",
+      ])
+    ).stdout,
+  );
+  const sessionId = dashboard.sessions.latest.sessionId;
+  const encodedSessionId = encodeURIComponent(sessionId);
+
+  const child = spawn(
+    "node",
+    [
+      "packages/cli/src/index.js",
+      "dashboard",
+      "serve",
+      "--repo",
+      repoPath,
+      "--port",
+      "0",
+      "--json",
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+
+  try {
+    const url = await waitForOutputMatch(child, /http:\/\/127\.0\.0\.1:\d+\//);
+    const detailResponse = await fetch(`${url}sessions/${encodedSessionId}`);
+    const detailHtml = await detailResponse.text();
+    const detailJsonResponse = await fetch(`${url}sessions/${encodedSessionId}.json`);
+    const detailJson = await detailJsonResponse.json();
+
+    assert.equal(detailResponse.status, 200);
+    assert.match(detailHtml, /Devflow Session Detail/);
+    assert.match(detailHtml, /Served session detail note/);
+    assert.equal(detailJson.sessionId, sessionId);
+    assert.equal(detailJson.agent, "Codex");
+    assert.equal(detailJson.workItemId, "served-session-detail");
+  } finally {
+    child.kill();
+    await waitForExit(child);
+  }
+});
+
 test("CLI dashboard serve exposes a dedicated handoffs view", async () => {
   const repoPath = await createTempGitRepo();
 
