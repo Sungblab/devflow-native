@@ -284,17 +284,26 @@ and ready-to-finish work, latest gate evidence, session summaries, recent
 timeline events, architecture map entries from `docs/architecture/maps/*.md`,
 and latest handoff state from local state and project docs. `devflow dashboard
 --html <path>` can also write a static browser shell from the same contract
-before the full Vite/React dashboard exists. `devflow dashboard serve` wraps
+while the full Vite/React dashboard is still behind a package-local build
+boundary. `devflow dashboard serve` wraps
 that shell in a local HTTP server and serves `/dashboard.json` for callers that
 need the raw contract. It also serves `/assets/dashboard.css` and
-`/assets/dashboard.js` as the first no-build web shell asset layer before a
-bundled Vite/React app exists, plus dedicated `/gates`, `/sessions`, `/handoffs`, and
+`/assets/dashboard.js` as the first no-build web shell asset layer while the
+bundled Vite/React app grows behind the same JSON contract, plus dedicated
+`/gates`, `/sessions`, `/handoffs`, and
 `/maps` HTML/JSON slices, latest gate detail routes at `/gates/<id>` and
 `/gates/<id>.json`, session detail routes at `/sessions/<id>` and
 `/sessions/<id>.json`, handoff detail routes at `/handoffs/<work-item-id>` and
 `/handoffs/<work-item-id>.json`, map detail routes at `/maps/<id>` and
 `/maps/<id>.json`, and first work item detail routes at `/work/<id>` and
 `/work/<id>.json`.
+
+`packages/web` owns the dashboard HTML renderers used by CLI routing and the
+first Vite/React scaffold: package-local build/dev scripts, Vite config, HTML
+entrypoint, React entrypoint, and a minimal dashboard app that reads
+`/dashboard.json`. The bundled app is not served by the CLI yet; this keeps the
+Windows-first no-build dashboard path dependency-light while making the future
+React boundary explicit.
 
 ## Security
 

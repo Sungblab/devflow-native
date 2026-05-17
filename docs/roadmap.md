@@ -263,16 +263,20 @@ next-action recommendation from `.devflow/state/events.jsonl` plus
 `docs/architecture/maps/*.md`. `devflow dashboard --html <path>` now writes a
 static browser shell from the same summary, and `devflow dashboard serve`
 serves that shell plus `/dashboard.json`, `/assets/dashboard.css`, and
-`/assets/dashboard.js` over local HTTP. The asset content is now owned by
-`packages/web` as a no-build stepping stone toward a richer dashboard package.
+`/assets/dashboard.js` over local HTTP. The asset content and current
+route-specific HTML renderers are now owned by `packages/web` as a no-build
+stepping stone toward a richer dashboard package.
 The server also includes dedicated `/gates`, `/sessions`, `/handoffs`, and `/maps` HTML views
 plus `/gates.json`, `/sessions.json`, `/handoffs.json`, and `/maps.json`
 slices, plus latest gate detail routes at `/gates/<id>` and `/gates/<id>.json`,
 session detail routes at `/sessions/<id>` and `/sessions/<id>.json`, map detail
 routes at `/maps/<id>` and `/maps/<id>.json`, handoff detail routes at
 `/handoffs/<work-item-id>` and `/handoffs/<work-item-id>.json`, and first work
-item detail routes at `/work/<id>` and `/work/<id>.json`. A richer Vite/React
-dashboard remains later Phase 8 work.
+item detail routes at `/work/<id>` and `/work/<id>.json`. `packages/web` also
+now has the first package-local Vite/React scaffold with `vite build`, Vite
+config, an HTML entrypoint, a React entrypoint, and a minimal dashboard app that
+reads `/dashboard.json`. Serving the bundled React app through `devflow
+dashboard serve` remains later Phase 8 work.
 
 ## Phase 9: GitHub Review Integration
 

@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   createDashboardServedHtml,
@@ -13,6 +16,8 @@ import {
   renderDashboardMapsPage,
   renderDashboardWorkPage,
 } from "../src/index.js";
+
+const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
 test("web package owns the no-build dashboard shell assets", () => {
   const staticHtml = "<!doctype html><html><head><title>Devflow Dashboard</title></head><body><main>Fallback</main></body></html>";
@@ -217,4 +222,28 @@ test("web package renders the work detail page", () => {
   assert.match(html, /blocked/);
   assert.match(html, /Render work details from the web package/);
   assert.match(html, /Waiting on final extraction/);
+});
+
+test("web package declares a Vite React build boundary", async () => {
+  const packageJson = JSON.parse(await readFile(join(packageRoot, "package.json"), "utf8"));
+  const viteConfig = await readFile(join(packageRoot, "vite.config.js"), "utf8");
+  const html = await readFile(join(packageRoot, "index.html"), "utf8");
+  const app = await readFile(join(packageRoot, "src", "dashboard-app.jsx"), "utf8");
+  const entry = await readFile(join(packageRoot, "src", "dashboard-entry.jsx"), "utf8");
+
+  assert.equal(packageJson.name, "@devflow/web");
+  assert.equal(packageJson.private, true);
+  assert.equal(packageJson.type, "module");
+  assert.equal(packageJson.scripts.build, "vite build");
+  assert.equal(packageJson.dependencies.react, "^19.2.6");
+  assert.equal(packageJson.dependencies["react-dom"], "^19.2.6");
+  assert.equal(packageJson.devDependencies["@vitejs/plugin-react"], "^6.0.2");
+  assert.equal(packageJson.devDependencies.vite, "^8.0.13");
+  assert.match(viteConfig, /@vitejs\/plugin-react/);
+  assert.match(viteConfig, /outDir: "dist"/);
+  assert.match(html, /<div id="root"><\/div>/);
+  assert.match(entry, /createRoot/);
+  assert.match(entry, /DashboardApp/);
+  assert.match(app, /export function DashboardApp/);
+  assert.match(app, /\/dashboard\.json/);
 });

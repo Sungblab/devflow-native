@@ -15,5 +15,14 @@ The first route-specific page renderers also live here:
 `/maps`, and `/work/<id>` HTML slices from the dashboard summary contract while
 the CLI remains responsible for routing and process I/O.
 
-Future Vite/React work should grow from this package while keeping CLI and MCP
-JSON contracts stable.
+The package also declares the first Vite/React build boundary:
+
+- `package.json` owns the package-local `vite build` and `vite --host
+  127.0.0.1` scripts.
+- `vite.config.js` keeps Vite output under `packages/web/dist`.
+- `index.html`, `src/dashboard-entry.jsx`, and `src/dashboard-app.jsx` define a
+  minimal React app shell that reads `/dashboard.json`.
+
+This scaffold does not replace `devflow dashboard serve` yet. The CLI still
+serves the no-build shell so Windows PowerShell dogfooding remains dependency
+light while the React dashboard grows behind the same JSON contract.
