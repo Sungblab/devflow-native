@@ -1,69 +1,61 @@
 # Solo Devflow OS
 
-Solo Devflow OS is a local-first black box recorder for AI-assisted
-development.
+Solo Devflow OS is a local-first continuity layer for solo developers using AI
+coding agents.
 
-It is not another coding agent. Codex, Claude Code, Gemini, and shell sessions
-do the work. Devflow records the project truth they need to share: what changed,
-what was verified, what was skipped, what risk remains, and what the next
-session should do.
+It is not another coding agent and it is not a dashboard-first app. Codex,
+Claude Code, Gemini, Superpowers, and shell sessions do the work. Devflow keeps
+the shared project truth they need to start, finish, and hand off work without
+losing context.
 
-## First Loop
+## Primary UX
 
-The first useful loop is intentionally small:
+The primary surface is the repo-local plugin at `plugins/devflow`.
+
+When enabled in Codex or Claude Code, the plugin is expected to:
+
+- load compact `doctor` and `status` context at session start
+- detect fast maintainer prompts such as `ㄱㄱ`, `이어가`, `끝내`, or `pr ㄱㄱ`
+- preserve local execution rules, active work, gate evidence, and latest
+  handoff state
+- use Superpowers as an optional workflow profile when available, not as a core
+  dependency
+- avoid generating HTML unless the maintainer asks for a visual artifact or the
+  state is too dense for text
+
+The CLI and MCP server are the local engine behind that plugin. They remain
+useful for debugging, tests, and hosts that do not support plugin hooks yet.
+
+## First Plugin Loop
+
+```text
+Codex or Claude Code opens the repo
+  -> Devflow SessionStart hook injects compact repo context
+
+Maintainer says "ㄱㄱ" or "이어가"
+  -> Devflow UserPromptSubmit hook classifies the workflow intent
+  -> the agent uses status, active work, and handoff state before editing
+
+Maintainer says "끝내" or "pr ㄱㄱ"
+  -> Devflow finish skill checks docs impact, gates, risks, and next prompt
+  -> completion evidence is recorded in .devflow/state/events.jsonl
+```
+
+## Local Engine
+
+The local engine still exposes direct commands for development and fallback
+use:
 
 ```powershell
 node packages/cli/src/index.js doctor --platform windows-powershell --json
 node packages/cli/src/index.js status --simple
-
-# Work in Codex, Claude Code, Gemini, or a terminal.
-
-node packages/cli/src/index.js finish `
-  --work readme-first-loop `
-  --title "README first loop" `
-  --intent "Make the first Devflow loop obvious from the repo entrypoint." `
-  --gate "docs:npm run docs:check:passed" `
-  --risk "No dashboard demo exists yet." `
-  --next-task "Add a captured example of finish output and next prompt." `
-  --guided
-
-node packages/cli/src/index.js prompt next `
-  --objective "Continue Solo Devflow OS from the recorded first loop." `
-  --command "npm run docs:check" `
-  --risk "No dashboard demo exists yet." `
-  --next-task "Add a captured example of finish output and next prompt."
+node packages/cli/src/index.js finish --json
+node packages/cli/src/index.js prompt next
+npm run mcp:stdio
 ```
-
-That loop answers the daily questions a solo maintainer loses across agent
-tabs:
-
-- What local shell, path, and tool rules should the agent follow?
-- What is the current repo/work/gate state?
-- What evidence closes this slice?
-- What exact prompt should the next session start with?
-
-## Example Handoff Shape
 
 `devflow finish` records local evidence in `.devflow/state/events.jsonl`.
-`devflow prompt next` emits a copy-paste handoff that should include:
-
-```text
-Objective: Continue Solo Devflow OS from the recorded first loop.
-
-Changed files:
-- README.md
-
-Commands run:
-- npm run docs:check
-
-Risks:
-- No dashboard demo exists yet.
-
-Next task: Add a captured example of finish output and next prompt.
-```
-
-For a fuller terminal walkthrough, see the
-[first loop demo](docs/examples/first-loop-demo.md).
+`devflow prompt next` emits a compact handoff prompt for the next session.
 
 ## Product Thesis
 
@@ -87,7 +79,8 @@ Devflow OS optimizes for continuity:
   work item.
 - Gate: a command or external review that proves a slice is ready.
 - Handoff: a generated next-session prompt plus evidence from the last run.
-- Map: a visual route from docs to code ownership to verification.
+- Artifact: an optional generated HTML or text view for dense reviews, split
+  plans, timelines, or handoffs. Artifacts are views, not source of truth.
 
 ## Documentation
 
@@ -98,34 +91,25 @@ Devflow OS optimizes for continuity:
 
 ## Current MVP
 
-```powershell
-node packages/cli/src/index.js init --json
-node packages/cli/src/index.js init --confirm --json
-node packages/cli/src/index.js health --json
-node packages/cli/src/index.js status --json
-node packages/cli/src/index.js status --simple
-node packages/cli/src/index.js doctor --platform windows-powershell --json
-node packages/cli/src/index.js finish --json
-node packages/cli/src/index.js prompt next
-npm run mcp:stdio
-```
+The current MVP is plugin-first and MCP-backed:
 
-The repo also contains local Codex and Claude Code plugin drafts at
-`plugins/devflow`. The start skill loads `devflow doctor` and `devflow status`
-before command-heavy work. The finish skill records evidence, checks
-documentation impact, respects host goal state when available, and asks whether
-to commit, PR, continue, or generate a next-session prompt.
+- `plugins/devflow/.codex-plugin/plugin.json`
+- `plugins/devflow/.claude-plugin/plugin.json`
+- `plugins/devflow/hooks/hooks.json`
+- `plugins/devflow/skills/start/SKILL.md`
+- `plugins/devflow/skills/finish/SKILL.md`
+- `packages/mcp/src/stdio.js`
+- `packages/cli/src/index.js`
 
 The MCP package exposes the same core contracts through `devflow.doctor`,
-`devflow.status`, `devflow.finish`, `devflow.record_gate`, and
-`devflow.next_prompt` handlers, plus a minimal stdio JSON-RPC transport for
-host integration experiments.
+`devflow.status`, `devflow.finish`, `devflow.record_gate`,
+`devflow.gates_run`, and `devflow.next_prompt`, plus work, split, prompt,
+session, and health tools.
 
-The Codex plugin manifest points to `plugins/devflow/.mcp.json`, which launches
-the local stdio transport with `node packages/mcp/src/stdio.js`.
+## Positioning
 
-## Initial Positioning
-
-Solo Devflow OS should feel closer to a black box recorder and project control
-room than to an IDE. It can eventually launch agents, but the first durable
-value is knowing what happened, what is blocked, and what comes next.
+Solo Devflow OS should feel like a repo-local black box recorder and
+single-developer workflow layer for AI-assisted development. A future visual UI
+can be added when the local state is large enough to justify it, but the first
+durable value is automatic context restoration inside the agent the maintainer
+already uses.

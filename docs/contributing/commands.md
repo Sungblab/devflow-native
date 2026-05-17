@@ -32,8 +32,6 @@ devflow sessions attach-plan
 devflow sessions attach
 devflow sessions list
 devflow sessions note
-devflow dashboard
-devflow dashboard serve
 devflow doctor
 ```
 
@@ -67,8 +65,6 @@ minimum project contract and skips existing files instead of overwriting them.
 evidence.
 `devflow work create/start/ready/block/list` provides the first local work item
 registry.
-`devflow dashboard` renders the first local dashboard view from the same state
-as `devflow status`.
 `doctor` is included early because plugin/skill-first workflows need a cheap
 way to avoid repeated local-environment mistakes.
 `devflow sessions codex` is included as a read-only adapter probe. It requires
@@ -1050,63 +1046,9 @@ Example:
 git fetch origin && git worktree add .worktrees/worker-static-quality -b codex/worker-static-quality origin/main
 ```
 
-## `devflow dashboard`
+## Generated artifacts
 
-Renders the local dashboard summary.
-
-Example:
-
-```powershell
-devflow dashboard --json
-devflow dashboard --html .devflow/state/dashboard.html --json
-devflow dashboard serve --repo . --port 8787 --json
-```
-
-Outputs:
-
-- `dashboard` JSON wrapper
-- active, blocked, and ready-to-finish work counts
-- active, blocked, and ready-to-finish work item lists
-- latest gate evidence counts and entries
-- attached/manual session counts, latest session, recent sessions, and agent
-  breakdown
-- recent timeline event count and entries from `.devflow/state/events.jsonl`
-- architecture map entries from `docs/architecture/maps/*.md`
-- latest handoff and stale handoff count
-- first dashboard recommendation
-
-Without `--json`, the command prints a compact terminal dashboard. With
-`--html <path>`, the command writes a static browser shell from the same core
-summary and returns a `dashboard_html` JSON wrapper when `--json` is present.
-`devflow dashboard serve` starts a local HTTP server for the same browser shell
-and exposes `/dashboard.json` for the raw summary contract. Served dashboard
-HTML also references `/assets/dashboard.css` and `/assets/dashboard.js` as the
-first no-build web shell assets over the same JSON contract. The future
-Vite/React dashboard build boundary lives in `packages/web`. By default this
-command still serves the dependency-light no-build shell. After
-`npm --prefix packages/web run build`, pass `--web-build` to serve the bundled
-React app from `packages/web/dist` while preserving `/dashboard.json`,
-`/assets/dashboard.css`, and `/assets/dashboard.js`. In `--web-build` mode,
-dashboard HTML routes such as `/gates`, `/sessions`, `/handoffs`, `/maps`,
-`/work`, and `/work/<id>` return the React app shell while their `.json` counterparts keep
-returning the raw local contract. Without `--web-build`, the no-build server
-still exposes a dedicated gates view at `/gates` and the same gate slice as JSON at
-`/gates.json`, with latest gate detail pages at `/gates/<id>` and
-`/gates/<id>.json`. A dedicated sessions view is available at `/sessions` and
-the same session slice as JSON at `/sessions.json`, with session detail pages
-at `/sessions/<id>` and `/sessions/<id>.json`. The latest and stale
-handoffs are available at `/handoffs` and `/handoffs.json`, with handoff detail
-pages at `/handoffs/<work-item-id>` and `/handoffs/<work-item-id>.json`. Architecture maps
-are available at `/maps` and `/maps.json`, with map detail pages at
-`/maps/<id>` and `/maps/<id>.json`. Work item detail pages are available at
-`/work/<id>` and `/work/<id>.json` for active, blocked, and ready-to-finish
-items. Use `--port 0` when the caller should choose an available port.
-
-Initial browser views:
-
-- active work
-- gates
-- parallel sessions
-- maps
-- handoffs
-- sessions
+The MVP no longer exposes a persistent `devflow dashboard` command. Visual
+surfaces should be generated on demand from structured state when a maintainer
+asks for a review sheet, split board, timeline, or handoff view. HTML artifacts
+are views, not state, and should not be fed back into agent context by default.

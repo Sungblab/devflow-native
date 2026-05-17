@@ -49,8 +49,6 @@ packages/cli/
 ## Initial Commands
 
 - `devflow status`
-- `devflow dashboard`
-- `devflow dashboard serve`
 - `devflow init`
 - `devflow health`
 - `devflow work create`
@@ -79,29 +77,6 @@ and at least one configured gate are present. `devflow work create`,
 `devflow work list` provide the first local work item registry over append-only
 `.devflow/state/events.jsonl` events. Work create and start writes are
 idempotent by id, returning the existing event instead of appending duplicates.
-`devflow dashboard` renders active, blocked, and ready-to-finish work, latest
-gate evidence, session summaries, recent timeline events, architecture maps,
-and handoff state from the same local state as a compact terminal or JSON
-dashboard summary.
-`devflow dashboard --html <path>` writes a static browser shell from that same
-summary for local review.
-`devflow dashboard serve --port <port>` serves that browser shell over local
-HTTP, exposes `/dashboard.json` for the raw summary contract, serves
-`/assets/dashboard.css` and `/assets/dashboard.js` for the first no-build web
-shell layer, and exposes
-dedicated gate views at `/gates` and `/gates.json`, gate detail routes at
-`/gates/<id>` and `/gates/<id>.json`, session views at `/sessions` and
-`/sessions.json`, session detail routes at `/sessions/<id>` and
-`/sessions/<id>.json`, handoff views at `/handoffs` and `/handoffs.json`,
-handoff detail routes at `/handoffs/<work-item-id>` and
-`/handoffs/<work-item-id>.json`, map views at `/maps` and `/maps.json`, map detail routes at `/maps/<id>` and
-`/maps/<id>.json`, and work item detail routes at `/work/<id>` and
-`/work/<id>.json`.
-After `npm --prefix packages/web run build`, add `--web-build` to serve the
-bundled React shell from `packages/web/dist` while keeping `/dashboard.json` and
-the existing slice/detail routes stable. Tests and local development can set
-`DEVFLOW_WEB_DIST_PATH` to point `--web-build` at an isolated temporary build
-directory without mutating `packages/web/dist`.
 `devflow split` renders local worktree-session plans, and `devflow split
 --register --start` can append the generated sessions as active work items
 without manual re-entry. The

@@ -8,7 +8,6 @@ JSON-RPC transport for MCP-capable hosts.
 
 - `devflow.doctor`
 - `devflow.status`
-- `devflow.dashboard`
 - `devflow.health`
 - `devflow.split`
 - `devflow.explain_term`
@@ -35,13 +34,6 @@ content plus a short text summary for agent hosts.
 session evidence. Pass `work` or `workItemId` to focus attached sessions on one
 work item, and `agent` to focus sessions from one recorded agent/manual source,
 while preserving the same core JSON contract used by the CLI.
-
-`devflow.dashboard` returns the first local dashboard contract: active,
-blocked, and ready-to-finish work counts, matching work item lists, latest gate
-evidence counts and entries, attached/manual session counts, recent sessions,
-agent breakdown, recent timeline events, architecture map entries from
-`docs/architecture/maps/*.md`, latest handoff state, and a single recommendation
-for the maintainer's next dashboard action.
 
 `devflow.health` checks the local project scaffold. It reports required files,
 missing files, configured gates, invalid gate definitions, and recommendations

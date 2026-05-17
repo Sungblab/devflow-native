@@ -9,7 +9,7 @@ Deliverables:
 - research notes
 - roadmap
 - initial command contract
-- dashboard information architecture
+- plugin-first information architecture
 
 Exit criteria:
 
@@ -25,6 +25,8 @@ Build:
 - `devflow finish`
 - `devflow doctor`
 - `devflow prompt next`
+- repo-local Codex/Claude plugin hooks for start, prompt intent, and finish
+  guard context
 - local `.devflow/` state files
 - git dirty-file capture
 - gate evidence capture
@@ -41,7 +43,7 @@ Exit criteria:
 - a completed task can record changed files, commands run, skipped checks,
   risks, and a next-session prompt
 - the product's first daily loop works from plugin skills, CLI, or future MCP
-  tools without dashboard or hosted sync
+  tools without a dashboard or hosted sync
 
 ## Phase 2: Repo Scaffold And Health
 
@@ -184,7 +186,8 @@ Build:
 Exit criteria:
 
 - active and historical agent sessions can be attached to a task
-- dashboard can show what each session did and where it stopped
+- compact status and optional artifacts can show what each session did and
+  where it stopped
 
 Current implementation note: `packages/adapters` has first read-only Codex
 session discovery helpers. `findCodexSessionFiles` locates candidate JSONL
@@ -238,54 +241,28 @@ Exit criteria:
 - simple/guided output remains a renderer over the same core state, not a
   separate product model
 
-## Phase 8: Local Dashboard
+## Phase 8: Generated Artifacts
 
 Build:
 
-- `devflow dashboard` local summary contract
-- active work view
-- timeline
-- gates view
-- maps view
-- sessions view
-- handoffs view
+- on-demand HTML/text artifact generation from structured `.devflow` state
+- review sheet artifacts for changed files, gates, skipped checks, and risks
+- split board artifacts for parallel work planning
+- timeline artifacts for sessions, gates, and handoffs
+- handoff artifacts for next-session prompts and unresolved risks
 
 Exit criteria:
 
-- the maintainer can open one local dashboard and understand project state
+- the maintainer can request a visual artifact only when the state is too dense
+  for compact text
+- generated HTML is never the source of truth and is not fed back to agents by
+  default
+- artifact templates are local, deterministic, and cheap compared with asking
+  the model to regenerate layout every turn
 
-Current implementation note: `devflow dashboard` and MCP `devflow.dashboard`
-now render the first local dashboard contract: active, blocked, and
-ready-to-finish work counts, item lists, latest gate evidence, latest handoff
-state, stale handoff counts, attached/manual session counts, recent sessions,
-agent breakdown, recent timeline events, architecture map entries, and one
-next-action recommendation from `.devflow/state/events.jsonl` plus
-`docs/architecture/maps/*.md`. `devflow dashboard --html <path>` now writes a
-static browser shell from the same summary, and `devflow dashboard serve`
-serves that shell plus `/dashboard.json`, `/assets/dashboard.css`, and
-`/assets/dashboard.js` over local HTTP. The asset content and current
-route-specific HTML renderers are now owned by `packages/web` as a no-build
-stepping stone toward a richer dashboard package.
-The server also includes dedicated `/gates`, `/sessions`, `/handoffs`, and `/maps` HTML views
-plus `/gates.json`, `/sessions.json`, `/handoffs.json`, and `/maps.json`
-slices, plus latest gate detail routes at `/gates/<id>` and `/gates/<id>.json`,
-session detail routes at `/sessions/<id>` and `/sessions/<id>.json`, map detail
-routes at `/maps/<id>` and `/maps/<id>.json`, handoff detail routes at
-`/handoffs/<work-item-id>` and `/handoffs/<work-item-id>.json`, and first work
-item detail routes at `/work/<id>` and `/work/<id>.json`. `packages/web` also
-now has the first package-local Vite/React scaffold with `vite build`, Vite
-config, an HTML entrypoint, a React entrypoint, and a dashboard app that reads
-`/dashboard.json` and derives metrics, route links, latest evidence, work
-lists, recent timeline events, gates/sessions/handoffs/maps detail panels, and
-client-side filtering through a package-local view model, including route-level
-section/detail view models with route-specific empty and not-found states for
-the built app plus structured detail facts, a built `/work` list route, and
-package-local dashboard CSS. After `npm --prefix packages/web run build`,
-`devflow dashboard serve --web-build` can serve the bundled app from
-`packages/web/dist` while preserving the no-build fallback and existing
-dashboard JSON/slice/detail JSON routes; HTML dashboard routes return the React
-app shell in that mode. Browser-level route smoke coverage remains later Phase
-8 work.
+Current implementation note: the earlier dashboard package was removed from
+the MVP. Phase 8 is now an on-demand artifact layer rather than a persistent
+web app.
 
 ## Phase 9: GitHub Review Integration
 

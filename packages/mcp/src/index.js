@@ -6,7 +6,6 @@ import {
   parseCodexSessionJsonl,
 } from "../../adapters/src/index.js";
 import {
-  createDashboardSummary,
   createDoctorSummary,
   createFinishSummary,
   createNextPrompt,
@@ -21,7 +20,6 @@ import {
   parseSessionListSince,
   parseSessionListSort,
   readProjectHealth,
-  readDashboardMaps,
   readDevflowConfig,
   readDevflowState,
   readMistakeMemory,
@@ -41,10 +39,6 @@ const tools = [
   {
     name: "devflow.status",
     description: "Read local repo state, handoffs, gate evidence, and recommendations.",
-  },
-  {
-    name: "devflow.dashboard",
-    description: "Render active, blocked, and ready work for the local dashboard.",
   },
   {
     name: "devflow.health",
@@ -131,10 +125,6 @@ export function listTools() {
 export async function callTool(name, args = {}) {
   if (name === "devflow.status") {
     return callStatus(args);
-  }
-
-  if (name === "devflow.dashboard") {
-    return callDashboard(args);
   }
 
   if (name === "devflow.health") {
@@ -245,21 +235,6 @@ async function callStatus(args) {
   });
 
   return toolResult(summary, `devflow status: ${summary.repo.absolutePath}`);
-}
-
-async function callDashboard(args) {
-  const repoPath = args.repo ?? process.cwd();
-  const state = await readDevflowState(repoPath);
-  const maps = await readDashboardMaps(repoPath);
-  const summary = createDashboardSummary({
-    repo: {
-      absolutePath: repoPath,
-    },
-    state,
-    maps,
-  });
-
-  return toolResult(summary, `devflow dashboard: ${summary.work.counts.open} open work items`);
 }
 
 async function callHealth(args) {

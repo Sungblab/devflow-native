@@ -1,7 +1,7 @@
 # `@devflow/core`
 
 `packages/core` owns the agent-neutral project model and local state logic. It
-must not depend on CLI argument parsing, dashboard rendering, or provider-
+must not depend on CLI argument parsing, artifact rendering, or provider-
 specific session formats.
 
 ## Initial File Boundary
@@ -59,6 +59,6 @@ packages/core/
 - Do not parse agent-specific history files directly. Use `packages/adapters`.
 - Do not emit shell-specific command strings directly. Use command descriptors
   that platform adapters render.
-- Do not import dashboard code.
+- Do not import artifact renderer code.
 - Do not assume Superpowers, gstack, OpenHarness, Hermes, Codex, Claude, or
   Gemini are mandatory.
