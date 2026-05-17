@@ -844,6 +844,69 @@ test("CLI work ready and block update lifecycle state", async () => {
   assert.equal(statusJson.work.blocked[0].blockedReason, "Waiting for review.");
 });
 
+test("CLI work update changes metadata without changing lifecycle state", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "update-work",
+    "--title",
+    "Original title",
+    "--description",
+    "Original description",
+    "--owned-path",
+    "docs/**",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "start",
+    "update-work",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+
+  const updated = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "update",
+    "update-work",
+    "--repo",
+    repoPath,
+    "--title",
+    "Updated title",
+    "--description",
+    "Updated description",
+    "--owned-path",
+    "packages/core/**",
+    "--owned-path",
+    "packages/cli/**",
+    "--json",
+  ]);
+  const status = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+
+  assert.equal(JSON.parse(updated.stdout).command, "work_update");
+
+  const statusJson = JSON.parse(status.stdout);
+  assert.equal(statusJson.work.active[0].id, "update-work");
+  assert.equal(statusJson.work.active[0].title, "Updated title");
+  assert.equal(statusJson.work.active[0].description, "Updated description");
+  assert.deepEqual(statusJson.work.active[0].ownedPaths, ["packages/core/**", "packages/cli/**"]);
+});
+
 test("CLI gates run executes configured gate and writes evidence", async () => {
   const repoPath = await createTempGitRepo();
   const scriptPath = join(repoPath, "gate-script.mjs");

@@ -32,6 +32,7 @@ import {
   recordWorkCreatedEvent,
   recordWorkReadyEvent,
   recordWorkStartedEvent,
+  recordWorkUpdatedEvent,
   runConfiguredGate,
 } from "../../core/src/index.js";
 
@@ -83,6 +84,10 @@ const tools = [
   {
     name: "devflow.work_start",
     description: "Mark a local Devflow work item as active.",
+  },
+  {
+    name: "devflow.work_update",
+    description: "Update local Devflow work item metadata.",
   },
   {
     name: "devflow.work_ready",
@@ -169,6 +174,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.work_start") {
     return callWorkStart(args);
+  }
+
+  if (name === "devflow.work_update") {
+    return callWorkUpdate(args);
   }
 
   if (name === "devflow.work_ready") {
@@ -440,6 +449,26 @@ async function callWorkStart(args) {
       event,
     },
     `devflow work_start: ${event.payload.id}`,
+  );
+}
+
+async function callWorkUpdate(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const event = await recordWorkUpdatedEvent(repoPath, {
+    id: args.id,
+    title: args.title,
+    description: args.description,
+    ownedPaths: args.ownedPaths,
+  });
+
+  return toolResult(
+    {
+      schemaVersion: "0.1",
+      command: "work_update",
+      workItem: event.payload,
+      event,
+    },
+    `devflow work_update: ${event.payload.id}`,
   );
 }
 

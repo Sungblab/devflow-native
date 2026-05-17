@@ -35,6 +35,7 @@ import {
   recordWorkCreatedEvent,
   recordWorkReadyEvent,
   recordWorkStartedEvent,
+  recordWorkUpdatedEvent,
 } from "../src/index.js";
 
 test("status summary captures repo, dirty files, gates, and prompt recommendation", () => {
@@ -322,6 +323,41 @@ test("work lifecycle events can mark items ready and blocked", async () => {
   assert.equal(state.work.blocked[0].blockedReason, "Waiting for review.");
   assert.equal(status.work.readyToFinish[0].id, "ready-work");
   assert.equal(status.work.blocked[0].id, "blocked-work");
+});
+
+test("work update events can change metadata without changing lifecycle status", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-work-update-"));
+
+  await recordWorkCreatedEvent(repoPath, {
+    id: "update-work",
+    title: "Original title",
+    description: "Original description",
+    ownedPaths: ["docs/**"],
+  });
+  await recordWorkStartedEvent(repoPath, { id: "update-work" });
+  const updated = await recordWorkUpdatedEvent(
+    repoPath,
+    {
+      id: "update-work",
+      title: "Updated title",
+      description: "Updated description",
+      ownedPaths: ["packages/core/**", "packages/cli/**"],
+    },
+    { observedAt: "2026-05-17T09:30:00.000Z" },
+  );
+
+  assert.equal(updated.type, "work.updated");
+  assert.equal(updated.payload.title, "Updated title");
+  assert.deepEqual(updated.payload.ownedPaths, ["packages/core/**", "packages/cli/**"]);
+
+  const state = await readDevflowState(repoPath);
+  const item = state.work.items.find((candidate) => candidate.id === "update-work");
+  assert.equal(item.title, "Updated title");
+  assert.equal(item.description, "Updated description");
+  assert.deepEqual(item.ownedPaths, ["packages/core/**", "packages/cli/**"]);
+  assert.equal(item.status, "active");
+  assert.equal(item.updatedAt, "2026-05-17T09:30:00.000Z");
+  assert.equal(state.work.active[0].id, "update-work");
 });
 
 test("project health scanner surfaces invalid gates from config", async () => {

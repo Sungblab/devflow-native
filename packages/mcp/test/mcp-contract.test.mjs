@@ -309,6 +309,38 @@ test("MCP work lifecycle tools mark items ready and blocked", async () => {
   assert.equal(status.structuredContent.work.blocked[0].blockedReason, "Waiting for review.");
 });
 
+test("MCP work_update changes metadata without changing lifecycle state", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-work-update-"));
+  await callTool("devflow.work_create", {
+    repo: repoPath,
+    id: "update-work",
+    title: "Original title",
+    description: "Original description",
+    ownedPaths: ["docs/**"],
+  });
+  await callTool("devflow.work_start", {
+    repo: repoPath,
+    id: "update-work",
+  });
+
+  const updated = await callTool("devflow.work_update", {
+    repo: repoPath,
+    id: "update-work",
+    title: "Updated title",
+    description: "Updated description",
+    ownedPaths: ["packages/core/**", "packages/mcp/**"],
+  });
+  const status = await callTool("devflow.status", {
+    repo: repoPath,
+  });
+
+  assert.equal(updated.structuredContent.command, "work_update");
+  assert.equal(status.structuredContent.work.active[0].id, "update-work");
+  assert.equal(status.structuredContent.work.active[0].title, "Updated title");
+  assert.equal(status.structuredContent.work.active[0].description, "Updated description");
+  assert.deepEqual(status.structuredContent.work.active[0].ownedPaths, ["packages/core/**", "packages/mcp/**"]);
+});
+
 test("MCP gates_run executes configured gate and records evidence", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-gates-run-"));
   const scriptPath = join(repoPath, "gate-script.mjs");

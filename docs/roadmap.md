@@ -73,7 +73,7 @@ Build:
 
 - `devflow split`
 - work item registry
-- `devflow work create/start/ready/block/list`
+- `devflow work create/start/update/ready/block/list`
 
 Exit criteria:
 
@@ -82,12 +82,14 @@ Exit criteria:
 - work items can be registered and listed from local state
 
 Current implementation note: `devflow work create`, `devflow work start`,
-`devflow work ready`, `devflow work block`, and `devflow work list` now append
-and derive local work item state from
+`devflow work update`, `devflow work ready`, `devflow work block`, and
+`devflow work list` now append and derive local work item state from
 `.devflow/state/events.jsonl`. MCP exposes the same contract as
-`devflow.work_create`, `devflow.work_start`, `devflow.work_ready`,
-`devflow.work_block`, and `devflow.work_list`, and `devflow status` now reads
-active, blocked, and ready-to-finish work items from derived state.
+`devflow.work_create`, `devflow.work_start`, `devflow.work_update`,
+`devflow.work_ready`, `devflow.work_block`, and `devflow.work_list`, and
+`devflow status` now reads active, blocked, and ready-to-finish work items from
+derived state. `work.updated` changes title, description, and owned paths
+without changing lifecycle status.
 `devflow split --register --start` and MCP `devflow.split` with
 `register: true` and `start: true` can also register generated split sessions
 as active work items. Repeated create/start and split registration writes are
@@ -136,6 +138,7 @@ Build:
 - `devflow.sessions_note` MCP tool
 - `devflow.work_create` MCP tool
 - `devflow.work_start` MCP tool
+- `devflow.work_update` MCP tool
 - `devflow.work_ready` MCP tool
 - `devflow.work_block` MCP tool
 - `devflow.work_list` MCP tool
@@ -160,8 +163,8 @@ Current implementation note: `packages/mcp` has testable handler functions for
 dry-run `devflow.sessions_attach_plan`, confirmed-write
 `devflow.sessions_attach`, read-only `devflow.sessions_list`, manual
 `devflow.sessions_note`, local work item tools `devflow.work_create`,
-`devflow.work_start`, `devflow.work_ready`, `devflow.work_block`, and
-`devflow.work_list`, and a
+`devflow.work_start`, `devflow.work_update`, `devflow.work_ready`,
+`devflow.work_block`, and `devflow.work_list`, and a
 minimal stdio JSON-RPC transport. The CLI also has `devflow split --json` with
 optional work registration and `devflow explain` renderers, plus `devflow prompt rewrite` for converting
 vague maintainer intent into agent-ready requirements. Host-specific Codex and

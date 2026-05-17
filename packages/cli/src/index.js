@@ -36,6 +36,7 @@ import {
   recordWorkCreatedEvent,
   recordWorkReadyEvent,
   recordWorkStartedEvent,
+  recordWorkUpdatedEvent,
   runConfiguredGate,
   writeInitPlan,
 } from "../../core/src/index.js";
@@ -78,6 +79,8 @@ try {
     await renderWorkCreate(args.slice(2));
   } else if (command === "work" && args[1] === "start") {
     await renderWorkStart(args.slice(2));
+  } else if (command === "work" && args[1] === "update") {
+    await renderWorkUpdate(args.slice(2));
   } else if (command === "work" && args[1] === "ready") {
     await renderWorkReady(args.slice(2));
   } else if (command === "work" && args[1] === "block") {
@@ -455,6 +458,30 @@ async function renderWorkStart(argsForCommand) {
     {
       schemaVersion: "0.1",
       command: "work_start",
+      workItem: event.payload,
+      event,
+    },
+    options.json,
+  );
+}
+
+async function renderWorkUpdate(argsForCommand) {
+  const { options, positional } = parseOptionsAndPositionals(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const ownedPaths = Object.hasOwn(options, "owned-path")
+    ? collectRepeated(options["owned-path"])
+    : undefined;
+  const event = await recordWorkUpdatedEvent(repoPath, {
+    id: positional[0] ?? options.id,
+    title: options.title,
+    description: options.description,
+    ownedPaths,
+  });
+
+  render(
+    {
+      schemaVersion: "0.1",
+      command: "work_update",
       workItem: event.payload,
       event,
     },
