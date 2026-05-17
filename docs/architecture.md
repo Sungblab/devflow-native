@@ -106,6 +106,7 @@ than appending duplicates.
 - `work.started`
 - `work.ready`
 - `work.blocked`
+- `work.unblocked`
 - `session.attached`
 - `session.message`
 - `git.status.captured`
@@ -125,6 +126,7 @@ devflow work create
 devflow work start
 devflow work ready
 devflow work block
+devflow work unblock
 devflow work list
 devflow session attach
 devflow gates run
@@ -162,6 +164,7 @@ devflow.work_create
 devflow.work_start
 devflow.work_ready
 devflow.work_block
+devflow.work_unblock
 devflow.work_list
 ```
 

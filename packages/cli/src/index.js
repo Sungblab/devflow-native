@@ -36,6 +36,7 @@ import {
   recordWorkCreatedEvent,
   recordWorkReadyEvent,
   recordWorkStartedEvent,
+  recordWorkUnblockedEvent,
   runConfiguredGate,
   writeInitPlan,
 } from "../../core/src/index.js";
@@ -82,6 +83,8 @@ try {
     await renderWorkReady(args.slice(2));
   } else if (command === "work" && args[1] === "block") {
     await renderWorkBlock(args.slice(2));
+  } else if (command === "work" && args[1] === "unblock") {
+    await renderWorkUnblock(args.slice(2));
   } else if (command === "work" && args[1] === "list") {
     await renderWorkList(args.slice(2));
   } else {
@@ -492,6 +495,24 @@ async function renderWorkBlock(argsForCommand) {
     {
       schemaVersion: "0.1",
       command: "work_block",
+      workItem: event.payload,
+      event,
+    },
+    options.json,
+  );
+}
+
+async function renderWorkUnblock(argsForCommand) {
+  const { options, positional } = parseOptionsAndPositionals(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const event = await recordWorkUnblockedEvent(repoPath, {
+    id: positional[0] ?? options.id,
+  });
+
+  render(
+    {
+      schemaVersion: "0.1",
+      command: "work_unblock",
       workItem: event.payload,
       event,
     },

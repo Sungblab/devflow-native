@@ -844,6 +844,58 @@ test("CLI work ready and block update lifecycle state", async () => {
   assert.equal(statusJson.work.blocked[0].blockedReason, "Waiting for review.");
 });
 
+test("CLI work unblock returns blocked work to active state", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "blocked-work",
+    "--title",
+    "Blocked work",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "block",
+    "blocked-work",
+    "--repo",
+    repoPath,
+    "--reason",
+    "Waiting for review.",
+    "--json",
+  ]);
+
+  const unblocked = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "unblock",
+    "blocked-work",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const status = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+
+  assert.equal(JSON.parse(unblocked.stdout).command, "work_unblock");
+
+  const statusJson = JSON.parse(status.stdout);
+  assert.equal(statusJson.work.active[0].id, "blocked-work");
+  assert.equal(statusJson.work.active[0].blockedReason, null);
+  assert.equal(statusJson.work.blocked.length, 0);
+});
+
 test("CLI gates run executes configured gate and writes evidence", async () => {
   const repoPath = await createTempGitRepo();
   const scriptPath = join(repoPath, "gate-script.mjs");

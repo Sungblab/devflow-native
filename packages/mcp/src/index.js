@@ -32,6 +32,7 @@ import {
   recordWorkCreatedEvent,
   recordWorkReadyEvent,
   recordWorkStartedEvent,
+  recordWorkUnblockedEvent,
   runConfiguredGate,
 } from "../../core/src/index.js";
 
@@ -91,6 +92,10 @@ const tools = [
   {
     name: "devflow.work_block",
     description: "Mark a local Devflow work item as blocked.",
+  },
+  {
+    name: "devflow.work_unblock",
+    description: "Return a blocked local Devflow work item to active.",
   },
   {
     name: "devflow.work_list",
@@ -177,6 +182,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.work_block") {
     return callWorkBlock(args);
+  }
+
+  if (name === "devflow.work_unblock") {
+    return callWorkUnblock(args);
   }
 
   if (name === "devflow.work_list") {
@@ -475,6 +484,23 @@ async function callWorkBlock(args) {
       event,
     },
     `devflow work_block: ${event.payload.id}`,
+  );
+}
+
+async function callWorkUnblock(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const event = await recordWorkUnblockedEvent(repoPath, {
+    id: args.id,
+  });
+
+  return toolResult(
+    {
+      schemaVersion: "0.1",
+      command: "work_unblock",
+      workItem: event.payload,
+      event,
+    },
+    `devflow work_unblock: ${event.payload.id}`,
   );
 }
 
