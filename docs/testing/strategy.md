@@ -12,6 +12,8 @@ documentation surface still works.
 Gate ids in `.devflow/config.json` must be unique, and every gate must include
 a non-empty `id` and `command`. `devflow health` treats malformed gate
 definitions as `invalid` even when all scaffold files are present.
+`devflow gates run <id>` executes the configured command without a shell and
+records both passing and failing process results as `gate.finished` evidence.
 
 ## When To Run Each Gate
 
@@ -29,6 +31,7 @@ full `npm test` before finishing if production code or shared contracts changed.
 ## Evidence Rules
 
 - Passing tests are evidence only for the behavior they cover.
-- Failed or skipped gates must be recorded with the reason.
+- Failed or skipped gates must be recorded with the reason. A failed executed
+  gate should preserve its exit code and stdout/stderr summaries.
 - `devflow finish` should include changed files, gates, known risks, and the
   next-session prompt before a PR is updated.

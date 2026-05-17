@@ -145,6 +145,7 @@ devflow.finish
 devflow.doctor
 devflow.next_prompt
 devflow.record_gate
+devflow.gates_run
 devflow.explain_term
 devflow.rewrite_prompt
 devflow.sessions_codex

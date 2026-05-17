@@ -30,6 +30,7 @@ import {
   recordFinishEvent,
   recordManualSessionNoteEvent,
   recordSessionAttachedEvent,
+  runConfiguredGate,
   writeInitPlan,
 } from "../../core/src/index.js";
 
@@ -51,6 +52,8 @@ try {
     await renderFinish(args.slice(1));
   } else if (command === "doctor") {
     await renderDoctor(args.slice(1));
+  } else if (command === "gates" && args[1] === "run") {
+    await renderGatesRun(args.slice(2));
   } else if (command === "prompt" && args[1] === "next") {
     renderNextPrompt(args.slice(2));
   } else if (command === "prompt" && args[1] === "rewrite") {
@@ -206,6 +209,20 @@ async function renderDoctor(argsForCommand) {
     },
     mistakes: memory.mistakes,
     warnings: memory.warnings,
+  });
+
+  render(summary, options.json);
+}
+
+async function renderGatesRun(argsForCommand) {
+  const { options, positional } = parseOptionsAndPositionals(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const id = positional[0];
+  const config = await readDevflowConfig(repoPath);
+  const summary = await runConfiguredGate(repoPath, {
+    id,
+    gates: config.gates,
+    workItemId: options.work,
   });
 
   render(summary, options.json);

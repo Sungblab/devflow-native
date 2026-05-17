@@ -16,6 +16,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.finish"));
   assert.ok(names.includes("devflow.next_prompt"));
   assert.ok(names.includes("devflow.record_gate"));
+  assert.ok(names.includes("devflow.gates_run"));
   assert.ok(names.includes("devflow.split"));
   assert.ok(names.includes("devflow.explain_term"));
   assert.ok(names.includes("devflow.rewrite_prompt"));
@@ -227,6 +228,36 @@ test("MCP record_gate records standalone gate evidence", async () => {
   const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
   assert.match(log, /"type":"gate.finished"/);
   assert.match(log, /docs-check/);
+});
+
+test("MCP gates_run executes configured gate and records evidence", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-gates-run-"));
+  const scriptPath = join(repoPath, "gate-script.mjs");
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(scriptPath, "console.log('mcp gate stdout');\n", "utf8");
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [{ id: "unit", command: `${JSON.stringify(process.execPath)} ${JSON.stringify(scriptPath)}` }],
+    })}\n`,
+    "utf8",
+  );
+
+  const result = await callTool("devflow.gates_run", {
+    repo: repoPath,
+    id: "unit",
+  });
+
+  assert.equal(result.structuredContent.command, "gates_run");
+  assert.equal(result.structuredContent.gate.id, "unit");
+  assert.equal(result.structuredContent.status, "passed");
+  assert.equal(result.structuredContent.exitCode, 0);
+  assert.match(result.structuredContent.stdout.summary, /mcp gate stdout/);
+  assert.match(result.content[0].text, /gates_run/);
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.match(log, /"type":"gate.finished"/);
+  assert.match(log, /mcp gate stdout/);
 });
 
 test("MCP split returns worktree sessions and copy-paste prompts", async () => {

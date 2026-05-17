@@ -96,6 +96,13 @@ Exit criteria:
 - project-specific verification can be run and recorded
 - skipped or failing gates remain visible
 
+Current implementation note: `devflow gates run <id>` and MCP
+`devflow.gates_run` can execute a configured `.devflow/config.json` gate as a
+single process command, capture stdout/stderr summaries, record exit code and
+pass/fail status in `.devflow/state/events.jsonl`, and surface that evidence
+through `devflow status`. Shell-operator support, richer output redaction, and
+multi-step gate descriptors remain later Phase 4 work.
+
 ## Phase 5: MCP And Agent Integrations
 
 Build:
@@ -106,6 +113,7 @@ Build:
 - `devflow.split` MCP tool
 - `devflow.finish` MCP tool
 - `devflow.record_gate` MCP tool
+- `devflow.gates_run` MCP tool
 - `devflow.next_prompt` MCP tool
 - `devflow.rewrite_prompt` MCP tool
 - `devflow.sessions_codex` MCP tool
@@ -128,8 +136,9 @@ Exit criteria:
 
 Current implementation note: `packages/mcp` has testable handler functions for
 `devflow.status`, `devflow.split`, `devflow.explain_term`, `devflow.doctor`,
-`devflow.finish`, `devflow.record_gate`, `devflow.next_prompt`, and
-`devflow.rewrite_prompt`, plus adapter-backed `devflow.sessions_codex` and
+`devflow.finish`, `devflow.record_gate`, `devflow.gates_run`,
+`devflow.next_prompt`, and `devflow.rewrite_prompt`, plus adapter-backed
+`devflow.sessions_codex` and
 dry-run `devflow.sessions_attach_plan`, confirmed-write
 `devflow.sessions_attach`, read-only `devflow.sessions_list`, manual
 `devflow.sessions_note`, and a

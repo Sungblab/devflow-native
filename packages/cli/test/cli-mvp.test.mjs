@@ -631,6 +631,69 @@ test("CLI status reads gate definitions from devflow config", async () => {
   assert.equal(parsed.gates[0].command, "npm run custom");
 });
 
+test("CLI gates run executes configured gate and writes evidence", async () => {
+  const repoPath = await createTempGitRepo();
+  const scriptPath = join(repoPath, "gate-script.mjs");
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(scriptPath, "console.log('cli gate stdout');\n", "utf8");
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [{ id: "unit", command: `${JSON.stringify(process.execPath)} ${JSON.stringify(scriptPath)}` }],
+    })}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "gates",
+    "run",
+    "unit",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "gates_run");
+  assert.equal(parsed.gate.id, "unit");
+  assert.equal(parsed.status, "passed");
+  assert.equal(parsed.exitCode, 0);
+  assert.match(parsed.stdout.summary, /cli gate stdout/);
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.match(log, /"type":"gate.finished"/);
+  assert.match(log, /cli gate stdout/);
+});
+
+test("CLI gates run supports npm commands from config", async () => {
+  const repoPath = await createTempGitRepo();
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [{ id: "npm-version", command: "npm --version" }],
+    })}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "gates",
+    "run",
+    "npm-version",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "gates_run");
+  assert.equal(parsed.status, "passed");
+  assert.equal(parsed.exitCode, 0);
+  assert.match(parsed.stdout.summary, /\d+\.\d+\.\d+/);
+});
+
 test("CLI finish renders JSON evidence summary", async () => {
   const repoPath = await createTempGitRepo();
   const { stdout } = await execFileAsync("node", [
