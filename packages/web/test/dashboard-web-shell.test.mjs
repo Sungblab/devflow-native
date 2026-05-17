@@ -251,7 +251,19 @@ test("web package declares a Vite React build boundary", async () => {
 test("web package derives a React dashboard view model", async () => {
   const { createDashboardViewModel } = await import("../src/dashboard-view-model.js");
   const viewModel = createDashboardViewModel({
-    work: { counts: { active: 2, blocked: 1, readyToFinish: 3 } },
+    work: {
+      counts: { active: 2, blocked: 1, readyToFinish: 3 },
+      active: [{ id: "active-work", title: "Active work", status: "active" }],
+      blocked: [
+        {
+          id: "blocked-work",
+          title: "Blocked work",
+          status: "blocked",
+          blockedReason: "Waiting on review.",
+        },
+      ],
+      readyToFinish: [{ id: "ready-work", title: "Ready work", status: "ready-to-finish" }],
+    },
     gates: {
       counts: { failing: 1, total: 4 },
       latest: [{ id: "unit", status: "failed", command: "npm test" }],
@@ -265,6 +277,18 @@ test("web package derives a React dashboard view model", async () => {
       latest: { prompt: "Continue the dashboard UI.", workItemId: "dashboard-ui" },
     },
     maps: { counts: { total: 6 } },
+    timeline: {
+      counts: { total: 2 },
+      recent: [
+        {
+          title: "unit passed",
+          detail: "npm test",
+          type: "gate.finished",
+          observedAt: "2026-05-17T13:00:00.000Z",
+          workItemId: "active-work",
+        },
+      ],
+    },
   });
 
   assert.deepEqual(viewModel.metrics, [
@@ -287,4 +311,29 @@ test("web package derives a React dashboard view model", async () => {
     { label: "Latest session", value: "Attached the latest Codex session.", detail: "session-1" },
     { label: "Latest handoff", value: "Continue the dashboard UI.", detail: "dashboard-ui" },
   ]);
+  assert.deepEqual(viewModel.workSections, [
+    {
+      label: "Active",
+      items: [{ href: "/work/active-work", title: "Active work", meta: "active-work" }],
+    },
+    {
+      label: "Blocked",
+      items: [{ href: "/work/blocked-work", title: "Blocked work", meta: "Waiting on review." }],
+    },
+    {
+      label: "Ready",
+      items: [{ href: "/work/ready-work", title: "Ready work", meta: "ready-work" }],
+    },
+  ]);
+  assert.deepEqual(viewModel.timeline, {
+    count: 2,
+    items: [
+      {
+        title: "unit passed",
+        detail: "npm test",
+        meta: "2026-05-17T13:00:00.000Z",
+        href: "/work/active-work",
+      },
+    ],
+  });
 });

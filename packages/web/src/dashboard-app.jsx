@@ -67,6 +67,19 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
           </article>
         ))}
       </section>
+      <section aria-label="Work lists">
+        {viewModel.workSections.map((section) => (
+          <section key={section.label}>
+            <h2>{section.label}</h2>
+            <ItemList emptyText={`No ${section.label.toLowerCase()} work.`} items={section.items} />
+          </section>
+        ))}
+      </section>
+      <section aria-label="Timeline">
+        <h2>Timeline</h2>
+        <p>Total {viewModel.timeline.count}</p>
+        <ItemList emptyText="No timeline events." items={viewModel.timeline.items} />
+      </section>
     </main>
   );
 }
@@ -77,5 +90,22 @@ function Metric({ label, value }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </article>
+  );
+}
+
+function ItemList({ emptyText, items }) {
+  if (items.length === 0) {
+    return <p>{emptyText}</p>;
+  }
+
+  return (
+    <ul>
+      {items.map((item) => (
+        <li key={`${item.title}-${item.meta}`}>
+          {item.href ? <a href={item.href}>{item.title}</a> : <strong>{item.title}</strong>}
+          <span>{item.detail ?? item.meta}</span>
+        </li>
+      ))}
+    </ul>
   );
 }

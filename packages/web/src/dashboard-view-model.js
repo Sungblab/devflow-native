@@ -49,5 +49,27 @@ export function createDashboardViewModel(dashboard) {
           }
         : null,
     ].filter(Boolean),
+    workSections: [
+      { label: "Active", items: createWorkItems(dashboard.work?.active ?? []) },
+      { label: "Blocked", items: createWorkItems(dashboard.work?.blocked ?? []) },
+      { label: "Ready", items: createWorkItems(dashboard.work?.readyToFinish ?? []) },
+    ],
+    timeline: {
+      count: dashboard.timeline?.counts?.total ?? 0,
+      items: (dashboard.timeline?.recent ?? []).map((event) => ({
+        title: event.title ?? event.type ?? "event",
+        detail: event.detail ?? event.type ?? "none",
+        meta: event.observedAt ?? "unknown time",
+        href: event.workItemId ? `/work/${encodeURIComponent(event.workItemId)}` : null,
+      })),
+    },
   };
+}
+
+function createWorkItems(items) {
+  return items.map((item) => ({
+    href: `/work/${encodeURIComponent(item.id)}`,
+    title: item.title ?? item.id,
+    meta: item.blockedReason ?? item.id,
+  }));
 }
