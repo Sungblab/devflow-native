@@ -8,5 +8,9 @@ the served JavaScript can turn dashboard JSON into browser-visible metric,
 latest-evidence, and route-link sections without coupling the CLI to
 DOM-specific rendering.
 
+The first route-specific page renderer also lives here: `renderDashboardGatesPage`
+renders the `/gates` HTML slice from the dashboard summary contract while the
+CLI remains responsible for routing and process I/O.
+
 Future Vite/React work should grow from this package while keeping CLI and MCP
 JSON contracts stable.

@@ -129,6 +129,47 @@ export function renderDashboardRouteLinks(dashboard) {
     .join("");
 }
 
+export function renderDashboardGatesPage(summary) {
+  const gateRows = (summary.gates?.latest ?? [])
+    .map(
+      (gate) =>
+        `<tr><td>${escapeHtml(gate.id)}</td><td>${escapeHtml(gate.status)}</td><td>${escapeHtml(gate.command)}</td><td>${escapeHtml(gate.workItemId ?? "none")}</td></tr>`,
+    )
+    .join("");
+  const rows = gateRows || '<tr><td colspan="4">No gate evidence.</td></tr>';
+  const counts = summary.gates?.counts ?? {};
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devflow Gates</title>
+  <style>
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f7f9; color: #171a1f; }
+    main { max-width: 960px; margin: 0 auto; padding: 32px 20px 48px; }
+    h1 { margin: 0 0 8px; font-size: 32px; }
+    p { margin: 0 0 20px; color: #5b6270; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #d9dde5; border-radius: 8px; overflow: hidden; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eceff3; vertical-align: top; }
+    th { font-size: 13px; color: #5b6270; text-transform: uppercase; }
+    td { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Devflow Gates</h1>
+    <p>${escapeHtml(counts.passed ?? 0)} passed / ${escapeHtml(counts.failed ?? 0)} failed / ${escapeHtml(counts.total ?? 0)} total</p>
+    <table>
+      <thead><tr><th>Gate</th><th>Status</th><th>Command</th><th>Work</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </main>
+</body>
+</html>
+`;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")

@@ -7,6 +7,7 @@ import {
   DASHBOARD_WEB_JS,
   renderDashboardLiveSection,
   renderDashboardRouteLinks,
+  renderDashboardGatesPage,
 } from "../src/index.js";
 
 test("web package owns the no-build dashboard shell assets", () => {
@@ -90,4 +91,23 @@ test("web package renders route-aware dashboard links", () => {
   assert.match(html, /href="\/maps"/);
   assert.match(html, /href="\/work"/);
   assert.match(html, /18/);
+});
+
+test("web package renders the gates slice page", () => {
+  const html = renderDashboardGatesPage({
+    gates: {
+      counts: { passed: 1, failed: 1, total: 2 },
+      latest: [
+        { id: "docs-check", status: "passed", command: "npm run docs:check", workItemId: "docs" },
+        { id: "unit", status: "failed", command: "npm test", workItemId: null },
+      ],
+    },
+  });
+
+  assert.match(html, /Devflow Gates/);
+  assert.match(html, /1 passed \/ 1 failed \/ 2 total/);
+  assert.match(html, /docs-check/);
+  assert.match(html, /npm run docs:check/);
+  assert.match(html, /unit/);
+  assert.match(html, /failed/);
 });
