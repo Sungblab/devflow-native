@@ -66,6 +66,11 @@ export function createDashboardSummary(input = {}) {
   const active = work.active ?? [];
   const blocked = work.blocked ?? [];
   const readyToFinish = work.readyToFinish ?? [];
+  const gates = createDashboardGateSummary(state.gates?.latestById ?? {});
+  const handoffs = {
+    latest: input.handoffs?.latest ?? state.handoffs?.latest ?? null,
+    stale: input.handoffs?.stale ?? state.handoffs?.stale ?? [],
+  };
 
   return {
     schemaVersion: "0.1",
@@ -86,7 +91,15 @@ export function createDashboardSummary(input = {}) {
       blocked,
       readyToFinish,
     },
-    recommendations: createDashboardRecommendations({ active, blocked, readyToFinish }),
+    gates,
+    handoffs: {
+      latest: handoffs.latest,
+      stale: handoffs.stale,
+      counts: {
+        stale: handoffs.stale.length,
+      },
+    },
+    recommendations: createDashboardRecommendations({ active, blocked, readyToFinish, gates }),
     warnings: [...(input.warnings ?? []), ...(state.warnings ?? [])],
   };
 }
@@ -1202,7 +1215,29 @@ function createDoctorRecommendations(platform, mistakes) {
   return recommendations;
 }
 
-function createDashboardRecommendations({ active, blocked, readyToFinish }) {
+function createDashboardGateSummary(latestById) {
+  const latest = Object.values(latestById);
+  return {
+    counts: {
+      total: latest.length,
+      passed: latest.filter((gate) => gate.status === "passed").length,
+      failed: latest.filter((gate) => gate.status === "failed").length,
+    },
+    latest,
+  };
+}
+
+function createDashboardRecommendations({ active, blocked, readyToFinish, gates }) {
+  const failedGate = gates.latest.find((gate) => gate.status === "failed");
+  if (failedGate) {
+    return [
+      {
+        kind: "gate",
+        message: `Fix failing gate ${failedGate.id} before starting more work.`,
+      },
+    ];
+  }
+
   if (blocked.length > 0) {
     return [
       {

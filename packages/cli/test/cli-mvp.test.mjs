@@ -891,6 +891,21 @@ test("CLI dashboard renders active work view JSON", async () => {
     "Waiting for review.",
     "--json",
   ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "dashboard-evidence",
+    "--title",
+    "Dashboard evidence",
+    "--gate",
+    "unit:npm test:passed",
+    "--next-task",
+    "Continue dashboard evidence.",
+    "--json",
+  ]);
 
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",
@@ -906,6 +921,10 @@ test("CLI dashboard renders active work view JSON", async () => {
   assert.equal(dashboard.work.counts.blocked, 1);
   assert.equal(dashboard.work.active[0].id, "active-work");
   assert.equal(dashboard.work.blocked[0].blockedReason, "Waiting for review.");
+  assert.equal(dashboard.gates.counts.total, 1);
+  assert.equal(dashboard.gates.counts.passed, 1);
+  assert.equal(dashboard.gates.latest[0].id, "unit");
+  assert.equal(dashboard.handoffs.latest.workItemId, "dashboard-evidence");
 });
 
 test("CLI gates run executes configured gate and writes evidence", async () => {

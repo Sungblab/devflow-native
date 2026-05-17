@@ -668,6 +668,10 @@ function renderDashboardText(summary) {
     `Active work: ${summary.work.counts.active}`,
     `Blocked work: ${summary.work.counts.blocked}`,
     `Ready to finish: ${summary.work.counts.readyToFinish}`,
+    `Latest gates: ${summary.gates.counts.total}`,
+    `Failing gates: ${summary.gates.counts.failed}`,
+    `Latest handoff: ${summary.handoffs.latest?.workItemId ?? "none"}`,
+    `Stale handoffs: ${summary.handoffs.counts.stale}`,
   ];
 
   for (const item of summary.work.active) {
@@ -681,6 +685,10 @@ function renderDashboardText(summary) {
 
   for (const item of summary.work.readyToFinish) {
     lines.push(`ready ${item.id} ${item.title}`);
+  }
+
+  for (const gate of summary.gates.latest) {
+    lines.push(`gate ${gate.id} ${gate.status} ${gate.command}`);
   }
 
   if (summary.recommendations.length > 0) {

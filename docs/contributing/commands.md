@@ -66,8 +66,8 @@ minimum project contract and skips existing files instead of overwriting them.
 evidence.
 `devflow work create/start/ready/block/list` provides the first local work item
 registry.
-`devflow dashboard` renders the first local active work view from the same
-state as `devflow status`.
+`devflow dashboard` renders the first local dashboard view from the same state
+as `devflow status`.
 `doctor` is included early because plugin/skill-first workflows need a cheap
 way to avoid repeated local-environment mistakes.
 `devflow sessions codex` is included as a read-only adapter probe. It requires
@@ -1064,6 +1064,8 @@ Outputs:
 - `dashboard` JSON wrapper
 - active, blocked, and ready-to-finish work counts
 - active, blocked, and ready-to-finish work item lists
+- latest gate evidence counts and entries
+- latest handoff and stale handoff count
 - first dashboard recommendation
 
 Without `--json`, the command prints a compact terminal dashboard. This is the

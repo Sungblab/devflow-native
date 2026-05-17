@@ -363,6 +363,52 @@ test("dashboard summary highlights active, blocked, and ready work", async () =>
   assert.equal(dashboard.recommendations[0].kind, "work");
 });
 
+test("dashboard summary includes gate evidence and handoff state", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-dashboard-evidence-"));
+  const finish = createFinishSummary({
+    workItem: { id: "dashboard-evidence", title: "Dashboard evidence" },
+    intent: "Expose dashboard evidence.",
+    changedFiles: [{ path: "packages/core/src/index.js", status: "modified" }],
+    gates: [
+      {
+        id: "unit",
+        command: "npm test",
+        status: "passed",
+        observedAt: "2026-05-17T10:00:00+09:00",
+        summary: "134 tests passed.",
+      },
+    ],
+    nextTask: "Continue dashboard evidence.",
+  });
+  await recordFinishEvent(repoPath, finish, { observedAt: "2026-05-17T10:01:00+09:00" });
+  await recordGateEvent(
+    repoPath,
+    {
+      id: "docs-check",
+      command: "npm run docs:check",
+      status: "failed",
+      summary: "Broken link.",
+      exitCode: 1,
+    },
+    { observedAt: "2026-05-17T10:02:00+09:00" },
+  );
+
+  const state = await readDevflowState(repoPath);
+  const dashboard = createDashboardSummary({
+    repo: { absolutePath: repoPath },
+    state,
+  });
+
+  assert.equal(dashboard.gates.counts.total, 2);
+  assert.equal(dashboard.gates.counts.passed, 1);
+  assert.equal(dashboard.gates.counts.failed, 1);
+  assert.equal(dashboard.gates.latest[0].id, "unit");
+  assert.equal(dashboard.gates.latest[1].id, "docs-check");
+  assert.equal(dashboard.gates.latest[1].exitCode, 1);
+  assert.equal(dashboard.handoffs.latest.workItemId, "dashboard-evidence");
+  assert.equal(dashboard.handoffs.counts.stale, 0);
+});
+
 test("project health scanner surfaces invalid gates from config", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-health-invalid-"));
   const plan = createInitPlan({
