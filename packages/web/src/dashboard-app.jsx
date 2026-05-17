@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 
-import { createDashboardViewModel, filterDashboardViewModel } from "./dashboard-view-model.js";
+import {
+  createDashboardRouteViewModel,
+  createDashboardViewModel,
+  filterDashboardViewModel,
+} from "./dashboard-view-model.js";
 
 export function DashboardApp({ endpoint = "/dashboard.json" }) {
   const [dashboard, setDashboard] = useState(null);
@@ -42,6 +46,16 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
   }
 
   const viewModel = filterDashboardViewModel(createDashboardViewModel(dashboard), query);
+  const routeViewModel = createDashboardRouteViewModel(viewModel, window.location.pathname);
+
+  if (routeViewModel) {
+    return (
+      <main>
+        <h1>Devflow Dashboard</h1>
+        <RouteView route={routeViewModel} />
+      </main>
+    );
+  }
 
   return (
     <main>
@@ -100,6 +114,27 @@ export function DashboardApp({ endpoint = "/dashboard.json" }) {
         ))}
       </section>
     </main>
+  );
+}
+
+function RouteView({ route }) {
+  if (route.kind === "detail") {
+    return (
+      <section aria-label="Dashboard route detail">
+        <a href={route.backHref}>{route.backLabel}</a>
+        <h2>{route.title}</h2>
+        <p>{route.meta}</p>
+        <p>{route.detail}</p>
+      </section>
+    );
+  }
+
+  return (
+    <section aria-label="Dashboard route section">
+      <h2>{route.title}</h2>
+      <p>Total {route.count}</p>
+      <ItemList emptyText={`No ${route.title.toLowerCase()} items.`} items={route.items} />
+    </section>
   );
 }
 

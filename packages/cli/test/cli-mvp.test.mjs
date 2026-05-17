@@ -1138,6 +1138,69 @@ test("CLI dashboard serve can expose the built web app", async () => {
   }
 });
 
+test("CLI dashboard serve --web-build serves the React app for dashboard HTML routes", async () => {
+  const repoPath = await createTempGitRepo();
+  const distPath = join(process.cwd(), "packages", "web", "dist");
+  await mkdir(join(distPath, "assets"), { recursive: true });
+  await writeFile(
+    join(distPath, "index.html"),
+    '<!doctype html><div id="root">built-route-shell</div><script type="module" src="/assets/web-route-smoke.js"></script>',
+  );
+  await writeFile(join(distPath, "assets", "web-route-smoke.js"), "window.__DEVFLOW_WEB_ROUTE_SMOKE__ = true;\n");
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "route-work",
+    "--title",
+    "Route work",
+    "--json",
+  ]);
+
+  const child = spawn(
+    "node",
+    [
+      "packages/cli/src/index.js",
+      "dashboard",
+      "serve",
+      "--repo",
+      repoPath,
+      "--port",
+      "0",
+      "--web-build",
+      "--json",
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+
+  try {
+    const url = await waitForOutputMatch(child, /http:\/\/127\.0\.0\.1:\d+\//);
+    const gatesResponse = await fetch(`${url}gates`);
+    const gatesHtml = await gatesResponse.text();
+    const workResponse = await fetch(`${url}work/route-work`);
+    const workHtml = await workResponse.text();
+    const gatesJsonResponse = await fetch(`${url}gates.json`);
+    const gatesJson = await gatesJsonResponse.json();
+
+    assert.equal(gatesResponse.status, 200);
+    assert.match(gatesHtml, /built-route-shell/);
+    assert.equal(workResponse.status, 200);
+    assert.match(workHtml, /built-route-shell/);
+    assert.equal(gatesJsonResponse.status, 200);
+    assert.equal(typeof gatesJson.counts.total, "number");
+  } finally {
+    child.kill();
+    await waitForExit(child);
+  }
+});
+
 test("CLI dashboard serve exposes a dedicated gates view", async () => {
   const repoPath = await createTempGitRepo();
 

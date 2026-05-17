@@ -109,6 +109,57 @@ export function filterDashboardViewModel(viewModel, query) {
   };
 }
 
+export function createDashboardRouteViewModel(viewModel, pathname) {
+  const routeMap = new Map([
+    ["/gates", "Gate evidence"],
+    ["/sessions", "Sessions"],
+    ["/handoffs", "Handoffs"],
+    ["/maps", "Maps"],
+  ]);
+  const sectionLabel = routeMap.get(pathname);
+  if (sectionLabel) {
+    const section = findDetailSection(viewModel, sectionLabel);
+    return section
+      ? {
+          kind: "section",
+          title: section.label,
+          count: section.count,
+          items: section.items,
+        }
+      : null;
+  }
+
+  for (const section of viewModel.detailSections) {
+    const item = section.items.find((candidate) => candidate.href === pathname);
+    if (item) {
+      return {
+        kind: "detail",
+        title: item.title,
+        meta: item.meta,
+        detail: item.detail,
+        backHref: section.href,
+        backLabel: section.label,
+      };
+    }
+  }
+
+  for (const section of viewModel.workSections) {
+    const item = section.items.find((candidate) => candidate.href === pathname);
+    if (item) {
+      return {
+        kind: "detail",
+        title: item.title,
+        meta: item.meta,
+        detail: section.label,
+        backHref: "/",
+        backLabel: "Dashboard",
+      };
+    }
+  }
+
+  return null;
+}
+
 function createWorkItems(items) {
   return items.map((item) => ({
     href: `/work/${encodeURIComponent(item.id)}`,
@@ -151,6 +202,10 @@ function createMapItems(items) {
     meta: item.path ?? "no path",
     detail: item.id,
   }));
+}
+
+function findDetailSection(viewModel, label) {
+  return viewModel.detailSections.find((section) => section.label === label);
 }
 
 function filterSections(sections, query) {

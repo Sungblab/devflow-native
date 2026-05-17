@@ -303,11 +303,13 @@ first Vite/React scaffold: package-local build/dev scripts, Vite config, HTML
 entrypoint, React entrypoint, and a dashboard app that reads `/dashboard.json`
 and derives metrics, route links, latest evidence, work lists, timeline events,
 gates/sessions/handoffs/maps detail panels, and client-side filtering through a
-package-local view model. The default CLI path still serves the no-build shell for
+package-local view model, including route-level section/detail view models for
+the built app. The default CLI path still serves the no-build shell for
 dependency-light Windows dogfooding. When the package has been built,
 `devflow dashboard serve --web-build` serves `packages/web/dist/index.html` and
 its Vite assets while keeping `/dashboard.json`, no-build dashboard assets, and
-slice/detail routes stable.
+slice/detail JSON routes stable; HTML dashboard routes return the React app
+shell in that mode.
 
 ## Security
 

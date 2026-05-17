@@ -249,7 +249,7 @@ test("web package declares a Vite React build boundary", async () => {
 });
 
 test("web package derives a React dashboard view model", async () => {
-  const { createDashboardViewModel, filterDashboardViewModel } = await import("../src/dashboard-view-model.js");
+  const { createDashboardRouteViewModel, createDashboardViewModel, filterDashboardViewModel } = await import("../src/dashboard-view-model.js");
   const viewModel = createDashboardViewModel({
     work: {
       counts: { active: 2, blocked: 1, readyToFinish: 3 },
@@ -415,4 +415,27 @@ test("web package derives a React dashboard view model", async () => {
     [],
   ]);
   assert.equal(filterDashboardViewModel(viewModel, "   "), viewModel);
+  assert.deepEqual(createDashboardRouteViewModel(viewModel, "/gates"), {
+    kind: "section",
+    title: "Gate evidence",
+    count: 4,
+    items: [{ href: "/gates/unit", title: "unit failed", meta: "npm test", detail: "active-work" }],
+  });
+  assert.deepEqual(createDashboardRouteViewModel(viewModel, "/gates/unit"), {
+    kind: "detail",
+    title: "unit failed",
+    meta: "npm test",
+    detail: "active-work",
+    backHref: "/gates",
+    backLabel: "Gate evidence",
+  });
+  assert.deepEqual(createDashboardRouteViewModel(viewModel, "/sessions/session-1"), {
+    kind: "detail",
+    title: "Attached the latest Codex session.",
+    meta: "Codex",
+    detail: "active-work",
+    backHref: "/sessions",
+    backLabel: "Sessions",
+  });
+  assert.equal(createDashboardRouteViewModel(viewModel, "/"), null);
 });

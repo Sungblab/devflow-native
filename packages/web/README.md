@@ -26,10 +26,12 @@ The package also declares the first Vite/React build boundary:
   metrics, route links, latest evidence, active/blocked/ready work lists, and
   recent timeline events, plus detail panels for gates, sessions, handoffs, and
   architecture maps. The same module exports a small client-side filter helper
-  used by the React app's search input.
+  used by the React app's search input, plus route-level section/detail view
+  models for built dashboard HTML routes.
 
 By default, `devflow dashboard serve` still serves the no-build shell so
 Windows PowerShell dogfooding remains dependency light. After running
 `npm --prefix packages/web run build`, `devflow dashboard serve --web-build`
-can serve the built React app from `packages/web/dist` while keeping
-`/dashboard.json` and the existing slice/detail routes stable.
+can serve the built React app from `packages/web/dist` for dashboard HTML routes
+while keeping `/dashboard.json` and the existing slice/detail JSON routes
+stable.

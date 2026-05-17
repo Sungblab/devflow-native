@@ -1086,8 +1086,11 @@ Vite/React dashboard build boundary lives in `packages/web`. By default this
 command still serves the dependency-light no-build shell. After
 `npm --prefix packages/web run build`, pass `--web-build` to serve the bundled
 React app from `packages/web/dist` while preserving `/dashboard.json`,
-`/assets/dashboard.css`, and `/assets/dashboard.js`. It also exposes a
-dedicated gates view at `/gates` and the same gate slice as JSON at
+`/assets/dashboard.css`, and `/assets/dashboard.js`. In `--web-build` mode,
+dashboard HTML routes such as `/gates`, `/sessions`, `/handoffs`, `/maps`, and
+`/work/<id>` return the React app shell while their `.json` counterparts keep
+returning the raw local contract. Without `--web-build`, the no-build server
+still exposes a dedicated gates view at `/gates` and the same gate slice as JSON at
 `/gates.json`, with latest gate detail pages at `/gates/<id>` and
 `/gates/<id>.json`. A dedicated sessions view is available at `/sessions` and
 the same session slice as JSON at `/sessions.json`, with session detail pages

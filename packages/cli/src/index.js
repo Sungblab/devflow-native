@@ -1193,7 +1193,7 @@ function closeServerOnce(server, once) {
 }
 
 async function readBuiltWebAsset(requestPath) {
-  const normalizedPath = requestPath === "/" ? "/index.html" : requestPath;
+  const normalizedPath = requestPath === "/" || isDashboardHtmlRoute(requestPath) ? "/index.html" : requestPath;
   if (normalizedPath !== "/index.html" && !normalizedPath.startsWith("/assets/")) {
     return null;
   }
@@ -1224,6 +1224,24 @@ async function readBuiltWebAsset(requestPath) {
           body: "Not found\n",
         };
   }
+}
+
+function isDashboardHtmlRoute(requestPath) {
+  if (requestPath.endsWith(".json")) {
+    return false;
+  }
+
+  return (
+    requestPath === "/gates" ||
+    /^\/gates\/[^/]+$/.test(requestPath) ||
+    requestPath === "/sessions" ||
+    /^\/sessions\/.+$/.test(requestPath) ||
+    requestPath === "/handoffs" ||
+    /^\/handoffs\/[^/]+$/.test(requestPath) ||
+    requestPath === "/maps" ||
+    /^\/maps\/[^/]+$/.test(requestPath) ||
+    /^\/work\/[^/]+$/.test(requestPath)
+  );
 }
 
 function contentTypeForBuiltAsset(assetPath) {
