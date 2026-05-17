@@ -10,6 +10,7 @@ import {
   renderDashboardGatesPage,
   renderDashboardSessionsPage,
   renderDashboardHandoffsPage,
+  renderDashboardMapsPage,
 } from "../src/index.js";
 
 test("web package owns the no-build dashboard shell assets", () => {
@@ -171,4 +172,31 @@ test("web package renders the handoffs slice page", () => {
   assert.match(html, /Continue from the latest handoff/);
   assert.match(html, /Stale dashboard handoff/);
   assert.match(html, /Refresh this handoff/);
+});
+
+test("web package renders the maps slice page", () => {
+  const html = renderDashboardMapsPage({
+    maps: {
+      counts: { total: 2 },
+      items: [
+        {
+          id: "workflow-map",
+          title: "Workflow Map",
+          path: "docs/architecture/maps/workflow-map.md",
+        },
+        {
+          id: "dashboard-map",
+          title: "Dashboard Map",
+          path: "docs/architecture/maps/dashboard-map.md",
+        },
+      ],
+    },
+  });
+
+  assert.match(html, /Devflow Maps/);
+  assert.match(html, /2 architecture maps/);
+  assert.match(html, /Workflow Map/);
+  assert.match(html, /workflow-map/);
+  assert.match(html, /docs\/architecture\/maps\/workflow-map\.md/);
+  assert.match(html, /Dashboard Map/);
 });
