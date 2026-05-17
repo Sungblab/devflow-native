@@ -484,6 +484,25 @@ export async function recordWorkUpdatedEvent(repoPath, workItem, options = {}) {
   return event;
 }
 
+export async function recordWorkRenamedEvent(repoPath, workItem, options = {}) {
+  if (!workItem?.id) {
+    throw new Error("work rename requires id.");
+  }
+
+  if (!workItem.title) {
+    throw new Error("work rename requires title.");
+  }
+
+  return recordWorkUpdatedEvent(
+    repoPath,
+    {
+      id: workItem.id,
+      title: workItem.title,
+    },
+    options,
+  );
+}
+
 export async function recordWorkReadyEvent(repoPath, workItem, options = {}) {
   if (!workItem?.id) {
     throw new Error("work ready requires id.");

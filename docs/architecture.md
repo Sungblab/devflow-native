@@ -125,6 +125,7 @@ devflow status
 devflow work create
 devflow work start
 devflow work update
+devflow work rename
 devflow work ready
 devflow work block
 devflow work list
@@ -163,6 +164,7 @@ devflow.sessions_note
 devflow.work_create
 devflow.work_start
 devflow.work_update
+devflow.work_rename
 devflow.work_ready
 devflow.work_block
 devflow.work_list

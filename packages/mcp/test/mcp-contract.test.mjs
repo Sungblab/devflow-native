@@ -341,6 +341,36 @@ test("MCP work_update changes metadata without changing lifecycle state", async 
   assert.deepEqual(status.structuredContent.work.active[0].ownedPaths, ["packages/core/**", "packages/mcp/**"]);
 });
 
+test("MCP work_rename updates only the work item title", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-work-rename-"));
+  await callTool("devflow.work_create", {
+    repo: repoPath,
+    id: "rename-work",
+    title: "Original title",
+    description: "Keep description",
+    ownedPaths: ["docs/**"],
+  });
+  await callTool("devflow.work_start", {
+    repo: repoPath,
+    id: "rename-work",
+  });
+
+  const renamed = await callTool("devflow.work_rename", {
+    repo: repoPath,
+    id: "rename-work",
+    title: "Renamed title",
+  });
+  const status = await callTool("devflow.status", {
+    repo: repoPath,
+  });
+
+  assert.equal(renamed.structuredContent.command, "work_rename");
+  assert.equal(status.structuredContent.work.active[0].id, "rename-work");
+  assert.equal(status.structuredContent.work.active[0].title, "Renamed title");
+  assert.equal(status.structuredContent.work.active[0].description, "Keep description");
+  assert.deepEqual(status.structuredContent.work.active[0].ownedPaths, ["docs/**"]);
+});
+
 test("MCP gates_run executes configured gate and records evidence", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-gates-run-"));
   const scriptPath = join(repoPath, "gate-script.mjs");

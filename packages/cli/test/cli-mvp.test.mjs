@@ -907,6 +907,63 @@ test("CLI work update changes metadata without changing lifecycle state", async 
   assert.deepEqual(statusJson.work.active[0].ownedPaths, ["packages/core/**", "packages/cli/**"]);
 });
 
+test("CLI work rename updates only the work item title", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "rename-work",
+    "--title",
+    "Original title",
+    "--description",
+    "Keep description",
+    "--owned-path",
+    "docs/**",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "start",
+    "rename-work",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+
+  const renamed = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "rename",
+    "rename-work",
+    "--repo",
+    repoPath,
+    "--title",
+    "Renamed title",
+    "--json",
+  ]);
+  const status = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+
+  assert.equal(JSON.parse(renamed.stdout).command, "work_rename");
+
+  const statusJson = JSON.parse(status.stdout);
+  assert.equal(statusJson.work.active[0].id, "rename-work");
+  assert.equal(statusJson.work.active[0].title, "Renamed title");
+  assert.equal(statusJson.work.active[0].description, "Keep description");
+  assert.deepEqual(statusJson.work.active[0].ownedPaths, ["docs/**"]);
+});
+
 test("CLI gates run executes configured gate and writes evidence", async () => {
   const repoPath = await createTempGitRepo();
   const scriptPath = join(repoPath, "gate-script.mjs");

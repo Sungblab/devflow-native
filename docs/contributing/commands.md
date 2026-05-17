@@ -19,6 +19,7 @@ devflow gates run
 devflow work create
 devflow work start
 devflow work update
+devflow work rename
 devflow work ready
 devflow work block
 devflow work list
@@ -65,8 +66,8 @@ minimum project contract and skips existing files instead of overwriting them.
 `devflow health` checks those scaffold files and configured gates.
 `devflow gates run` executes one configured gate and records pass/fail
 evidence.
-`devflow work create/start/update/ready/block/list` provides the first local
-work item registry.
+`devflow work create/start/update/rename/ready/block/list` provides the first
+local work item registry.
 `devflow dashboard` stays in the broad contract.
 `doctor` is included early because plugin/skill-first workflows need a cheap
 way to avoid repeated local-environment mistakes.
@@ -93,11 +94,11 @@ the same log and derives the latest handoff and latest gate evidence from it.
 The event log is local-first project state and is ignored by git by default in
 this repository.
 `devflow work create` appends `work.created`, `devflow work start` appends
-`work.started`, `devflow work update` appends `work.updated`,
-`devflow work ready` appends `work.ready`, `devflow work block` appends
-`work.blocked`, and `devflow work list` derives current work item state from
-the same log. Work item create/start writes are idempotent by id: creating or
-starting an already recorded work item returns the existing event with
+`work.started`, `devflow work update` and `devflow work rename` append
+`work.updated`, `devflow work ready` appends `work.ready`, `devflow work block`
+appends `work.blocked`, and `devflow work list` derives current work item state
+from the same log. Work item create/start writes are idempotent by id: creating
+or starting an already recorded work item returns the existing event with
 `existing: true` instead of appending another line.
 
 ## Shared CLI Rules
@@ -447,6 +448,30 @@ Outputs:
 
 Updated metadata is visible in `devflow status` and `devflow work list`, while
 the work item's current lifecycle status is preserved.
+
+## `devflow work rename`
+
+Renames a local work item without changing description, owned paths, or
+lifecycle status.
+
+Example:
+
+```powershell
+devflow work rename phase-3-work-registry --title "Phase 3 local work registry" --json
+```
+
+Inputs:
+
+- work item id as the first positional argument, or `--id <id>`
+- required `--title <title>`
+
+Outputs:
+
+- `work_rename` JSON wrapper
+- title-only work item metadata payload
+- appended `work.updated` event
+
+Use `devflow work update` when changing description or owned paths too.
 
 ## `devflow work ready`
 

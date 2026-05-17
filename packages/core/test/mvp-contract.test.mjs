@@ -34,6 +34,7 @@ import {
   recordWorkBlockedEvent,
   recordWorkCreatedEvent,
   recordWorkReadyEvent,
+  recordWorkRenamedEvent,
   recordWorkStartedEvent,
   recordWorkUpdatedEvent,
 } from "../src/index.js";
@@ -358,6 +359,38 @@ test("work update events can change metadata without changing lifecycle status",
   assert.equal(item.status, "active");
   assert.equal(item.updatedAt, "2026-05-17T09:30:00.000Z");
   assert.equal(state.work.active[0].id, "update-work");
+});
+
+test("work rename events update only the title", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-work-rename-"));
+
+  await recordWorkCreatedEvent(repoPath, {
+    id: "rename-work",
+    title: "Original title",
+    description: "Keep description",
+    ownedPaths: ["docs/**"],
+  });
+  await recordWorkStartedEvent(repoPath, { id: "rename-work" });
+  const renamed = await recordWorkRenamedEvent(
+    repoPath,
+    {
+      id: "rename-work",
+      title: "Renamed title",
+    },
+    { observedAt: "2026-05-17T09:35:00.000Z" },
+  );
+
+  assert.equal(renamed.type, "work.updated");
+  assert.equal(renamed.payload.title, "Renamed title");
+  assert.equal(renamed.payload.description, undefined);
+  assert.equal(renamed.payload.ownedPaths, undefined);
+
+  const state = await readDevflowState(repoPath);
+  const item = state.work.items.find((candidate) => candidate.id === "rename-work");
+  assert.equal(item.title, "Renamed title");
+  assert.equal(item.description, "Keep description");
+  assert.deepEqual(item.ownedPaths, ["docs/**"]);
+  assert.equal(item.status, "active");
 });
 
 test("project health scanner surfaces invalid gates from config", async () => {

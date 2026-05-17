@@ -35,6 +35,7 @@ import {
   recordWorkBlockedEvent,
   recordWorkCreatedEvent,
   recordWorkReadyEvent,
+  recordWorkRenamedEvent,
   recordWorkStartedEvent,
   recordWorkUpdatedEvent,
   runConfiguredGate,
@@ -81,6 +82,8 @@ try {
     await renderWorkStart(args.slice(2));
   } else if (command === "work" && args[1] === "update") {
     await renderWorkUpdate(args.slice(2));
+  } else if (command === "work" && args[1] === "rename") {
+    await renderWorkRename(args.slice(2));
   } else if (command === "work" && args[1] === "ready") {
     await renderWorkReady(args.slice(2));
   } else if (command === "work" && args[1] === "block") {
@@ -482,6 +485,25 @@ async function renderWorkUpdate(argsForCommand) {
     {
       schemaVersion: "0.1",
       command: "work_update",
+      workItem: event.payload,
+      event,
+    },
+    options.json,
+  );
+}
+
+async function renderWorkRename(argsForCommand) {
+  const { options, positional } = parseOptionsAndPositionals(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const event = await recordWorkRenamedEvent(repoPath, {
+    id: positional[0] ?? options.id,
+    title: options.title,
+  });
+
+  render(
+    {
+      schemaVersion: "0.1",
+      command: "work_rename",
       workItem: event.payload,
       event,
     },
