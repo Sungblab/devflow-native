@@ -66,12 +66,15 @@ unchanged. `limit` must be a positive integer, `since` must parse as a date, and
 `devflow.work_create`, `devflow.work_start`, and `devflow.work_list` expose the
 local work item registry to agent hosts. The write tools append `work.created`
 and `work.started` events; the list tool derives current item status from local
-state without reading agent history.
+state without reading agent history. Repeated create or start calls for the
+same id return the existing event with `existing: true` instead of appending
+duplicate lines.
 
 `devflow.split` accepts `register: true` to append generated sessions as
 `work.created` events. When `start: true` is also provided, it appends matching
 `work.started` events so agent hosts can make split tasks visible in
 `devflow.work_list` and `devflow.status` without re-entering work item details.
+Repeated split registration reuses existing work events by id.
 
 `devflow.gates_run` reads `.devflow/config.json`, finds a configured gate by
 `id`, executes its command without a shell, and appends a `gate.finished` event

@@ -90,7 +90,9 @@ The event log is local-first project state and is ignored by git by default in
 this repository.
 `devflow work create` appends `work.created`, `devflow work start` appends
 `work.started`, and `devflow work list` derives current work item state from
-the same log.
+the same log. Work item writes are idempotent by id: creating or starting an
+already recorded work item returns the existing event with `existing: true`
+instead of appending another line.
 
 ## Shared CLI Rules
 
@@ -388,6 +390,9 @@ Outputs:
 - created work item payload
 - appended `work.created` event
 
+If the id already has a `work.created` event, the command returns that existing
+event with `existing: true` and does not append another event.
+
 ## `devflow work start`
 
 Marks a local work item as active.
@@ -407,6 +412,9 @@ Outputs:
 - `work_start` JSON wrapper
 - started work item payload
 - appended `work.started` event
+
+If the id already has a `work.started` event, the command returns that existing
+event with `existing: true` and does not append another event.
 
 ## `devflow work list`
 
@@ -474,7 +482,8 @@ When `--register` is present, each generated session id becomes a work item id,
 the session goal becomes the work item title, and owned paths are copied into
 the registry. `--start` marks those generated work items active in the same
 local event log so `devflow work list` and `devflow status` can see them without
-manual re-entry.
+manual re-entry. Re-running the same split registration reuses existing
+`work.created` and `work.started` events instead of appending duplicates.
 
 JSON output:
 

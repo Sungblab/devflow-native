@@ -743,6 +743,42 @@ test("CLI work create, start, and list persist local work item state", async () 
   assert.deepEqual(listJson.items[0].ownedPaths, ["packages/core/**", "packages/cli/**"]);
 });
 
+test("CLI work create is idempotent for existing ids", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "duplicate-safe",
+    "--title",
+    "Duplicate safe",
+    "--json",
+  ]);
+  const repeated = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "duplicate-safe",
+    "--title",
+    "Changed title",
+    "--json",
+  ]);
+  const repeatedJson = JSON.parse(repeated.stdout);
+
+  assert.equal(repeatedJson.event.existing, true);
+  assert.equal(repeatedJson.workItem.title, "Duplicate safe");
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.equal(log.trim().split("\n").length, 1);
+});
+
 test("CLI gates run executes configured gate and writes evidence", async () => {
   const repoPath = await createTempGitRepo();
   const scriptPath = join(repoPath, "gate-script.mjs");

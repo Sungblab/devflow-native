@@ -256,6 +256,26 @@ test("MCP work tools create, start, and list work items", async () => {
   assert.deepEqual(listed.structuredContent.items[0].ownedPaths, ["packages/core/**", "packages/mcp/**"]);
 });
 
+test("MCP work_create is idempotent for existing ids", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-work-idempotent-"));
+  await callTool("devflow.work_create", {
+    repo: repoPath,
+    id: "duplicate-safe",
+    title: "Duplicate safe",
+  });
+  const repeated = await callTool("devflow.work_create", {
+    repo: repoPath,
+    id: "duplicate-safe",
+    title: "Changed title",
+  });
+
+  assert.equal(repeated.structuredContent.event.existing, true);
+  assert.equal(repeated.structuredContent.workItem.title, "Duplicate safe");
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.equal(log.trim().split("\n").length, 1);
+});
+
 test("MCP gates_run executes configured gate and records evidence", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-gates-run-"));
   const scriptPath = join(repoPath, "gate-script.mjs");

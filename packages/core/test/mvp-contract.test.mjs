@@ -251,6 +251,36 @@ test("work item events can create, start, list, and feed status", async () => {
   assert.match(log, /"type":"work.started"/);
 });
 
+test("work create is idempotent for an existing work item id", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-work-idempotent-"));
+
+  const first = await recordWorkCreatedEvent(
+    repoPath,
+    {
+      id: "duplicate-safe",
+      title: "Duplicate safe",
+      ownedPaths: ["packages/core/**"],
+    },
+    { observedAt: "2026-05-17T09:10:00.000Z" },
+  );
+  const second = await recordWorkCreatedEvent(
+    repoPath,
+    {
+      id: "duplicate-safe",
+      title: "Duplicate safe changed",
+      ownedPaths: ["docs/**"],
+    },
+    { observedAt: "2026-05-17T09:11:00.000Z" },
+  );
+
+  assert.equal(second.existing, true);
+  assert.equal(second.observedAt, first.observedAt);
+  assert.equal(second.payload.title, "Duplicate safe");
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  assert.equal(log.trim().split("\n").length, 1);
+});
+
 test("project health scanner surfaces invalid gates from config", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-health-invalid-"));
   const plan = createInitPlan({
@@ -786,6 +816,36 @@ test("split sessions can be registered as active work items", async () => {
   assert.deepEqual(list.items[0].ownedPaths, ["packages/core/**", "packages/cli/**"]);
   assert.equal(list.items[0].status, "active");
   assert.equal(list.items[1].title, "Expose split registration through MCP and docs.");
+});
+
+test("split registration does not append duplicate work created events", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-split-idempotent-"));
+  const plan = createSplitPlan({
+    goal: "Idempotent split registration",
+    tasks: [
+      {
+        id: "core-cli",
+        goal: "Wire CLI split registration.",
+        ownedPaths: ["packages/core/**", "packages/cli/**"],
+      },
+    ],
+  });
+
+  await recordSplitWorkEvents(repoPath, plan, {
+    start: true,
+    observedAt: "2026-05-17T09:12:00.000Z",
+  });
+  const second = await recordSplitWorkEvents(repoPath, plan, {
+    start: true,
+    observedAt: "2026-05-17T09:13:00.000Z",
+  });
+
+  assert.equal(second.created[0].existing, true);
+
+  const log = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  const lines = log.trim().split("\n");
+  assert.equal(lines.filter((line) => line.includes('"type":"work.created"')).length, 1);
+  assert.equal(lines.filter((line) => line.includes('"type":"work.started"')).length, 1);
 });
 
 test("split plan surfaces invalid config warnings while falling back to defaults", async () => {

@@ -389,6 +389,14 @@ export async function recordWorkCreatedEvent(repoPath, workItem, options = {}) {
     throw new Error("work create requires title.");
   }
 
+  const existing = await findWorkEvent(repoPath, "work.created", workItem.id);
+  if (existing) {
+    return {
+      ...existing,
+      existing: true,
+    };
+  }
+
   const observedAt = options.observedAt ?? new Date().toISOString();
   const event = {
     schemaVersion: "0.1",
@@ -410,6 +418,14 @@ export async function recordWorkCreatedEvent(repoPath, workItem, options = {}) {
 export async function recordWorkStartedEvent(repoPath, workItem, options = {}) {
   if (!workItem?.id) {
     throw new Error("work start requires id.");
+  }
+
+  const existing = await findWorkEvent(repoPath, "work.started", workItem.id);
+  if (existing) {
+    return {
+      ...existing,
+      existing: true,
+    };
   }
 
   const observedAt = options.observedAt ?? new Date().toISOString();
@@ -1000,6 +1016,39 @@ async function appendDevflowEvent(repoPath, event) {
   const stateDir = join(repoPath, ".devflow", "state");
   await mkdir(stateDir, { recursive: true });
   await appendFile(join(stateDir, "events.jsonl"), `${JSON.stringify(event)}\n`, "utf8");
+}
+
+async function findWorkEvent(repoPath, type, id) {
+  const events = await readDevflowEvents(repoPath);
+  return events.find((event) => event.type === type && event.payload?.id === id) ?? null;
+}
+
+async function readDevflowEvents(repoPath) {
+  let raw;
+  try {
+    raw = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return [];
+    }
+
+    throw error;
+  }
+
+  const events = [];
+  for (const line of raw.split("\n")) {
+    if (!line.trim()) {
+      continue;
+    }
+
+    try {
+      events.push(JSON.parse(line));
+    } catch {
+      // Invalid lines are surfaced by readDevflowState; write de-duplication can ignore them.
+    }
+  }
+
+  return events;
 }
 
 function normalizePlatform(platform = {}) {
