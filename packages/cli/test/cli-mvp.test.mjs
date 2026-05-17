@@ -1090,7 +1090,7 @@ test("CLI dashboard serve exposes web shell assets", async () => {
 
 test("CLI dashboard serve can expose the built web app", async () => {
   const repoPath = await createTempGitRepo();
-  const distPath = join(process.cwd(), "packages", "web", "dist");
+  const distPath = await createTempWebDist();
   await mkdir(join(distPath, "assets"), { recursive: true });
   await writeFile(
     join(distPath, "index.html"),
@@ -1113,6 +1113,7 @@ test("CLI dashboard serve can expose the built web app", async () => {
     ],
     {
       cwd: process.cwd(),
+      env: { ...process.env, DEVFLOW_WEB_DIST_PATH: distPath },
       stdio: ["ignore", "pipe", "pipe"],
     },
   );
@@ -1140,7 +1141,7 @@ test("CLI dashboard serve can expose the built web app", async () => {
 
 test("CLI dashboard serve --web-build serves the React app for dashboard HTML routes", async () => {
   const repoPath = await createTempGitRepo();
-  const distPath = join(process.cwd(), "packages", "web", "dist");
+  const distPath = await createTempWebDist();
   await mkdir(join(distPath, "assets"), { recursive: true });
   await writeFile(
     join(distPath, "index.html"),
@@ -1176,6 +1177,7 @@ test("CLI dashboard serve --web-build serves the React app for dashboard HTML ro
     ],
     {
       cwd: process.cwd(),
+      env: { ...process.env, DEVFLOW_WEB_DIST_PATH: distPath },
       stdio: ["ignore", "pipe", "pipe"],
     },
   );
@@ -2717,6 +2719,10 @@ async function createTempGitRepo() {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-cli-"));
   await execFileAsync("git", ["init"], { cwd: repoPath });
   return repoPath;
+}
+
+async function createTempWebDist() {
+  return mkdtemp(join(tmpdir(), "devflow-web-dist-"));
 }
 
 function waitForOutputMatch(child, pattern) {

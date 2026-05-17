@@ -56,7 +56,9 @@ import {
   writeInitPlan,
 } from "../../core/src/index.js";
 
-const WEB_DIST_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "../../web/dist");
+const WEB_DIST_PATH = process.env.DEVFLOW_WEB_DIST_PATH
+  ? resolve(process.env.DEVFLOW_WEB_DIST_PATH)
+  : resolve(dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 
 const args = process.argv.slice(2);
 const command = args[0];

@@ -99,7 +99,9 @@ handoff detail routes at `/handoffs/<work-item-id>` and
 `/work/<id>.json`.
 After `npm --prefix packages/web run build`, add `--web-build` to serve the
 bundled React shell from `packages/web/dist` while keeping `/dashboard.json` and
-the existing slice/detail routes stable.
+the existing slice/detail routes stable. Tests and local development can set
+`DEVFLOW_WEB_DIST_PATH` to point `--web-build` at an isolated temporary build
+directory without mutating `packages/web/dist`.
 `devflow split` renders local worktree-session plans, and `devflow split
 --register --start` can append the generated sessions as active work items
 without manual re-entry. The
