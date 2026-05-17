@@ -1088,6 +1088,56 @@ test("CLI dashboard serve exposes web shell assets", async () => {
   }
 });
 
+test("CLI dashboard serve can expose the built web app", async () => {
+  const repoPath = await createTempGitRepo();
+  const distPath = join(process.cwd(), "packages", "web", "dist");
+  await mkdir(join(distPath, "assets"), { recursive: true });
+  await writeFile(
+    join(distPath, "index.html"),
+    '<!doctype html><div id="root">built-react-shell</div><script type="module" src="/assets/web-build-smoke.js"></script>',
+  );
+  await writeFile(join(distPath, "assets", "web-build-smoke.js"), "window.__DEVFLOW_WEB_BUILD_SMOKE__ = true;\n");
+
+  const child = spawn(
+    "node",
+    [
+      "packages/cli/src/index.js",
+      "dashboard",
+      "serve",
+      "--repo",
+      repoPath,
+      "--port",
+      "0",
+      "--web-build",
+      "--json",
+    ],
+    {
+      cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
+
+  try {
+    const url = await waitForOutputMatch(child, /http:\/\/127\.0\.0\.1:\d+\//);
+    const shellResponse = await fetch(url);
+    const shellHtml = await shellResponse.text();
+    const assetResponse = await fetch(`${url}assets/web-build-smoke.js`);
+    const asset = await assetResponse.text();
+    const jsonResponse = await fetch(`${url}dashboard.json`);
+    const dashboard = await jsonResponse.json();
+
+    assert.equal(shellResponse.status, 200);
+    assert.match(shellHtml, /built-react-shell/);
+    assert.equal(assetResponse.status, 200);
+    assert.match(asset, /DEVFLOW_WEB_BUILD_SMOKE/);
+    assert.equal(jsonResponse.status, 200);
+    assert.equal(dashboard.command, "dashboard");
+  } finally {
+    child.kill();
+    await waitForExit(child);
+  }
+});
+
 test("CLI dashboard serve exposes a dedicated gates view", async () => {
   const repoPath = await createTempGitRepo();
 

@@ -275,8 +275,11 @@ routes at `/maps/<id>` and `/maps/<id>.json`, handoff detail routes at
 item detail routes at `/work/<id>` and `/work/<id>.json`. `packages/web` also
 now has the first package-local Vite/React scaffold with `vite build`, Vite
 config, an HTML entrypoint, a React entrypoint, and a minimal dashboard app that
-reads `/dashboard.json`. Serving the bundled React app through `devflow
-dashboard serve` remains later Phase 8 work.
+reads `/dashboard.json`. After `npm --prefix packages/web run build`,
+`devflow dashboard serve --web-build` can serve the bundled app from
+`packages/web/dist` while preserving the no-build fallback and existing
+dashboard JSON/slice/detail routes. Building out the richer React dashboard UI
+remains later Phase 8 work.
 
 ## Phase 9: GitHub Review Integration
 

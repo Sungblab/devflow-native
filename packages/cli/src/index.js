@@ -2,8 +2,9 @@
 import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
-import { dirname, isAbsolute, join } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { cwd, exit } from "node:process";
+import { fileURLToPath } from "node:url";
 
 import {
   discoverCodexSessions,
@@ -54,6 +55,8 @@ import {
   runConfiguredGate,
   writeInitPlan,
 } from "../../core/src/index.js";
+
+const WEB_DIST_PATH = resolve(dirname(fileURLToPath(import.meta.url)), "../../web/dist");
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -236,6 +239,15 @@ async function renderDashboardServe(argsForCommand) {
       response.writeHead(200, { "content-type": "text/javascript; charset=utf-8" });
       response.end(DASHBOARD_WEB_JS, () => closeServerOnce(server, options.once));
       return;
+    }
+
+    if (options["web-build"]) {
+      const builtAsset = await readBuiltWebAsset(requestPath);
+      if (builtAsset) {
+        response.writeHead(builtAsset.status, { "content-type": builtAsset.contentType });
+        response.end(builtAsset.body, () => closeServerOnce(server, options.once));
+        return;
+      }
     }
 
     if (requestPath === "/gates.json") {
@@ -1180,6 +1192,56 @@ function closeServerOnce(server, once) {
   }
 }
 
+async function readBuiltWebAsset(requestPath) {
+  const normalizedPath = requestPath === "/" ? "/index.html" : requestPath;
+  if (normalizedPath !== "/index.html" && !normalizedPath.startsWith("/assets/")) {
+    return null;
+  }
+
+  const relativePath = normalizedPath.slice(1);
+  const assetPath = resolve(WEB_DIST_PATH, relativePath);
+  const assetRelativePath = relative(WEB_DIST_PATH, assetPath);
+  if (assetRelativePath.startsWith("..") || isAbsolute(assetRelativePath)) {
+    return {
+      status: 404,
+      contentType: "text/plain; charset=utf-8",
+      body: "Not found\n",
+    };
+  }
+
+  try {
+    return {
+      status: 200,
+      contentType: contentTypeForBuiltAsset(assetPath),
+      body: await readFile(assetPath),
+    };
+  } catch {
+    return normalizedPath === "/index.html"
+      ? null
+      : {
+          status: 404,
+          contentType: "text/plain; charset=utf-8",
+          body: "Not found\n",
+        };
+  }
+}
+
+function contentTypeForBuiltAsset(assetPath) {
+  if (assetPath.endsWith(".html")) {
+    return "text/html; charset=utf-8";
+  }
+  if (assetPath.endsWith(".js")) {
+    return "text/javascript; charset=utf-8";
+  }
+  if (assetPath.endsWith(".css")) {
+    return "text/css; charset=utf-8";
+  }
+  if (assetPath.endsWith(".svg")) {
+    return "image/svg+xml";
+  }
+  return "application/octet-stream";
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -1210,7 +1272,16 @@ function parseOptionsAndPositionals(rawArgs) {
     }
 
     const key = arg.slice(2);
-    if (key === "json" || key === "simple" || key === "guided" || key === "confirm" || key === "register" || key === "start" || key === "once") {
+    if (
+      key === "json" ||
+      key === "simple" ||
+      key === "guided" ||
+      key === "confirm" ||
+      key === "register" ||
+      key === "start" ||
+      key === "once" ||
+      key === "web-build"
+    ) {
       options[key] = true;
       continue;
     }

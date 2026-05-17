@@ -97,6 +97,9 @@ handoff detail routes at `/handoffs/<work-item-id>` and
 `/handoffs/<work-item-id>.json`, map views at `/maps` and `/maps.json`, map detail routes at `/maps/<id>` and
 `/maps/<id>.json`, and work item detail routes at `/work/<id>` and
 `/work/<id>.json`.
+After `npm --prefix packages/web run build`, add `--web-build` to serve the
+bundled React shell from `packages/web/dist` while keeping `/dashboard.json` and
+the existing slice/detail routes stable.
 `devflow split` renders local worktree-session plans, and `devflow split
 --register --start` can append the generated sessions as active work items
 without manual re-entry. The

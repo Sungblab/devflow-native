@@ -23,6 +23,8 @@ The package also declares the first Vite/React build boundary:
 - `index.html`, `src/dashboard-entry.jsx`, and `src/dashboard-app.jsx` define a
   minimal React app shell that reads `/dashboard.json`.
 
-This scaffold does not replace `devflow dashboard serve` yet. The CLI still
-serves the no-build shell so Windows PowerShell dogfooding remains dependency
-light while the React dashboard grows behind the same JSON contract.
+By default, `devflow dashboard serve` still serves the no-build shell so
+Windows PowerShell dogfooding remains dependency light. After running
+`npm --prefix packages/web run build`, `devflow dashboard serve --web-build`
+can serve the built React app from `packages/web/dist` while keeping
+`/dashboard.json` and the existing slice/detail routes stable.
