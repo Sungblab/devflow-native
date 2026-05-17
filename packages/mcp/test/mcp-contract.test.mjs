@@ -27,6 +27,11 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.sessions_note"));
   assert.ok(names.includes("devflow.work_create"));
   assert.ok(names.includes("devflow.work_start"));
+  assert.ok(names.includes("devflow.work_update"));
+  assert.ok(names.includes("devflow.work_rename"));
+  assert.ok(names.includes("devflow.work_ready"));
+  assert.ok(names.includes("devflow.work_block"));
+  assert.ok(names.includes("devflow.work_unblock"));
   assert.ok(names.includes("devflow.work_list"));
 });
 
@@ -307,6 +312,68 @@ test("MCP work lifecycle tools mark items ready and blocked", async () => {
   assert.equal(status.structuredContent.work.readyToFinish[0].id, "ready-work");
   assert.equal(status.structuredContent.work.blocked[0].id, "blocked-work");
   assert.equal(status.structuredContent.work.blocked[0].blockedReason, "Waiting for review.");
+});
+
+test("MCP work_update changes metadata without changing lifecycle state", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-work-update-"));
+  await callTool("devflow.work_create", {
+    repo: repoPath,
+    id: "update-work",
+    title: "Original title",
+    description: "Original description",
+    ownedPaths: ["docs/**"],
+  });
+  await callTool("devflow.work_start", {
+    repo: repoPath,
+    id: "update-work",
+  });
+
+  const updated = await callTool("devflow.work_update", {
+    repo: repoPath,
+    id: "update-work",
+    title: "Updated title",
+    description: "Updated description",
+    ownedPaths: ["packages/core/**", "packages/mcp/**"],
+  });
+  const status = await callTool("devflow.status", {
+    repo: repoPath,
+  });
+
+  assert.equal(updated.structuredContent.command, "work_update");
+  assert.equal(status.structuredContent.work.active[0].id, "update-work");
+  assert.equal(status.structuredContent.work.active[0].title, "Updated title");
+  assert.equal(status.structuredContent.work.active[0].description, "Updated description");
+  assert.deepEqual(status.structuredContent.work.active[0].ownedPaths, ["packages/core/**", "packages/mcp/**"]);
+});
+
+test("MCP work_rename updates only the work item title", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-work-rename-"));
+  await callTool("devflow.work_create", {
+    repo: repoPath,
+    id: "rename-work",
+    title: "Original title",
+    description: "Keep description",
+    ownedPaths: ["docs/**"],
+  });
+  await callTool("devflow.work_start", {
+    repo: repoPath,
+    id: "rename-work",
+  });
+
+  const renamed = await callTool("devflow.work_rename", {
+    repo: repoPath,
+    id: "rename-work",
+    title: "Renamed title",
+  });
+  const status = await callTool("devflow.status", {
+    repo: repoPath,
+  });
+
+  assert.equal(renamed.structuredContent.command, "work_rename");
+  assert.equal(status.structuredContent.work.active[0].id, "rename-work");
+  assert.equal(status.structuredContent.work.active[0].title, "Renamed title");
+  assert.equal(status.structuredContent.work.active[0].description, "Keep description");
+  assert.deepEqual(status.structuredContent.work.active[0].ownedPaths, ["docs/**"]);
 });
 
 test("MCP work_unblock returns blocked work to active state", async () => {

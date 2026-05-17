@@ -18,6 +18,8 @@ devflow health
 devflow gates run
 devflow work create
 devflow work start
+devflow work update
+devflow work rename
 devflow work ready
 devflow work block
 devflow work unblock
@@ -64,8 +66,8 @@ minimum project contract and skips existing files instead of overwriting them.
 `devflow health` checks those scaffold files and configured gates.
 `devflow gates run` executes one configured gate and records pass/fail
 evidence.
-`devflow work create/start/ready/block/unblock/list` provides the first local
-work item registry.
+`devflow work create/start/update/rename/ready/block/unblock/list` provides the first
+local work item registry.
 `doctor` is included early because plugin/skill-first workflows need a cheap
 way to avoid repeated local-environment mistakes.
 `devflow sessions codex` is included as a read-only adapter probe. It requires
@@ -91,7 +93,8 @@ the same log and derives the latest handoff and latest gate evidence from it.
 The event log is local-first project state and is ignored by git by default in
 this repository.
 `devflow work create` appends `work.created`, `devflow work start` appends
-`work.started`, `devflow work ready` appends `work.ready`, `devflow work block`
+`work.started`, `devflow work update` and `devflow work rename` append
+`work.updated`, `devflow work ready` appends `work.ready`, `devflow work block`
 appends `work.blocked`, `devflow work unblock` appends `work.unblocked`, and
 `devflow work list` derives current work item state from the same log. Work
 item create/start writes are idempotent by id: creating or starting an already
@@ -419,6 +422,56 @@ Outputs:
 
 If the id already has a `work.started` event, the command returns that existing
 event with `existing: true` and does not append another event.
+
+## `devflow work update`
+
+Updates local work item metadata without changing lifecycle status.
+
+Example:
+
+```powershell
+devflow work update phase-3-work-registry --title "Phase 3 work registry" --owned-path "packages/core/**" --json
+```
+
+Inputs:
+
+- work item id as the first positional argument, or `--id <id>`
+- optional `--title <title>`
+- optional `--description <description>`
+- optional repeated `--owned-path <glob>`
+
+Outputs:
+
+- `work_update` JSON wrapper
+- updated work item metadata payload
+- appended `work.updated` event
+
+Updated metadata is visible in `devflow status` and `devflow work list`, while
+the work item's current lifecycle status is preserved.
+
+## `devflow work rename`
+
+Renames a local work item without changing description, owned paths, or
+lifecycle status.
+
+Example:
+
+```powershell
+devflow work rename phase-3-work-registry --title "Phase 3 local work registry" --json
+```
+
+Inputs:
+
+- work item id as the first positional argument, or `--id <id>`
+- required `--title <title>`
+
+Outputs:
+
+- `work_rename` JSON wrapper
+- title-only work item metadata payload
+- appended `work.updated` event
+
+Use `devflow work update` when changing description or owned paths too.
 
 ## `devflow work ready`
 

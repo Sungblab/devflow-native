@@ -443,6 +443,66 @@ export async function recordWorkStartedEvent(repoPath, workItem, options = {}) {
   return event;
 }
 
+export async function recordWorkUpdatedEvent(repoPath, workItem, options = {}) {
+  if (!workItem?.id) {
+    throw new Error("work update requires id.");
+  }
+
+  if (
+    workItem.title === undefined &&
+    workItem.description === undefined &&
+    workItem.ownedPaths === undefined
+  ) {
+    throw new Error("work update requires title, description, or ownedPaths.");
+  }
+
+  const observedAt = options.observedAt ?? new Date().toISOString();
+  const payload = {
+    id: workItem.id,
+  };
+
+  if (workItem.title !== undefined) {
+    payload.title = workItem.title;
+  }
+
+  if (workItem.description !== undefined) {
+    payload.description = workItem.description;
+  }
+
+  if (workItem.ownedPaths !== undefined) {
+    payload.ownedPaths = workItem.ownedPaths;
+  }
+
+  const event = {
+    schemaVersion: "0.1",
+    type: "work.updated",
+    observedAt,
+    payload,
+  };
+
+  await appendDevflowEvent(repoPath, event);
+  return event;
+}
+
+export async function recordWorkRenamedEvent(repoPath, workItem, options = {}) {
+  if (!workItem?.id) {
+    throw new Error("work rename requires id.");
+  }
+
+  if (!workItem.title) {
+    throw new Error("work rename requires title.");
+  }
+
+  return recordWorkUpdatedEvent(
+    repoPath,
+    {
+      id: workItem.id,
+      title: workItem.title,
+    },
+    options,
+  );
+}
+
 export async function recordWorkReadyEvent(repoPath, workItem, options = {}) {
   if (!workItem?.id) {
     throw new Error("work ready requires id.");
@@ -1291,6 +1351,21 @@ function createWorkState(events) {
       const item = ensureWorkItem(itemsById, order, event.payload.id);
       item.status = "active";
       item.startedAt = event.observedAt;
+      continue;
+    }
+
+    if (event.type === "work.updated") {
+      const item = ensureWorkItem(itemsById, order, event.payload.id);
+      if (event.payload.title !== undefined) {
+        item.title = event.payload.title;
+      }
+      if (event.payload.description !== undefined) {
+        item.description = event.payload.description;
+      }
+      if (event.payload.ownedPaths !== undefined) {
+        item.ownedPaths = event.payload.ownedPaths;
+      }
+      item.updatedAt = event.observedAt;
       continue;
     }
 

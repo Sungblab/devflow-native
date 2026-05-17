@@ -34,7 +34,9 @@ import {
   recordWorkBlockedEvent,
   recordWorkCreatedEvent,
   recordWorkReadyEvent,
+  recordWorkRenamedEvent,
   recordWorkStartedEvent,
+  recordWorkUpdatedEvent,
   recordWorkUnblockedEvent,
 } from "../src/index.js";
 
@@ -323,6 +325,73 @@ test("work lifecycle events can mark items ready and blocked", async () => {
   assert.equal(state.work.blocked[0].blockedReason, "Waiting for review.");
   assert.equal(status.work.readyToFinish[0].id, "ready-work");
   assert.equal(status.work.blocked[0].id, "blocked-work");
+});
+
+test("work update events can change metadata without changing lifecycle status", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-work-update-"));
+
+  await recordWorkCreatedEvent(repoPath, {
+    id: "update-work",
+    title: "Original title",
+    description: "Original description",
+    ownedPaths: ["docs/**"],
+  });
+  await recordWorkStartedEvent(repoPath, { id: "update-work" });
+  const updated = await recordWorkUpdatedEvent(
+    repoPath,
+    {
+      id: "update-work",
+      title: "Updated title",
+      description: "Updated description",
+      ownedPaths: ["packages/core/**", "packages/cli/**"],
+    },
+    { observedAt: "2026-05-17T09:30:00.000Z" },
+  );
+
+  assert.equal(updated.type, "work.updated");
+  assert.equal(updated.payload.title, "Updated title");
+  assert.deepEqual(updated.payload.ownedPaths, ["packages/core/**", "packages/cli/**"]);
+
+  const state = await readDevflowState(repoPath);
+  const item = state.work.items.find((candidate) => candidate.id === "update-work");
+  assert.equal(item.title, "Updated title");
+  assert.equal(item.description, "Updated description");
+  assert.deepEqual(item.ownedPaths, ["packages/core/**", "packages/cli/**"]);
+  assert.equal(item.status, "active");
+  assert.equal(item.updatedAt, "2026-05-17T09:30:00.000Z");
+  assert.equal(state.work.active[0].id, "update-work");
+});
+
+test("work rename events update only the title", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-work-rename-"));
+
+  await recordWorkCreatedEvent(repoPath, {
+    id: "rename-work",
+    title: "Original title",
+    description: "Keep description",
+    ownedPaths: ["docs/**"],
+  });
+  await recordWorkStartedEvent(repoPath, { id: "rename-work" });
+  const renamed = await recordWorkRenamedEvent(
+    repoPath,
+    {
+      id: "rename-work",
+      title: "Renamed title",
+    },
+    { observedAt: "2026-05-17T09:35:00.000Z" },
+  );
+
+  assert.equal(renamed.type, "work.updated");
+  assert.equal(renamed.payload.title, "Renamed title");
+  assert.equal(renamed.payload.description, undefined);
+  assert.equal(renamed.payload.ownedPaths, undefined);
+
+  const state = await readDevflowState(repoPath);
+  const item = state.work.items.find((candidate) => candidate.id === "rename-work");
+  assert.equal(item.title, "Renamed title");
+  assert.equal(item.description, "Keep description");
+  assert.deepEqual(item.ownedPaths, ["docs/**"]);
+  assert.equal(item.status, "active");
 });
 
 test("work lifecycle events can unblock blocked items", async () => {
