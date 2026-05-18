@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solo-devflow-os.local/schemas/handoff.schema.json",
+  "title": "Devflow Structured Handoff",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "workItemId",
+    "taskGoal",
+    "currentStatus",
+    "changedFiles",
+    "decisions",
+    "knownFailures",
+    "remainingRisks",
+    "nextActions",
+    "contextPointers",
+    "doNotRepeat"
+  ],
+  "properties": {
+    "version": {
+      "const": "devflow.handoff.v1"
+    },
+    "workItemId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "taskGoal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "currentStatus": {
+      "type": "string",
+      "enum": ["not_started", "in_progress", "blocked", "ready", "completed"]
+    },
+    "changedFiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "changeSummary", "riskLevel"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "changeSummary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "riskLevel": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "knownFailures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["summary", "evidenceRef"],
+        "properties": {
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidenceRef": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "remainingRisks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "nextActions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "contextPointers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "reason"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "doNotRepeat": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

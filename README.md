@@ -70,6 +70,22 @@ Devflow OS optimizes for continuity:
 - Which reviews are unresolved?
 - What should the next session do?
 
+## Research Framing
+
+Solo Devflow OS can also be used as a research harness for studying
+multi-session AI coding agents.
+
+The core research question is:
+
+> Does structured workflow-state handoff with gate evidence improve
+> continuation success and reduce false completion compared with no handoff,
+> raw transcript handoff, token-matched free-form summary, static repository
+> context, gate-only evidence, and human oracle handoff?
+
+The product remains a local-first continuity layer. The research harness
+evaluates whether that layer measurably improves coding-agent reliability at
+session boundaries.
+
 ## First-Class Concepts
 
 - Project contract: durable repo rules, architecture boundaries, docs index,
@@ -86,7 +102,8 @@ Devflow OS optimizes for continuity:
 
 - [Product Plan](docs/product-plan.md)
 - [Architecture](docs/architecture.md)
-- [Research Notes](docs/research.md)
+- [Research Harness](docs/research/README.md)
+- [Related Work Notes](docs/research.md)
 - [Roadmap](docs/roadmap.md)
 
 ## Current MVP

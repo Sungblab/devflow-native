@@ -45,6 +45,24 @@ Exit criteria:
 - the product's first daily loop works from plugin skills, CLI, or future MCP
   tools without a dashboard or hosted sync
 
+## Phase 1R: Research Contract And Harness Skeleton
+
+Build:
+
+- research framing docs under `docs/research/`
+- structured handoff and gate-evidence JSON schemas in `packages/core`
+- baseline condition templates under `experiments/conditions/`
+- initial experiment harness README and protocol notes
+
+Exit criteria:
+
+- the product/research split is clear to an external reader
+- structured handoff and gate evidence have stable fields before implementation
+  hardens `devflow finish`
+- experiment conditions can compare no handoff, raw transcript,
+  token-matched summary, structured handoff, gate evidence only, structured
+  handoff plus gate evidence, and human oracle handoff
+
 ## Phase 2: Repo Scaffold And Health
 
 Build:

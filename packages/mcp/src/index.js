@@ -594,9 +594,12 @@ async function callDoctor(args) {
 
 async function callFinish(args) {
   const repoPath = args.repo ?? process.cwd();
+  const config = await readDevflowConfig(repoPath);
+  const state = await readDevflowState(repoPath);
   const risks = (args.risks ?? []).map((risk) =>
     typeof risk === "string" ? { severity: "low", message: risk } : risk,
   );
+  const gateEvidence = [...Object.values(state.gates.latestById), ...(args.gates ?? [])];
   const summary = createFinishSummary({
     workItem: {
       id: args.work ?? "local-work",
@@ -604,7 +607,8 @@ async function callFinish(args) {
     },
     intent: args.intent ?? "Record local completion evidence.",
     changedFiles: args.changedFiles ?? [],
-    gates: args.gates ?? [],
+    gates: gateEvidence,
+    requiredGates: args.requiredGates ?? config.gates ?? [],
     skipped: args.skipped ?? [],
     risks,
     nextTask: args.nextTask,

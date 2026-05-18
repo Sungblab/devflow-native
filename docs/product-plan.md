@@ -230,3 +230,21 @@ The product should own:
 
 This allows Solo Devflow OS to integrate with Codex, Claude Code, Gemini,
 Hermes, Orca, Lanes, RCFlow, and future tools instead of trying to replace them.
+
+## Research Position
+
+The same local state can support a focused research harness. The research
+question is not whether a general agent memory system is useful. It is whether
+structured same-task handoff plus deterministic gate evidence improves
+multi-session coding-agent continuation.
+
+Research surfaces should stay separate from the product core:
+
+- `packages/core` owns the product contracts for work items, events, gates, and
+  handoffs.
+- `docs/research/` owns research questions, baselines, metrics, and rubrics.
+- `experiments/` owns condition templates, fixtures, run records, and later
+  scoring scripts.
+
+The source of truth remains structured `.devflow` state and append-only event
+logs. HTML artifacts are optional views for humans, not evidence records.

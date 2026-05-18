@@ -209,6 +209,57 @@ test("MCP finish records evidence into local state", async () => {
   assert.match(log, /mcp-finish/);
 });
 
+test("MCP finish blocks done claim when configured gate has no recorded evidence", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-finish-guard-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [{ id: "unit", command: "npm test" }],
+    })}\n`,
+  );
+
+  const result = await callTool("devflow.finish", {
+    repo: repoPath,
+    work: "missing-gate",
+    title: "Missing gate",
+    intent: "Block completion without recorded gate evidence.",
+  });
+
+  assert.equal(result.structuredContent.canClaimDone, false);
+  assert.equal(result.structuredContent.unknownGates[0].id, "unit");
+  assert.equal(result.structuredContent.doneBlockers[0].kind, "unknown_gate");
+});
+
+test("MCP finish allows done claim when configured gate evidence was recorded", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-finish-recorded-gate-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [{ id: "unit", command: "npm test" }],
+    })}\n`,
+  );
+  await callTool("devflow.record_gate", {
+    repo: repoPath,
+    id: "unit",
+    command: "npm test",
+    status: "passed",
+    workItemId: "recorded-gate",
+  });
+
+  const result = await callTool("devflow.finish", {
+    repo: repoPath,
+    work: "recorded-gate",
+    title: "Recorded gate",
+    intent: "Allow completion after recorded gate evidence.",
+  });
+
+  assert.equal(result.structuredContent.canClaimDone, true);
+  assert.deepEqual(result.structuredContent.doneBlockers, []);
+  assert.equal(result.structuredContent.gateEvidence[0].id, "unit");
+});
+
 test("MCP record_gate records standalone gate evidence", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-record-gate-"));
   const result = await callTool("devflow.record_gate", {

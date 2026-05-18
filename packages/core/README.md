@@ -33,6 +33,9 @@ packages/core/
       split-planner.ts
       finish-planner.ts
       next-prompt.ts
+    schemas/
+      handoff.schema.json
+      gate-evidence.schema.json
     redaction/
       secrets.ts
   test/
@@ -49,6 +52,8 @@ packages/core/
 - Store append-only events and rebuild derived status views from those events.
 - Recommend gates and next prompts from project contracts, changed files, and
   session evidence.
+- Keep handoff and gate-evidence schemas stable for CLI, MCP, plugin, and
+  research-harness consumers.
 - Propose session-to-work-item links without writing attach state. Low- or
   medium-confidence session matches must stay confirmation-gated.
 - Render local execution contracts and repeated-mistake memory into agent-safe

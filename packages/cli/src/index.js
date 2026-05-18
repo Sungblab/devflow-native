@@ -190,7 +190,10 @@ async function renderSplit(argsForCommand) {
 async function renderFinish(argsForCommand) {
   const options = parseOptions(argsForCommand);
   const repoPath = options.repo ?? cwd();
+  const config = await readDevflowConfig(repoPath);
+  const state = await readDevflowState(repoPath);
   const gates = collectRepeated(options.gate).map(parseGate);
+  const gateEvidence = [...Object.values(state.gates.latestById), ...gates];
   const risks = collectRepeated(options.risk).map((message) => ({
     severity: "low",
     message,
@@ -203,7 +206,8 @@ async function renderFinish(argsForCommand) {
     },
     intent: options.intent ?? "Record local completion evidence.",
     changedFiles: readChangedFiles(repoPath),
-    gates,
+    gates: gateEvidence,
+    requiredGates: config.gates ?? [],
     skipped: collectRepeated(options.skipped).map((reason, index) => ({
       id: `skipped-${index + 1}`,
       reason,
@@ -659,6 +663,8 @@ function renderGuidedFinish(summary) {
     `Verified gates: ${summary.evidence.gates.length}`,
     `Skipped checks: ${summary.evidence.skipped.length}`,
     `Known risks: ${summary.risks.length}`,
+    `Can claim done: ${summary.canClaimDone ? "yes" : "no"}`,
+    `Done blockers: ${summary.doneBlockers.length}`,
     `Review recommendation: ${summary.review.recommendation}`,
     `Next task: ${extractNextTask(summary.nextSession.prompt)}`,
   ];

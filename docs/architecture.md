@@ -42,6 +42,7 @@ on WSL, macOS, and Linux.
 ```text
 packages/core
   project model, event store, gate runner, git scanner, handoff generator
+  shared JSON schemas for handoff and gate evidence
 
 packages/cli
   devflow init/status/split/finish/doctor/gates/session/review
@@ -59,6 +60,10 @@ plugins/devflow
 packages/adapters
   Codex, Claude, Gemini, Copilot, OpenCode, Goose, Aider, GitHub,
   generic shell, test output parsers
+
+experiments
+  research harness fixtures, condition templates, run/result schemas, and
+  scoring scripts over recorded Devflow state
 
 templates
   AGENTS.md, docs index, architecture maps, testing strategy, health scripts
@@ -258,6 +263,13 @@ HTML artifacts from structured `.devflow` state:
 - split boards for worktree/session planning
 - timeline views for session, gate, review, and handoff events
 - handoff views for next-session prompts and unresolved risks
+
+## Research Harness Boundary
+
+The research harness evaluates Devflow state, but it does not replace the
+product model. Experiment fixtures, conditions, and scoring logic live under
+`experiments/` and consume the same handoff and gate-evidence contracts used by
+the CLI and MCP layers. Product code should not depend on experiment runners.
 
 Generated artifacts are views. They must not become the source of truth, and
 agents should not read full HTML back into context by default.
