@@ -194,6 +194,49 @@ Idea
   -> searchable project memory
 ```
 
+## Contract-First Sliced Execution
+
+Solo Devflow OS should support a contract-first, sliced execution workflow.
+This is neither classic waterfall nor unconstrained vibe coding.
+
+The operating model:
+
+```text
+project contract
+  -> slice spec
+  -> implementation plan
+  -> plan-bounded agent session
+  -> gate evidence
+  -> finish guard
+  -> next-session handoff
+```
+
+The project contract captures durable product direction, domain constraints,
+architecture boundaries, coding rules, testing policy, and non-goals. Each work
+slice then gets a focused spec and implementation plan. A later agent session
+should implement the plan, avoid broad unplanned expansion, record assumptions,
+run or cite relevant gates, and produce a handoff for the next session.
+
+This workflow is designed to avoid two failure modes:
+
+- upfront over-design where implementation never starts
+- prompt-by-prompt improvisation where domain gaps, assumptions, and
+  verification state disappear into chat history
+
+### Question Budget
+
+Agents should not ask the maintainer unlimited clarifying questions. Questions
+consume input/output tokens, lengthen context, and often leave decisions only in
+chat. Devflow should encourage agents to ask only when:
+
+- local docs and state cannot answer the question
+- a wrong assumption would create real risk
+- the decision affects public behavior, data model, security, billing,
+  irreversible work, or a major architecture boundary
+
+Otherwise, the agent should choose a conservative default, record the
+assumption in the spec, plan, event log, or handoff, and continue.
+
 ## Opinionated Defaults
 
 - One primary implementation session and one optional review/audit session.
@@ -203,6 +246,11 @@ Idea
 - Direct commit allowed for small docs, private notes, and mechanical cleanup.
 - Every completed task should produce a next-session prompt.
 - Failed checks should be recorded as evidence, not hidden.
+- Slice-level work should prefer a written spec and implementation plan before
+  coding when domain constraints, public behavior, or cross-module contracts
+  are involved.
+- Agents should be plan-bounded by default: follow the slice plan, surface
+  evidence when blocked, and avoid broad opportunistic refactors.
 - AI API access is optional. Core status, split, finish, gates, and handoff
   recording must work from local files, git, docs, and agent history. AI assist
   features such as term explanation, prompt rewriting, and session summarization

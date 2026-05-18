@@ -14,6 +14,7 @@ This is the documentation router for Solo Devflow OS.
 | Korean research index | [research/ko/README.md](./research/ko/README.md) |
 | Korean research primer | [research/ko/primer.md](./research/ko/primer.md) |
 | Research decision log | [research/ko/decision-log.md](./research/ko/decision-log.md) |
+| Contract-first sliced execution | [research/ko/contract-first-sliced-execution.md](./research/ko/contract-first-sliced-execution.md) |
 | Research related-work map | [research/related-work.md](./research/related-work.md) |
 | Research paper outline | [research/paper-outline.md](./research/paper-outline.md) |
 | Long-context and cold-start cost notes | [research/ko/long-context-and-cost.md](./research/ko/long-context-and-cost.md) |

@@ -16,6 +16,9 @@
      문제를 정리한다.
 4. [한국어 논문 개요](./paper-outline-ko.md)
    - 논문/보고서를 한국어로 어떤 구조로 쓸지 잡는다.
+5. [Contract-First Sliced Execution](./contract-first-sliced-execution.md)
+   - 프로젝트 계약, slice spec, implementation plan, 질문 예산, plan-bounded
+     agent session 운영 모델을 설명한다.
 
 ## 연구 한 문장
 
@@ -47,4 +50,3 @@ repeated exploration에 어떤 영향을 주는지 비교한다.
 - 영어 paper outline: [../paper-outline.md](../paper-outline.md)
 - 실험 설계: [../experiment-design.md](../experiment-design.md)
 - 지표/루브릭: [../metrics.md](../metrics.md)
-

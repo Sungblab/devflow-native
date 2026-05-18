@@ -155,3 +155,40 @@ changed files, gates, next actions를 제공한다.
 - repeated exploration count
 - cold-start exploration cost
 
+## 2026-05-18: Contract-first sliced execution
+
+### 결정
+
+Devflow의 운영 모델은 순수 워터폴이나 순수 바이브코딩이 아니라
+contract-first sliced execution으로 잡는다.
+
+```text
+project contract
+  -> slice spec
+  -> implementation plan
+  -> plan-bounded agent session
+  -> gate evidence
+  -> finish guard
+  -> next-session handoff
+```
+
+### 이유
+
+에이전트가 매번 사용자에게 질문하면 input/output token이 계속 늘고, 결정이
+chat에만 남아 다음 세션에서 유실된다. 반대로 처음부터 전체를 오래 설계하면
+구현이 늦어진다.
+
+따라서 durable project contract는 먼저 만들고, 구현은 slice 단위로 spec과
+plan을 만든 뒤, 다음 세션 에이전트가 plan 파일 중심으로 구현하게 한다.
+
+### 질문 예산
+
+에이전트는 다음 경우에만 질문한다.
+
+- local docs와 state로 답할 수 없다.
+- 틀린 가정이 실제 위험을 만든다.
+- public behavior, data model, security, billing, irreversible work, major
+  architecture boundary에 영향을 준다.
+
+그 외에는 보수적인 기본값을 선택하고 assumption을 spec, plan, event log,
+handoff에 기록한다.

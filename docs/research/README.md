@@ -14,6 +14,7 @@ notes first:
 - [Decision Log](./ko/decision-log.md)
 - [Long Context And Cost](./ko/long-context-and-cost.md)
 - [Korean Paper Outline](./ko/paper-outline-ko.md)
+- [Contract-First Sliced Execution](./ko/contract-first-sliced-execution.md)
 
 ## Research Question
 
