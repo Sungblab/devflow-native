@@ -40,8 +40,10 @@ events, JSON schemas, and Markdown research docs.
 ## Read Next
 
 - [Research Plan](./research-plan.md)
+- [Related Work](./related-work.md)
 - [Experiment Design](./experiment-design.md)
 - [Baselines](./baselines.md)
 - [Metrics](./metrics.md)
 - [Schemas](./schemas.md)
+- [Paper Cache](./papers/README.md)
 - [Related Work Notes](../research.md)

@@ -5,4 +5,5 @@ dist/
 !.env.example
 .devflow/state/
 *.log
+docs/research/papers/*.pdf
 

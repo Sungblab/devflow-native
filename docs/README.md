@@ -11,6 +11,7 @@ This is the documentation router for Solo Devflow OS.
 | Agent and platform adapter strategy | [architecture/adapters.md](./architecture/adapters.md) |
 | MCP handler package | [../packages/mcp/README.md](../packages/mcp/README.md) |
 | Research harness framing | [research/README.md](./research/README.md) |
+| Research related-work map | [research/related-work.md](./research/related-work.md) |
 | Existing tool and related-work notes | [research.md](./research.md) |
 | Research experiment design | [research/experiment-design.md](./research/experiment-design.md) |
 | Research metrics and rubrics | [research/metrics.md](./research/metrics.md) |
