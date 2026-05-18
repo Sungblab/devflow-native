@@ -23,6 +23,13 @@ Build a local-first workflow OS for solo maintainers using AI agents. It should
 make the development process observable, resumable, and enforceable across
 projects without forcing every project into a hosted SaaS.
 
+The short version:
+
+```text
+Agent IDEs and orchestrators run agents.
+Solo Devflow OS records the repo-local project truth those agents share.
+```
+
 ## Non-Goals
 
 - Do not start as another general coding agent.
@@ -32,6 +39,8 @@ projects without forcing every project into a hosted SaaS.
 - Do not assume the user wants many parallel agents by default.
 - Do not make a persistent visual dashboard the MVP. Visual output should be
   generated only when it helps the maintainer inspect dense state.
+- Do not treat generated HTML artifacts as durable evidence. They are views
+  over structured local state, not the source of truth.
 
 ## Target User
 
@@ -214,6 +223,10 @@ The intended position is lower and more durable:
 Agent IDEs and orchestrators run agents.
 Solo Devflow OS records the project truth those agents share.
 ```
+
+That truth is the current task state plus verification context: active work
+items, agent/manual sessions, changed files, gate evidence, skipped checks,
+remaining risks, review state, and next-session handoff prompts.
 
 The product should own:
 
