@@ -67,8 +67,8 @@ structured handoff alone or gate evidence alone?
 ### RQ3: Cost And Exploration
 
 Does structured handoff reduce token cost, irrelevant file reads, repeated
-exploration, and time to first useful edit compared with raw transcript or no
-handoff?
+exploration, cold-start exploration cost, and time to first useful edit
+compared with raw transcript, no handoff, or compressed continuation?
 
 ### RQ4: Handoff Quality
 
@@ -290,7 +290,9 @@ LLM-assisted review for semantic metrics.
 ### Token Budget Confounds
 
 Longer context packages may win only because they include more information.
-Mitigation: include token-matched free-form summary and report token cost.
+Mitigation: include token-matched free-form summary, report token cost, and
+treat long-context or compressed-continuation runs as explicit baselines rather
+than assuming short handoff is always better.
 
 ### Gate Evidence Limits
 
@@ -326,4 +328,3 @@ system and evaluation papers.
 4. Replace placeholder handoff-faithfulness scoring with a rubric-backed review
    path.
 5. Run a small pilot and write a results table.
-

@@ -13,6 +13,9 @@
   context pointers, ownership map, or changed-file neighborhood.
 - Repeated exploration count: repeated reads, searches, or commands that
   duplicate Session 1 work without adding new evidence.
+- Cold-start exploration cost: tokens, file reads, searches, tool calls, or
+  elapsed time spent before the first useful edit in a fresh continuation
+  session.
 
 ## Handoff Quality Metrics
 

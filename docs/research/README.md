@@ -39,9 +39,12 @@ events, JSON schemas, and Markdown research docs.
 
 ## Read Next
 
+- [Korean Primer](./korean-primer.md)
 - [Research Plan](./research-plan.md)
+- [Research Decision Log](./research-decision-log.md)
 - [Related Work](./related-work.md)
 - [Paper Outline](./paper-outline.md)
+- [Long Context And Cost](./long-context-and-cost.md)
 - [Experiment Design](./experiment-design.md)
 - [Baselines](./baselines.md)
 - [Metrics](./metrics.md)
