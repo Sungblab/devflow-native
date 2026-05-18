@@ -1,0 +1,75 @@
+{
+  "taskId": "task-001",
+  "condition": "structured-handoff-plus-gate",
+  "agent": "codex",
+  "model": "gpt-5",
+  "startedAt": "2026-05-18T10:00:00.000Z",
+  "finishedAt": "2026-05-18T10:08:00.000Z",
+  "tokenUsage": {
+    "input": 8200,
+    "output": 2100,
+    "total": 10300
+  },
+  "toolCalls": [
+    {
+      "name": "read_file",
+      "target": "packages/cli/src/index.js"
+    },
+    {
+      "name": "read_file",
+      "target": ".devflow/state/events.jsonl"
+    },
+    {
+      "name": "shell",
+      "target": "npm test"
+    }
+  ],
+  "filesRead": [
+    "packages/cli/src/index.js",
+    "packages/cli/test/status-json.test.mjs",
+    ".devflow/state/events.jsonl"
+  ],
+  "filesChanged": [
+    "packages/cli/src/index.js",
+    "packages/cli/test/status-json.test.mjs"
+  ],
+  "finalStatus": "completed",
+  "completionClaim": {
+    "claimedDone": true,
+    "text": "Implemented status --json and verified npm test passed."
+  },
+  "gateEvidenceRefs": [
+    "gate.finished:test:2026-05-18T10:07:30.000Z"
+  ],
+  "handoff": {
+    "version": "devflow.handoff.v1",
+    "workItemId": "task-001",
+    "taskGoal": "Add a --json flag to the status command so agent hosts can consume stable output.",
+    "currentStatus": "ready",
+    "changedFiles": [
+      {
+        "path": "packages/cli/src/index.js",
+        "changeSummary": "Added status --json parsing and JSON rendering path.",
+        "riskLevel": "medium"
+      },
+      {
+        "path": "packages/cli/test/status-json.test.mjs",
+        "changeSummary": "Added acceptance coverage for status --json output.",
+        "riskLevel": "low"
+      }
+    ],
+    "remainingRisks": [],
+    "nextActions": [
+      "Inspect the recorded test gate evidence before claiming done."
+    ],
+    "contextPointers": [
+      {
+        "path": "packages/cli/src/index.js",
+        "reason": "status command implementation"
+      }
+    ]
+  },
+  "timeToFirstUsefulEdit": 92,
+  "irrelevantFileReadCount": 0,
+  "repeatedExplorationCount": 0
+}

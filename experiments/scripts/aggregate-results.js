@@ -18,8 +18,7 @@ function aggregate(results) {
     byCondition.set(condition, bucket);
   }
 
-  return {
-    conditions: [...byCondition.entries()].map(([condition, items]) => ({
+  const conditions = [...byCondition.entries()].map(([condition, items]) => ({
       condition,
       runs: items.length,
       continuationSuccessRate: average(items.map((item) => Number(Boolean(item.continuationSuccess)))),
@@ -29,7 +28,12 @@ function aggregate(results) {
       averageHandoffFaithfulness: average(items.map((item) => item.handoffFaithfulness ?? 0)),
       averageHandoffMinimality: average(items.map((item) => item.handoffMinimality ?? 0)),
       averageHandoffActionability: average(items.map((item) => item.handoffActionability ?? 0)),
-    })),
+    }));
+
+  return {
+    totalRuns: results.length,
+    conditions,
+    byCondition: Object.fromEntries(conditions.map((condition) => [condition.condition, condition])),
   };
 }
 

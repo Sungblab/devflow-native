@@ -38,3 +38,31 @@ test("experiment scorer scripts print usage without input files", async () => {
     assert.match(stdout, /Usage:/);
   }
 });
+
+test("sample pilot fixtures can be scored and aggregated", async () => {
+  const task = JSON.parse(await readFile("experiments/fixtures/tasks/task-001.json", "utf8"));
+  const run = JSON.parse(await readFile("experiments/fixtures/runs/task-001-structured-handoff-plus-gate.json", "utf8"));
+  const expectedResult = JSON.parse(await readFile("experiments/fixtures/results/task-001-structured-handoff-plus-gate.json", "utf8"));
+
+  assert.equal(task.taskId, "task-001");
+  assert.equal(run.taskId, task.taskId);
+  assert.equal(expectedResult.taskId, task.taskId);
+
+  const scoredRun = await execFileAsync("node", [
+    "experiments/scripts/score-run.js",
+    "experiments/fixtures/runs/task-001-structured-handoff-plus-gate.json",
+  ]);
+  const scoredResult = JSON.parse(scoredRun.stdout);
+  assert.equal(scoredResult.taskId, "task-001");
+  assert.equal(scoredResult.condition, "structured-handoff-plus-gate");
+  assert.equal(scoredResult.continuationSuccess, true);
+  assert.equal(scoredResult.falseCompletion, false);
+
+  const aggregate = await execFileAsync("node", [
+    "experiments/scripts/aggregate-results.js",
+    "experiments/fixtures/results/task-001-structured-handoff-plus-gate.json",
+  ]);
+  const aggregateResult = JSON.parse(aggregate.stdout);
+  assert.equal(aggregateResult.totalRuns, 1);
+  assert.equal(aggregateResult.byCondition["structured-handoff-plus-gate"].runs, 1);
+});

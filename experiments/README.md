@@ -18,6 +18,7 @@ reset.
 - [Task schema](./schemas/task.schema.json)
 - [Run schema](./schemas/run.schema.json)
 - [Result schema](./schemas/result.schema.json)
+- [Sample task fixture](./fixtures/tasks/task-001.json)
 
 ## Conditions
 
@@ -41,12 +42,22 @@ The scoring scripts currently use deterministic placeholder heuristics. Human
 or LLM-assisted scoring is still needed for semantic checks such as handoff
 faithfulness and useful edit detection.
 
+Example pilot plumbing:
+
+```powershell
+node experiments/scripts/score-run.js experiments/fixtures/runs/task-001-structured-handoff-plus-gate.json
+node experiments/scripts/aggregate-results.js experiments/fixtures/results/task-001-structured-handoff-plus-gate.json
+```
+
 ## Layout
 
 ```text
 experiments/
   fixtures/
     repos/
+    handoffs/
+    results/
+    runs/
     tasks/
     snapshots/
   schemas/
