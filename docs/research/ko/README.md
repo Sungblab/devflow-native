@@ -16,7 +16,9 @@
      문제를 정리한다.
 4. [한국어 논문 개요](./paper-outline-ko.md)
    - 논문/보고서를 한국어로 어떤 구조로 쓸지 잡는다.
-5. [Contract-First Sliced Execution](./contract-first-sliced-execution.md)
+5. [논문 HTML 미리보기](./paper-preview.html)
+   - 현재 연구가 논문 형태로 어떻게 보일지 빠르게 확인한다.
+6. [Contract-First Sliced Execution](./contract-first-sliced-execution.md)
    - 프로젝트 계약, slice spec, implementation plan, 질문 예산, plan-bounded
      agent session 운영 모델을 설명한다.
 

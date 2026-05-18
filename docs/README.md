@@ -13,6 +13,7 @@ This is the documentation router for Solo Devflow OS.
 | Research harness framing | [research/README.md](./research/README.md) |
 | Korean research index | [research/ko/README.md](./research/ko/README.md) |
 | Korean research primer | [research/ko/primer.md](./research/ko/primer.md) |
+| Korean paper preview | [research/ko/paper-preview.html](./research/ko/paper-preview.html) |
 | Research decision log | [research/ko/decision-log.md](./research/ko/decision-log.md) |
 | Contract-first sliced execution | [research/ko/contract-first-sliced-execution.md](./research/ko/contract-first-sliced-execution.md) |
 | Research related-work map | [research/related-work.md](./research/related-work.md) |
