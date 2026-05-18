@@ -4,6 +4,17 @@ Solo Devflow OS can be used as a research harness for studying multi-session AI
 coding agents. The product remains a local-first continuity layer; the research
 harness evaluates whether that layer improves continuation reliability.
 
+## Korean-First Path
+
+If you are trying to understand or operate this research, start with the Korean
+notes first:
+
+- [Korean Research Index](./ko/README.md)
+- [Primer](./ko/primer.md)
+- [Decision Log](./ko/decision-log.md)
+- [Long Context And Cost](./ko/long-context-and-cost.md)
+- [Korean Paper Outline](./ko/paper-outline-ko.md)
+
 ## Research Question
 
 Does structured workflow-state handoff with gate evidence improve continuation
@@ -37,14 +48,11 @@ HTML artifacts are not source of truth. They can help humans inspect dense
 state, but the durable evidence is structured `.devflow` state, append-only
 events, JSON schemas, and Markdown research docs.
 
-## Read Next
+## English Reference Docs
 
-- [Korean Primer](./korean-primer.md)
 - [Research Plan](./research-plan.md)
-- [Research Decision Log](./research-decision-log.md)
 - [Related Work](./related-work.md)
 - [Paper Outline](./paper-outline.md)
-- [Long Context And Cost](./long-context-and-cost.md)
 - [Experiment Design](./experiment-design.md)
 - [Baselines](./baselines.md)
 - [Metrics](./metrics.md)
