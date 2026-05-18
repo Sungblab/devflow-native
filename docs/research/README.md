@@ -41,6 +41,7 @@ events, JSON schemas, and Markdown research docs.
 
 - [Research Plan](./research-plan.md)
 - [Related Work](./related-work.md)
+- [Paper Outline](./paper-outline.md)
 - [Experiment Design](./experiment-design.md)
 - [Baselines](./baselines.md)
 - [Metrics](./metrics.md)
