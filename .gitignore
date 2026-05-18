@@ -6,4 +6,7 @@ dist/
 .devflow/state/
 *.log
 docs/research/papers/*.pdf
+docs/agentic_handoff_research_plan_v2.html
+docs/AI 코딩 에이전트 핸드오프 연구.md
+docs/deep-research-report.md
 

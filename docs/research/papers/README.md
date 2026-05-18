@@ -6,6 +6,16 @@ Devflow research framing.
 PDF files are intentionally ignored by git to avoid bloating the repository.
 Keep durable citations and summaries in Markdown under `docs/research/`.
 
+## Local Draft Inputs
+
+The following local drafts were used as source notes while consolidating the
+research framing. They are intentionally ignored by git because their durable
+content has been absorbed into `docs/research/` Markdown files.
+
+- `docs/agentic_handoff_research_plan_v2.html`
+- `docs/AI 코딩 에이전트 핸드오프 연구.md`
+- `docs/deep-research-report.md`
+
 ## Downloaded Papers
 
 | Paper | Local PDF | Source |
@@ -32,4 +42,3 @@ Keep durable citations and summaries in Markdown under `docs/research/`.
 ```powershell
 Invoke-WebRequest -Uri https://arxiv.org/pdf/2605.15184 -OutFile docs/research/papers/2605.15184-is-grep-all-you-need-agent-harnesses.pdf
 ```
-
