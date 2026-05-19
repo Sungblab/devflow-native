@@ -77,6 +77,43 @@ Devflow의 답은 다음이다.
 - 전체 대화 기록을 갖는 것과 완료 가능 여부를 검증하는 것은 다르다.
 - 많이 읽을 수 있는 것과 적게 읽어도 되는 것은 다르다.
 
+## Semble 같은 code search 도구에 대한 입장
+
+[Semble](https://github.com/MinishLab/semble)은 에이전트가 자연어 또는 symbol
+query로 관련 코드 chunk를 바로 찾게 해주는 agent-oriented code search 도구다.
+MCP, CLI, AGENTS.md snippet을 지원하고, grep 후 파일 전체를 읽는 방식보다
+토큰을 크게 줄인다고 주장한다.
+
+이 도구는 Devflow 연구에 중요하다. 왜냐하면 "새 세션이 repo를 다시 파악하느라
+토큰을 많이 쓴다"는 문제를 Semble도 직접 겨냥하기 때문이다.
+
+하지만 Semble과 Devflow는 푸는 문제가 다르다.
+
+```text
+Semble:
+  "이 코드베이스에서 auth flow가 어디 구현되어 있는가?"
+
+Devflow:
+  "이전 세션이 auth flow를 어디까지 고쳤고,
+   어떤 테스트가 실패했고,
+   어떤 gate가 아직 없으며,
+   다음 세션이 완료라고 말해도 되는가?"
+```
+
+좋은 영어 문장:
+
+> Token-efficient code search tools such as Semble reduce the cost of locating
+> relevant code, but they do not preserve task-specific workflow state, prior
+> verification evidence, or completion blockers across agent sessions.
+
+한국어:
+
+> Semble 같은 토큰 효율적 코드 검색 도구는 관련 코드를 찾는 비용을 줄여주지만,
+> 이전 세션의 작업 상태, 검증 증거, 완료 차단 요인을 다음 세션에 보존해주지는
+> 않는다.
+
+따라서 Semble은 Devflow의 경쟁자라기보다 보완재 또는 baseline이다.
+
 ## 연구에 추가할 baseline
 
 긴 컨텍스트/세션 압축 반론을 반영하려면 실험 조건에 다음을 추가할 수 있다.
@@ -87,10 +124,17 @@ H. Compressed continuation baseline
 
 I. Long-context full-context baseline
    가능한 경우 큰 컨텍스트 모델에 raw repo/session context를 더 많이 제공한다.
+
+J. No handoff + Semble-assisted search
+   handoff 없이 Semble 같은 code search 도구만 제공한다.
+
+K. Structured handoff + gate evidence + Semble
+   handoff/evidence와 token-efficient code search를 함께 제공한다.
 ```
 
 초기 파일럿에서는 7개 core condition을 유지하고, 비용이 허용될 때 H/I를
-확장 조건으로 추가한다.
+확장 조건으로 추가한다. Semble 조건은 검색 도구 반론을 다루는 2차 확장
+실험으로 둔다.
 
 ## 지표
 
@@ -126,4 +170,3 @@ Devflow solves long context.
 
 긴 컨텍스트는 모델/아키텍처 문제다. Devflow는 workflow-state checkpointing
 문제다.
-

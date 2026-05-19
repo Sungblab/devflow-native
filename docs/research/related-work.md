@@ -45,6 +45,7 @@ model. Devflow studies a nearby but narrower gap:
 
 | Work | Main Point | Devflow Connection |
 | --- | --- | --- |
+| [Semble](https://github.com/MinishLab/semble) | Agent-oriented code search that returns relevant code chunks through CLI or MCP and reports large token savings over grep-plus-read exploration. | Useful related work and possible baseline for token-efficient code localization. Semble helps agents find relevant code, while Devflow preserves task-specific workflow state, gate evidence, and completion blockers across sessions. |
 | [ContextBench](https://arxiv.org/abs/2602.05892) | Evaluates context retrieval for coding agents, including precision, recall, and efficiency. | Devflow's irrelevant file reads and repeated exploration metrics are downstream of context focus. |
 | [SWE Context Bench](https://arxiv.org/abs/2602.08316) | Studies reuse of prior coding-task experience. | Devflow focuses on intra-task continuation, not inter-task reuse of completed past experience. |
 | [LongCLI-Bench](https://arxiv.org/abs/2602.14337) | Long-horizon CLI engineering tasks expose low pass rates and early-stage failures in agents. | Supports measuring time to first useful edit, repeated exploration, and continuation success in terminal-like coding workflows. |
@@ -95,3 +96,12 @@ keep:
 - Measure not only final success, but also false completion, irrelevant file
   reads, repeated exploration, and time to first useful edit.
 
+Semble adds another useful control for later studies:
+
+- As a baseline, compare no-handoff continuation with normal grep/read against
+  no-handoff continuation with Semble-assisted code search.
+- As a controlled tool, allow every condition to use Semble so the experiment
+  isolates workflow-state handoff rather than code-search quality.
+- As a combined condition, test structured handoff plus gate evidence plus
+  Semble to see whether active-work state and token-efficient code search are
+  complementary.

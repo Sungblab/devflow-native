@@ -192,3 +192,29 @@ plan을 만든 뒤, 다음 세션 에이전트가 plan 파일 중심으로 구�
 
 그 외에는 보수적인 기본값을 선택하고 assumption을 spec, plan, event log,
 handoff에 기록한다.
+
+## 2026-05-20: Semble과 code-search 반론
+
+### 결정
+
+Semble은 related work와 향후 baseline 후보에 포함한다. 단, Devflow의 중심
+주장은 code search가 아니라 same-task workflow-state handoff와 gate evidence로
+유지한다.
+
+### 이유
+
+Semble은 agent가 grep 후 파일 전체를 읽는 방식보다 적은 토큰으로 관련 코드
+chunk를 찾게 해주는 도구다. 이것은 "새 세션이 repo를 다시 파악하느라 토큰을
+많이 쓴다"는 Devflow의 문제의식이 실제 도구 시장에서도 중요하게 다뤄지고
+있다는 증거다.
+
+하지만 Semble은 관련 코드를 찾는 문제를 풀고, Devflow는 이전 세션의 작업
+상태, 검증 증거, 완료 차단 요인, 다음 행동을 보존하는 문제를 푼다.
+
+### 실험 반영
+
+초기 core condition A-G는 유지한다. 이후 확장 실험으로 다음 조건을 고려한다.
+
+- no handoff + Semble-assisted search
+- structured handoff + gate evidence + Semble
+- 모든 조건에 Semble을 허용한 상태에서 handoff 조건만 비교
