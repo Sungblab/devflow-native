@@ -2,8 +2,15 @@
 
 ## 작업 제목
 
-AGENTS.md를 넘어서: 다중 세션 AI 코딩 에이전트를 위한 검증 인식
-워크플로우 상태 핸드오프
+Do Coding Agents Resume Better with Structured Handoffs?
+
+부제:
+
+다중 세션 AI 코딩 에이전트를 위한 검증 인식 워크플로우 상태 핸드오프
+
+제품명 `Solo Devflow OS`는 reference implementation 이름으로 유지하되, 논문
+본문에서는 과장되어 보일 수 있는 `OS` 표현보다 `Devflow Handoff Protocol`,
+`workflow continuity layer`, `verification-aware handoff protocol`을 우선 사용한다.
 
 ## 한 문장 논지
 
@@ -70,6 +77,10 @@ read count, repeated exploration count, time to first useful edit를 줄이는�
 Structured handoff는 자유 요약보다 completeness, faithfulness, minimality,
 actionability가 높은가?
 
+### RQ5. 효과의 원인
+
+관찰된 효과는 정보량 때문인가, 구조화 때문인가, 검증 증거 때문인가?
+
 ## 비교 조건
 
 | 조건 | 설명 | 왜 필요한가 |
@@ -111,6 +122,11 @@ AI judge가 아니라 deterministic evidence로 본다.
 - lint/build 통과 여부
 - acceptance criteria 만족 여부
 - expected changed files와 실제 diff 비교
+
+모든 조건은 같은 canonical interrupted snapshot에서 시작해야 한다. 즉, Session
+1을 매번 새로 자연 실행하지 않고, partial implementation, git diff, failing
+gate, skipped gate, known blocker, command log가 고정된 snapshot을 만든 뒤
+condition-specific input만 바꾼다.
 
 ### False completion
 
@@ -169,9 +185,9 @@ continuation에서 structured handoff와 gate evidence의 효과를 ablation으�
 
 ## 당장 해야 할 일
 
-1. `task-001`을 7개 condition 전체 fixture로 확장한다.
-2. task를 5개로 늘린다.
-3. AI judge prompt와 rubric을 고정한다.
-4. 작은 pilot을 수동 실행한다.
-5. 결과표를 만들고 claim 수위를 다시 조정한다.
-
+1. `task-001` canonical interrupted snapshot을 고정한다.
+2. `task-001`을 7개 condition 전체 input fixture로 확장한다.
+3. 작은 pilot을 `1 task x 7 conditions x 2 repeats = 14 runs`로 먼저 실행한다.
+4. AI judge prompt와 rubric을 handoff quality 전용으로 고정한다.
+5. task를 3개, 5개로 늘린다.
+6. 결과표를 만들고 claim 수위를 다시 조정한다.

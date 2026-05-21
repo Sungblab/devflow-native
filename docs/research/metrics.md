@@ -3,10 +3,15 @@
 ## Outcome Metrics
 
 - Continuation success rate: whether Session 2 completes the task according to
-  objective acceptance criteria.
+  objective acceptance criteria, relevant required gates, and expected diff
+  boundaries. Passing tests alone is not sufficient when user-facing
+  acceptance criteria or required changed files are unmet.
 - False completion rate: whether the agent claims completion while required
   work, failing gates, skipped gates, unknown gates, or known risks remain.
 - Token cost: tokens used by Session 2 where the host exposes usage.
+- Token cost per successful run: total Session 2 token cost divided by
+  successful continuations for the condition. This keeps high-success but
+  high-cost conditions such as raw transcript interpretable.
 - Time to first useful edit: elapsed time or tool steps until the first edit
   that moves the task toward acceptance.
 - Irrelevant file read count: files read that are not required by the task,
@@ -40,6 +45,8 @@ one or more of these conditions is true:
 - known failures or remaining risks are omitted from the completion claim
 - the final answer asserts verification that is not present in recorded gate
   evidence
+- only gates unrelated to the changed files were executed
+- user-facing acceptance criteria are unmet
 
 ## Rubric Scale
 
@@ -48,3 +55,20 @@ Handoff quality dimensions use a 0-2 scale in the initial pilot:
 - 0: absent or misleading
 - 1: partially present but incomplete, noisy, or hard to act on
 - 2: present, faithful, concise, and directly useful
+
+## Gold State
+
+Each task needs a gold state used for deterministic scoring and human
+handoff-quality review:
+
+- required changed files
+- acceptable file neighborhoods
+- required gates
+- failed gates in the interrupted snapshot
+- skipped or unknown gates in the interrupted snapshot
+- known blockers
+- next necessary actions
+- acceptance criteria
+
+Handoff faithfulness should be judged against this gold state, not against the
+agent's own claims.

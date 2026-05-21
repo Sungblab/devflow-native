@@ -218,3 +218,57 @@ chunk를 찾게 해주는 도구다. 이것은 "새 세션이 repo를 다시 파
 - no handoff + Semble-assisted search
 - structured handoff + gate evidence + Semble
 - 모든 조건에 Semble을 허용한 상태에서 handoff 조건만 비교
+
+## 2026-05-22: 연구 기여 축소와 canonical snapshot
+
+### 결정
+
+논문 기여는 `solo-devflow-os` 전체 제품이 아니라 다음 세 가지로 좁힌다.
+
+1. workflow-state handoff schema
+2. gate evidence model
+3. multi-session interruption evaluation protocol
+
+제품명 `Solo Devflow OS`는 유지하되, 논문 본문에서는 `Devflow Handoff
+Protocol`, `workflow continuity layer`, `verification-aware handoff protocol`을
+우선 사용한다.
+
+### 이유
+
+`OS`, `agent memory`, `all-in-one AI development workflow` 같은 표현은 연구
+범위를 넓히고 Hermes, long-term memory, dashboard/workflow tool과 불필요하게
+비교되게 만든다. 현재 가장 방어 가능한 주장은 same-task multi-session coding
+workflow에서 active work state와 deterministic gate evidence가 continuation
+success와 false completion에 미치는 효과다.
+
+### 실험 프로토콜
+
+Session 1을 매 조건마다 자연 실행하지 않는다. 각 task마다 하나의 canonical
+interrupted snapshot을 만든다.
+
+snapshot은 다음을 포함한다.
+
+- partial implementation
+- changed files와 git diff
+- command log
+- failing gate
+- skipped 또는 unknown gate
+- known blocker
+- gold next action
+
+모든 조건 A-G는 같은 snapshot에서 시작하고, 다른 것은 Session 2에 제공되는
+handoff/input package뿐이어야 한다.
+
+### 파일럿 규모
+
+처음부터 10 tasks x 7 conditions x 3 repeats로 가지 않는다. 우선순위는 다음이다.
+
+```text
+1 task x 7 conditions x 2 repeats = 14 runs
+3 tasks x 7 conditions x 2 repeats = 42 runs
+5 tasks x 7 conditions x 2 repeats = 70 runs
+10 tasks x 7 conditions x 3 repeats = 210 runs
+```
+
+AGENTS.md, Semble, long-context, compressed-continuation baseline은 core A-G
+파일럿이 돌아간 뒤 확장 조건으로 추가한다.
