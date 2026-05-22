@@ -1,4 +1,4 @@
-# Condition F: Structured Handoff Plus Gate Evidence
+# Condition G: Structured Handoff Plus Gate Evidence
 
 Session 2 receives:
 

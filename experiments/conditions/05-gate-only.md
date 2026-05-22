@@ -1,4 +1,4 @@
-# Condition E: Gate Evidence Only
+# Condition F: Gate Evidence Only
 
 Session 2 receives:
 

@@ -48,12 +48,12 @@ AI 코딩 에이전트는 파일을 읽고, 코드를 수정하고, 테스트를
 평가한다. 제안 방식은 작업 목표, 현재 상태, 변경 파일, 결정 사항, 알려진
 실패, gate evidence, 남은 위험, 다음 행동을 repo-local state로 기록하고 다음
 세션에 전달한다. 우리는 no handoff, raw transcript, token-matched free-form
-summary, structured handoff, gate evidence only, structured handoff plus gate
-evidence, human oracle handoff를 비교하여 continuation success, false
-completion, token cost, time to first useful edit, irrelevant file reads,
-repeated exploration, handoff quality를 측정한다. 이 연구는 새로운 코딩
-에이전트를 만드는 것이 아니라, 세션 경계에서 어떤 workflow-state package가
-더 신뢰성 있는 continuation을 만드는지 평가하는 데 초점을 둔다.
+summary, artifact-only, structured handoff, gate evidence only, structured handoff
+plus gate evidence, human oracle handoff를 비교하여 continuation success, false
+completion, token cost, time to first useful edit, irrelevant file reads, repeated
+exploration, handoff quality를 측정한다. 이 연구는 새로운 코딩 에이전트를 만드는
+것이 아니라, 세션 경계에서 어떤 workflow-state package가 더 신뢰성 있는
+continuation을 만드는지 평가하는 데 초점을 둔다.
 
 ## 연구 질문
 
@@ -88,14 +88,16 @@ actionability가 높은가?
 | A. No handoff | 원래 task와 현재 파일 상태만 제공 | 세션 단절 기준선 |
 | B. Raw transcript | 이전 세션 대화/로그 전체 제공 | 정보량은 많지만 noisy한 조건 |
 | C. Token-matched summary | structured handoff와 비슷한 길이의 자유 요약 | 구조화 효과 분리 |
-| D. Structured handoff | 정해진 schema로 상태 전달 | 구조화 자체의 효과 |
-| E. Gate evidence only | 검증 결과와 위험만 제공 | 검증 증거 효과 분리 |
-| F. Structured handoff + gate evidence | 제안 방식 | 최종 평가 조건 |
-| G. Human oracle | 사람이 만든 최적 인수인계 | 상한선 |
-| H. Compressed continuation | 같은 세션의 압축된 context로 계속 진행 | Codex식 continuation 반론 반영 |
-| I. Long-context full context | 큰 컨텍스트 모델에 더 많은 repo/session context 제공 | long-context 반론 반영 |
+| D. Artifact-only | changed files, git diff, command logs, gate outputs만 제공 | 파일/로그 노출 효과 분리 |
+| E. Structured handoff | 정해진 schema로 상태 전달 | 구조화 자체의 효과 |
+| F. Gate evidence only | 검증 결과와 위험만 제공 | 검증 증거 효과 분리 |
+| G. Structured handoff + gate evidence | 제안 방식 | 최종 평가 조건 |
+| H. Human oracle | 사람이 만든 최적 인수인계 | 상한선 |
+| I. Compressed continuation | 같은 세션의 압축된 context로 계속 진행 | Codex식 continuation 반론 반영 |
+| J. Long-context full context | 큰 컨텍스트 모델에 더 많은 repo/session context 제공 | long-context 반론 반영 |
 
-초기 파일럿은 A-G를 우선하고, 비용이 허용되면 H/I를 확장 조건으로 둔다.
+초기 파일럿은 A-H를 우선하고, 비용이 허용되면 I/J와 Semble/CodeGraph 조건을
+확장 조건으로 둔다.
 
 ## 핵심 지표
 
@@ -126,7 +128,8 @@ AI judge가 아니라 deterministic evidence로 본다.
 모든 조건은 같은 canonical interrupted snapshot에서 시작해야 한다. 즉, Session
 1을 매번 새로 자연 실행하지 않고, partial implementation, git diff, failing
 gate, skipped gate, known blocker, command log가 고정된 snapshot을 만든 뒤
-condition-specific input만 바꾼다.
+condition-specific input만 바꾼다. gold next action, expected final fix, hidden
+acceptance oracle은 Session 2 input에 넣지 않고 hidden evaluator metadata에만 둔다.
 
 ### False completion
 
@@ -186,8 +189,8 @@ continuation에서 structured handoff와 gate evidence의 효과를 ablation으�
 ## 당장 해야 할 일
 
 1. `task-001` canonical interrupted snapshot을 고정한다.
-2. `task-001`을 7개 condition 전체 input fixture로 확장한다.
-3. 작은 pilot을 `1 task x 7 conditions x 2 repeats = 14 runs`로 먼저 실행한다.
+2. `task-001`을 8개 core condition 전체 input fixture로 확장한다.
+3. 작은 pilot을 `1 task x 8 conditions x 2 repeats = 16 runs`로 먼저 실행한다.
 4. AI judge prompt와 rubric을 handoff quality 전용으로 고정한다.
 5. task를 3개, 5개로 늘린다.
 6. 결과표를 만들고 claim 수위를 다시 조정한다.

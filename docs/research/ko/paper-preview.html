@@ -211,8 +211,9 @@
           본 연구는 다중 세션 AI 코딩 에이전트를 위한 검증 인식 구조화 핸드오프를 평가한다.
           제안 방식은 작업 목표, 현재 상태, 변경 파일, 결정 사항, 알려진 실패, gate evidence,
           남은 위험, 다음 행동을 repo-local state로 기록하고 다음 세션에 전달한다. 비교 조건은
-          no handoff, raw transcript, token-matched free-form summary, structured handoff, gate
-          evidence only, structured handoff plus gate evidence, human oracle handoff다.
+          no handoff, raw transcript, token-matched free-form summary, artifact-only,
+          structured handoff, gate evidence only, structured handoff plus gate evidence,
+          human oracle handoff다.
         </p>
       </section>
 
@@ -290,22 +291,27 @@
             <td>구조화 효과 분리</td>
           </tr>
           <tr>
-            <td>D. Structured handoff</td>
+            <td>D. Artifact-only</td>
+            <td>changed files, git diff, command logs, gate outputs만 제공</td>
+            <td>파일/로그 노출 효과 분리</td>
+          </tr>
+          <tr>
+            <td>E. Structured handoff</td>
             <td>정해진 schema로 상태 전달</td>
             <td>구조화 자체의 효과</td>
           </tr>
           <tr>
-            <td>E. Gate evidence only</td>
+            <td>F. Gate evidence only</td>
             <td>검증 결과와 위험만 제공</td>
             <td>검증 증거 효과 분리</td>
           </tr>
           <tr>
-            <td>F. Structured handoff + gate evidence</td>
+            <td>G. Structured handoff + gate evidence</td>
             <td>제안 방식</td>
             <td>최종 평가 조건</td>
           </tr>
           <tr>
-            <td>G. Human oracle</td>
+            <td>H. Human oracle</td>
             <td>사람이 만든 최적 인수인계</td>
             <td>상한선</td>
           </tr>
@@ -327,8 +333,8 @@
       <p>
         각 task fixture는 초기 prompt, 중단 시점 snapshot, acceptance criteria, required gates,
         gold changed files, gold context pointers, expected risks를 가진다. 첫 세션은 의도적으로
-        중간 상태에서 멈춘다. 두 번째 세션은 조건 A-G 중 하나의 continuation package만 받고 작업을
-        이어간다.
+        중간 상태에서 멈춘다. 두 번째 세션은 조건 A-H 중 하나의 continuation package만 받고 작업을
+        이어간다. gold next action과 hidden acceptance oracle은 평가자 metadata에만 남긴다.
       </p>
       <p>
         성공 여부는 가능한 한 deterministic evidence로 본다. 테스트, 타입체크, lint, build,
@@ -352,6 +358,7 @@
           <tr><td>No handoff</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>
           <tr><td>Raw transcript</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>
           <tr><td>Token-matched summary</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>
+          <tr><td>Artifact-only</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>
           <tr><td>Structured handoff</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>
           <tr><td>Gate evidence only</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>
           <tr><td>Structured handoff + gate evidence</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>

@@ -25,10 +25,11 @@ reset.
 - [No handoff](./conditions/00-no-handoff.md)
 - [Raw transcript](./conditions/01-raw-transcript.md)
 - [Token-matched summary](./conditions/02-token-matched-summary.md)
-- [Structured handoff](./conditions/03-structured-handoff.md)
-- [Gate evidence only](./conditions/04-gate-only.md)
-- [Structured handoff plus gate evidence](./conditions/05-structured-handoff-plus-gate.md)
-- [Human oracle handoff](./conditions/06-human-oracle.md)
+- [Artifact-only](./conditions/03-artifact-only.md)
+- [Structured handoff](./conditions/04-structured-handoff.md)
+- [Gate evidence only](./conditions/05-gate-only.md)
+- [Structured handoff plus gate evidence](./conditions/06-structured-handoff-plus-gate.md)
+- [Human oracle handoff](./conditions/07-human-oracle.md)
 
 ## Scripts
 

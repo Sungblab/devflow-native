@@ -44,7 +44,8 @@ files, decisions, known failures, gate evidence, remaining risks, and next
 actions as structured handoff data. We evaluate whether this handoff, with and
 without deterministic gate evidence, improves continuation success and reduces
 false completion compared with no handoff, raw transcript handoff,
-token-matched free-form summary, gate-only evidence, and human oracle handoff.
+token-matched free-form summary, artifact-only context, gate-only evidence, and
+human oracle handoff.
 Our planned evaluation measures continuation success, false completion, token
 cost, time to first useful edit, irrelevant file reads, repeated exploration,
 and handoff quality. The study positions workflow-state handoff as a
@@ -218,10 +219,11 @@ from the same snapshot under different handoff conditions.
 | A | No handoff | Baseline for pure context loss. |
 | B | Raw transcript | Tests whether more context helps despite noise and token cost. |
 | C | Token-matched free-form summary | Separates structure from summary length. |
-| D | Structured handoff | Tests schema-based active-work state. |
-| E | Gate evidence only | Isolates verification evidence without task-state structure. |
-| F | Structured handoff plus gate evidence | Main proposed condition. |
-| G | Human oracle handoff | Upper bound. |
+| D | Artifact-only | Separates observable artifact exposure from narrative workflow-state interpretation. |
+| E | Structured handoff | Tests schema-based active-work state. |
+| F | Gate evidence only | Isolates verification evidence without task-state structure. |
+| G | Structured handoff plus gate evidence | Main proposed condition. |
+| H | Human oracle handoff | Upper bound. |
 
 ### Metrics
 
@@ -246,7 +248,7 @@ Handoff quality metrics:
 Start small:
 
 ```text
-5 tasks x 7 conditions x 2 repeats = 70 runs
+5 tasks x 8 conditions x 2 repeats = 80 runs
 ```
 
 If agent cost is too high, reduce repeats before removing conditions. The
@@ -321,7 +323,7 @@ system and evaluation papers.
 
 ## Immediate Next Work
 
-1. Expand `task-001` fixtures to all seven conditions.
+1. Expand `task-001` fixtures to all eight core conditions.
 2. Add at least four more controlled tasks.
 3. Implement a replayable run directory structure that stores snapshot id,
    condition id, agent id, run output, scored result, and gate evidence refs.

@@ -1,4 +1,4 @@
-# Condition D: Structured Handoff
+# Condition E: Structured Handoff
 
 Session 2 receives:
 

@@ -1,6 +1,6 @@
 # Baselines
 
-The experiment harness compares seven conditions.
+The experiment harness compares eight core conditions.
 
 ## A. No Handoff
 
@@ -17,22 +17,28 @@ more information helps despite noise and token cost.
 The second session receives an unstructured summary with roughly the same token
 budget as the structured handoff. This separates structure from length.
 
-## D. Structured Handoff
+## D. Artifact-Only
+
+The second session receives changed files, git diff, command logs, and gate
+outputs without narrative diagnosis. This separates the value of exposing the
+right artifacts from the value of structured workflow-state interpretation.
+
+## E. Structured Handoff
 
 The second session receives the structured handoff without detailed gate
 evidence. This measures whether workflow-state structure improves continuation.
 
-## E. Gate Evidence Only
+## F. Gate Evidence Only
 
 The second session receives gate evidence and risk notes without the full
 structured handoff. This isolates the value of verification evidence.
 
-## F. Structured Handoff Plus Gate Evidence
+## G. Structured Handoff Plus Gate Evidence
 
 The second session receives the full proposed context package. This is the main
 Devflow condition.
 
-## G. Human Oracle Handoff
+## H. Human Oracle Handoff
 
 The second session receives a high-quality human-written handoff. This provides
 an upper bound for automated or semi-automated handoff quality.

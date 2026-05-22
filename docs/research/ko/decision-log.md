@@ -197,27 +197,31 @@ handoff에 기록한다.
 
 ### 결정
 
-Semble은 related work와 향후 baseline 후보에 포함한다. 단, Devflow의 중심
-주장은 code search가 아니라 same-task workflow-state handoff와 gate evidence로
-유지한다.
+Semble과 CodeGraph 같은 code search / code graph 도구는 related work와 향후
+baseline 후보에 포함한다. 단, Devflow의 중심 주장은 code search가 아니라
+same-task workflow-state handoff와 gate evidence로 유지한다.
 
 ### 이유
 
 Semble은 agent가 grep 후 파일 전체를 읽는 방식보다 적은 토큰으로 관련 코드
-chunk를 찾게 해주는 도구다. 이것은 "새 세션이 repo를 다시 파악하느라 토큰을
-많이 쓴다"는 Devflow의 문제의식이 실제 도구 시장에서도 중요하게 다뤄지고
-있다는 증거다.
+chunk를 찾게 해주는 도구다. CodeGraph는 local code knowledge graph로 symbol
+relationship, call graph, impact analysis를 제공한다. 이것은 "새 세션이 repo를
+다시 파악하느라 토큰을 많이 쓴다"는 Devflow의 문제의식이 실제 도구 시장에서도
+중요하게 다뤄지고 있다는 증거다.
 
-하지만 Semble은 관련 코드를 찾는 문제를 풀고, Devflow는 이전 세션의 작업
-상태, 검증 증거, 완료 차단 요인, 다음 행동을 보존하는 문제를 푼다.
+하지만 Semble/CodeGraph는 관련 코드를 찾고 구조를 이해하는 문제를 풀고,
+Devflow는 이전 세션의 작업 상태, 검증 증거, 완료 차단 요인, 다음 행동을
+보존하는 문제를 푼다.
 
 ### 실험 반영
 
-초기 core condition A-G는 유지한다. 이후 확장 실험으로 다음 조건을 고려한다.
+초기 core condition A-H는 유지한다. 이후 확장 실험으로 다음 조건을 고려한다.
 
 - no handoff + Semble-assisted search
 - structured handoff + gate evidence + Semble
-- 모든 조건에 Semble을 허용한 상태에서 handoff 조건만 비교
+- no handoff + CodeGraph-assisted navigation
+- structured handoff + gate evidence + CodeGraph
+- 모든 조건에 동일한 검색/그래프 도구를 허용한 상태에서 handoff 조건만 비교
 
 ## 2026-05-22: 연구 기여 축소와 canonical snapshot
 
@@ -246,7 +250,7 @@ success와 false completion에 미치는 효과다.
 Session 1을 매 조건마다 자연 실행하지 않는다. 각 task마다 하나의 canonical
 interrupted snapshot을 만든다.
 
-snapshot은 다음을 포함한다.
+agent-visible snapshot은 다음을 포함한다.
 
 - partial implementation
 - changed files와 git diff
@@ -254,21 +258,37 @@ snapshot은 다음을 포함한다.
 - failing gate
 - skipped 또는 unknown gate
 - known blocker
-- gold next action
 
-모든 조건 A-G는 같은 snapshot에서 시작하고, 다른 것은 Session 2에 제공되는
+gold next action, expected final fix, hidden acceptance oracle, gold changed
+files, gold context pointers는 hidden evaluator metadata에만 둔다.
+
+모든 조건 A-H는 같은 snapshot에서 시작하고, 다른 것은 Session 2에 제공되는
 handoff/input package뿐이어야 한다.
+
+### Observable-only audit
+
+Session 2에 제공되는 handoff의 모든 claim은 Session 1에서 관찰 가능한 artifact에
+추적 가능해야 한다. 출처는 prompt, transcript, file read, edit, git diff, command
+log, gate output, user statement 중 하나여야 한다. 최종 정답 patch나 hidden test를
+보고 만든 사후 diagnosis는 leakage로 본다.
+
+### Artifact-only baseline
+
+core condition에 artifact-only baseline을 추가한다. 이 조건은 changed files, git
+diff, command logs, gate outputs만 제공하고 narrative diagnosis는 제공하지 않는다.
+이 baseline은 structured handoff의 효과가 단순히 "관련 파일과 로그를 제공한 효과"인지,
+아니면 workflow-state 구조화의 효과인지 분리하기 위해 필요하다.
 
 ### 파일럿 규모
 
-처음부터 10 tasks x 7 conditions x 3 repeats로 가지 않는다. 우선순위는 다음이다.
+처음부터 10 tasks x 8 conditions x 3 repeats로 가지 않는다. 우선순위는 다음이다.
 
 ```text
-1 task x 7 conditions x 2 repeats = 14 runs
-3 tasks x 7 conditions x 2 repeats = 42 runs
-5 tasks x 7 conditions x 2 repeats = 70 runs
-10 tasks x 7 conditions x 3 repeats = 210 runs
+1 task x 8 conditions x 2 repeats = 16 runs
+3 tasks x 8 conditions x 2 repeats = 48 runs
+5 tasks x 8 conditions x 2 repeats = 80 runs
+10 tasks x 8 conditions x 3 repeats = 240 runs
 ```
 
-AGENTS.md, Semble, long-context, compressed-continuation baseline은 core A-G
-파일럿이 돌아간 뒤 확장 조건으로 추가한다.
+AGENTS.md, Semble, CodeGraph, long-context, compressed-continuation baseline은
+core A-H 파일럿이 돌아간 뒤 확장 조건으로 추가한다.
