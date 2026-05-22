@@ -22,6 +22,7 @@ This is the documentation router for Solo Devflow OS.
 | Existing tool and related-work notes | [research.md](./research.md) |
 | Research experiment design | [research/experiment-design.md](./research/experiment-design.md) |
 | Research metrics and rubrics | [research/metrics.md](./research/metrics.md) |
+| Next research development slice | [research/ko/next-development-slice.md](./research/ko/next-development-slice.md) |
 | Build order | [roadmap.md](./roadmap.md) |
 | Development workflow for this repo | [contributing/workflow.md](./contributing/workflow.md) |
 | Context and handoff rules | [contributing/context-rules.md](./contributing/context-rules.md) |

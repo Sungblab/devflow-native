@@ -60,8 +60,15 @@ Exit criteria:
 - structured handoff and gate evidence have stable fields before implementation
   hardens `devflow finish`
 - experiment conditions can compare no handoff, raw transcript,
-  token-matched summary, structured handoff, gate evidence only, structured
-  handoff plus gate evidence, and human oracle handoff
+  token-matched summary, artifact-only, structured handoff, gate evidence only,
+  structured handoff plus gate evidence, and human oracle handoff
+
+Current implementation note: research docs, schemas, scorer skeletons, and
+condition templates exist. The next research slice is
+[`task-001` A-H pilot inputs](./research/ko/next-development-slice.md), which
+should add canonical interrupted snapshot inputs, hidden evaluator metadata,
+observable-only provenance, and leakage tests before any CLI/MCP experiment
+automation.
 
 ## Phase 2: Repo Scaffold And Health
 
