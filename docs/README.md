@@ -10,7 +10,18 @@ This is the documentation router for Solo Devflow OS.
 | System structure and technical boundaries | [architecture.md](./architecture.md) |
 | Agent and platform adapter strategy | [architecture/adapters.md](./architecture/adapters.md) |
 | MCP handler package | [../packages/mcp/README.md](../packages/mcp/README.md) |
-| Existing tool research | [research.md](./research.md) |
+| Research harness framing | [research/README.md](./research/README.md) |
+| Korean research index | [research/ko/README.md](./research/ko/README.md) |
+| Korean research primer | [research/ko/primer.md](./research/ko/primer.md) |
+| Korean paper preview | [research/ko/paper-preview.html](./research/ko/paper-preview.html) |
+| Research decision log | [research/ko/decision-log.md](./research/ko/decision-log.md) |
+| Contract-first sliced execution | [research/ko/contract-first-sliced-execution.md](./research/ko/contract-first-sliced-execution.md) |
+| Research related-work map | [research/related-work.md](./research/related-work.md) |
+| Research paper outline | [research/paper-outline.md](./research/paper-outline.md) |
+| Long-context and cold-start cost notes | [research/ko/long-context-and-cost.md](./research/ko/long-context-and-cost.md) |
+| Existing tool and related-work notes | [research.md](./research.md) |
+| Research experiment design | [research/experiment-design.md](./research/experiment-design.md) |
+| Research metrics and rubrics | [research/metrics.md](./research/metrics.md) |
 | Build order | [roadmap.md](./roadmap.md) |
 | Development workflow for this repo | [contributing/workflow.md](./contributing/workflow.md) |
 | Context and handoff rules | [contributing/context-rules.md](./contributing/context-rules.md) |
@@ -38,6 +49,8 @@ This is the documentation router for Solo Devflow OS.
 - Gate: a command or review step that produces evidence.
 - Handoff: a next-session prompt plus summary of changed files, checks, and
   risks.
+- Gate evidence: a recorded verification result tied to a work item, changed
+  files, and remaining risk, not just raw test output.
 - Profile: a workflow style such as plain, Superpowers, gstack, OpenHarness, or
   Hermes.
 - Mistake memory: local records of repeated agent failures such as shell

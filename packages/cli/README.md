@@ -102,3 +102,11 @@ summary also surfaces a compact warning count when local state has warnings. `de
 sessions note` records manual or external session context as local state. The
 future `devflow init` command can reuse the same rendering and config
 infrastructure once the MVP loop is stable.
+
+`devflow finish --json` returns a false-completion guard contract in addition
+to the original evidence summary. It reads configured gates from
+`.devflow/config.json` and recorded `gate.finished` events from
+`.devflow/state/events.jsonl`, then returns `canClaimDone`, `doneBlockers`,
+`skippedGates`, `failedGates`, `unknownGates`, `remainingRisks`,
+`structuredHandoff`, and `nextPrompt`. Missing, failed, skipped, or unknown
+required gates block `canClaimDone`.

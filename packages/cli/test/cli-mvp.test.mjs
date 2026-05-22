@@ -1115,6 +1115,78 @@ test("CLI finish renders JSON evidence summary", async () => {
   assert.match(parsed.nextSession.prompt, /file-backed state persistence/);
 });
 
+test("CLI finish blocks done claim when configured gate has no recorded evidence", async () => {
+  const repoPath = await createTempGitRepo();
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [{ id: "unit", command: "npm test" }],
+    })}\n`,
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "missing-gate",
+    "--title",
+    "Missing gate",
+    "--intent",
+    "Block completion without recorded gate evidence.",
+    "--json",
+  ]);
+
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.canClaimDone, false);
+  assert.equal(parsed.unknownGates[0].id, "unit");
+  assert.equal(parsed.doneBlockers[0].kind, "unknown_gate");
+});
+
+test("CLI finish allows done claim when configured gate evidence was recorded", async () => {
+  const repoPath = await createTempGitRepo();
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [{ id: "node-version", command: "node --version" }],
+    })}\n`,
+  );
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "gates",
+    "run",
+    "node-version",
+    "--repo",
+    repoPath,
+    "--work",
+    "recorded-gate",
+    "--json",
+  ]);
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "recorded-gate",
+    "--title",
+    "Recorded gate",
+    "--intent",
+    "Allow completion after recorded gate evidence.",
+    "--json",
+  ]);
+
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.canClaimDone, true);
+  assert.deepEqual(parsed.doneBlockers, []);
+  assert.equal(parsed.gateEvidence[0].id, "node-version");
+});
+
 test("CLI finish renders guided checklist and still records evidence", async () => {
   const repoPath = await createTempGitRepo();
   const { stdout } = await execFileAsync("node", [

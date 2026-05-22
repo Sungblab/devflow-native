@@ -1,12 +1,45 @@
 # Solo Devflow OS
 
-Solo Devflow OS is a local-first continuity layer for solo developers using AI
-coding agents.
+Solo Devflow OS is a repo-local continuity layer and black box recorder for
+solo developers using AI coding agents.
 
-It is not another coding agent and it is not a dashboard-first app. Codex,
-Claude Code, Gemini, Superpowers, and shell sessions do the work. Devflow keeps
-the shared project truth they need to start, finish, and hand off work without
-losing context.
+Codex, Claude Code, Gemini, Superpowers, and shell sessions do the work.
+Devflow records the shared project truth they need to start, finish, and hand
+off work without losing context.
+
+## What It Is
+
+- A local-first state layer for active work, agent sessions, gate evidence,
+  risks, and handoffs.
+- A plugin-first workflow surface for Codex and Claude Code, backed by the same
+  CLI and MCP contracts.
+- A repo-local record of what changed, what was verified, what is still risky,
+  and what the next session should do.
+- A research harness for measuring whether structured handoff plus gate
+  evidence improves multi-session coding-agent reliability.
+
+## What It Is Not
+
+- It is not another autonomous coding agent.
+- It is not a dashboard-first app.
+- It is not a replacement for Codex, Claude Code, Gemini, Superpowers, Hermes,
+  git, tests, or PR review.
+- It is not an HTML artifact generator as source of truth. Generated artifacts
+  are optional views over structured local state.
+
+## Why Continuity Matters
+
+AI coding agents make implementation faster, but long-running development still
+breaks at session boundaries:
+
+- the next session repeats exploration that already happened
+- failing or skipped checks get flattened into confident summaries
+- active work, changed files, and review state scatter across chat history,
+  terminals, git, and local notes
+- a maintainer cannot tell whether a task is actually done or only claimed done
+
+Devflow's job is to keep that workflow state compact, local, inspectable, and
+usable by the next agent session.
 
 ## Primary UX
 
@@ -57,10 +90,10 @@ npm run mcp:stdio
 `devflow finish` records local evidence in `.devflow/state/events.jsonl`.
 `devflow prompt next` emits a compact handoff prompt for the next session.
 
-## Product Thesis
+## Core Loop
 
-Most AI coding tools optimize for code generation or agent orchestration. Solo
-Devflow OS optimizes for continuity:
+Most AI coding tools optimize for code generation or agent orchestration.
+Devflow optimizes for continuity:
 
 - What is this project supposed to be?
 - What task is active now?
@@ -69,6 +102,26 @@ Devflow OS optimizes for continuity:
 - Which checks passed or failed?
 - Which reviews are unresolved?
 - What should the next session do?
+
+The durable source of truth is structured `.devflow` state and append-only
+events. CLI, MCP, and plugin skills are different ways to read or write that
+same state.
+
+## Research Framing
+
+Solo Devflow OS can also be used as a research harness for studying
+multi-session AI coding agents.
+
+The core research question is:
+
+> Does structured workflow-state handoff with gate evidence improve
+> continuation success and reduce false completion compared with no handoff,
+> raw transcript handoff, token-matched free-form summary, static repository
+> context, gate-only evidence, and human oracle handoff?
+
+The product remains a local-first continuity layer. The research harness
+evaluates whether that layer measurably improves coding-agent reliability at
+session boundaries.
 
 ## First-Class Concepts
 
@@ -86,8 +139,22 @@ Devflow OS optimizes for continuity:
 
 - [Product Plan](docs/product-plan.md)
 - [Architecture](docs/architecture.md)
-- [Research Notes](docs/research.md)
+- [Research Harness](docs/research/README.md)
+- [Related Work Notes](docs/research.md)
 - [Roadmap](docs/roadmap.md)
+
+## Repository Structure
+
+```text
+packages/core     shared product model, local state, gates, handoff contracts
+packages/cli      terminal command surface over core contracts
+packages/mcp      MCP handler and stdio transport over the same contracts
+packages/adapters agent/session history adapters
+plugins/devflow   repo-local Codex and Claude Code plugin drafts
+docs              product, architecture, roadmap, examples, research notes
+experiments       research conditions, schemas, scorer skeletons, fixtures
+templates         future project scaffold templates
+```
 
 ## Current MVP
 
@@ -106,10 +173,13 @@ The MCP package exposes the same core contracts through `devflow.doctor`,
 `devflow.gates_run`, and `devflow.next_prompt`, plus work, split, prompt,
 session, and health tools.
 
-## Positioning
+`devflow finish --json` now returns a false-completion guard contract with
+`canClaimDone`, `doneBlockers`, changed files, gate evidence, skipped or failed
+gates, remaining risks, a structured handoff, and the next-session prompt.
 
-Solo Devflow OS should feel like a repo-local black box recorder and
-single-developer workflow layer for AI-assisted development. A future visual UI
-can be added when the local state is large enough to justify it, but the first
-durable value is automatic context restoration inside the agent the maintainer
-already uses.
+## Status
+
+This repository is still an MVP and research prototype. The local CLI, MCP
+handler layer, repo-local plugin drafts, research docs, schemas, and experiment
+skeleton are present. Richer artifact generation, hosted sync, and automated
+experiment execution are later work.

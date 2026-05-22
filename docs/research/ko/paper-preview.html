@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>검증 인식 구조화 핸드오프 연구 초안</title>
+    <style>
+      :root {
+        --paper: #fbfaf7;
+        --ink: #161616;
+        --muted: #626262;
+        --line: #d8d3c8;
+        --accent: #245b56;
+        --warn: #7a3e2d;
+        --code: #eee9df;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #e8e3d8;
+        color: var(--ink);
+        font-family:
+          "Noto Sans KR",
+          "Apple SD Gothic Neo",
+          "Malgun Gothic",
+          system-ui,
+          sans-serif;
+        line-height: 1.7;
+      }
+
+      main {
+        width: min(980px, calc(100% - 32px));
+        margin: 32px auto;
+        padding: 56px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        box-shadow: 0 18px 50px rgb(0 0 0 / 10%);
+      }
+
+      header {
+        border-bottom: 2px solid var(--ink);
+        padding-bottom: 28px;
+        margin-bottom: 34px;
+      }
+
+      .kicker {
+        margin: 0 0 14px;
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.25;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 820px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 42px;
+      }
+
+      h2 {
+        margin: 42px 0 12px;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+        font-size: 24px;
+      }
+
+      h3 {
+        margin: 26px 0 8px;
+        color: var(--accent);
+        font-size: 18px;
+      }
+
+      p {
+        margin: 0 0 14px;
+      }
+
+      ul {
+        margin: 8px 0 18px;
+        padding-left: 24px;
+      }
+
+      li {
+        margin: 4px 0;
+      }
+
+      .meta,
+      footer {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .notice,
+      .abstract {
+        margin: 24px 0;
+        padding: 18px 20px;
+        background: #f4f1ea;
+        border: 1px solid var(--line);
+      }
+
+      .notice {
+        border-left: 5px solid var(--warn);
+      }
+
+      pre {
+        overflow-x: auto;
+        padding: 16px;
+        background: var(--code);
+        border: 1px solid var(--line);
+        line-height: 1.5;
+      }
+
+      code {
+        font-family: Consolas, "Liberation Mono", monospace;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 18px 0 24px;
+        font-size: 14px;
+      }
+
+      th,
+      td {
+        vertical-align: top;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+      }
+
+      th {
+        background: #f0ebe2;
+        text-align: left;
+      }
+
+      .placeholder {
+        color: var(--warn);
+        font-weight: 700;
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+
+        main {
+          width: 100%;
+          margin: 0;
+          padding: 28px;
+          border: 0;
+          box-shadow: none;
+        }
+      }
+
+      @media (max-width: 700px) {
+        main {
+          width: 100%;
+          margin: 0;
+          padding: 24px;
+          border-left: 0;
+          border-right: 0;
+        }
+
+        h1 {
+          font-size: 30px;
+        }
+
+        table {
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="kicker">Draft Preview · Solo Devflow OS Research</p>
+        <h1>검증 인식 구조화 핸드오프는 다중 세션 AI 코딩 에이전트의 작업 재개를 개선하는가?</h1>
+        <p class="meta">Working draft · 한국어 미리보기 · 실제 실험 결과는 아직 없음</p>
+      </header>
+
+      <section class="notice">
+        <strong>주의.</strong> 이 문서는 제출용 논문이 아니라 연구 방향을 눈으로 확인하기 위한
+        HTML preview다. 현재는 연구 질문, 비교 조건, 측정 지표, 실험 설계의 뼈대를 보여준다.
+      </section>
+
+      <section class="abstract">
+        <h2>초록</h2>
+        <p>
+          AI 코딩 에이전트는 파일 탐색, 코드 수정, 테스트 실행, 리뷰 반영까지 점점 더 긴
+          소프트웨어 엔지니어링 작업을 수행한다. 그러나 현실적인 작업은 한 세션 안에서 끝나지
+          않는 경우가 많다. 세션이 종료되거나 컨텍스트가 압축되면, 다음 세션은 이전 세션이 어떤
+          파일을 왜 바꿨는지, 어떤 검증을 실행했는지, 어떤 위험이 남았는지 다시 추론해야 한다.
+          이 과정에서 반복 탐색, 토큰 비용 증가, 검증 누락, 허위 완료가 발생한다.
+        </p>
+        <p>
+          본 연구는 다중 세션 AI 코딩 에이전트를 위한 검증 인식 구조화 핸드오프를 평가한다.
+          제안 방식은 작업 목표, 현재 상태, 변경 파일, 결정 사항, 알려진 실패, gate evidence,
+          남은 위험, 다음 행동을 repo-local state로 기록하고 다음 세션에 전달한다. 비교 조건은
+          no handoff, raw transcript, token-matched free-form summary, artifact-only,
+          structured handoff, gate evidence only, structured handoff plus gate evidence,
+          human oracle handoff다.
+        </p>
+      </section>
+
+      <h2>1. 문제</h2>
+      <p>
+        “내 프로젝트 파악하고 이어서 해줘”라는 프롬프트는 큰 코드베이스에서 비싸다. 에이전트는
+        README, 패키지 설정, 소스 디렉터리, 테스트, 최근 git diff를 다시 읽는다. 이 탐색은 첫
+        유효 수정 전에 수만 토큰을 소모할 수 있고, 이미 알고 있던 실패나 미실행 gate를 놓치게
+        만든다.
+      </p>
+      <p>
+        긴 컨텍스트 모델과 세션 압축은 이 문제를 완화하지만, “무엇이 현재 작업 상태인가”와
+        “완료라고 말해도 되는 검증 근거가 있는가”를 자동으로 보장하지 않는다.
+      </p>
+
+      <h2>2. 핵심 아이디어</h2>
+      <p>
+        Devflow의 가설은 단순하다. 다음 세션에 raw transcript나 막연한 요약을 넘기기보다, 현재
+        작업 상태와 검증 증거를 정해진 schema로 넘기면 에이전트가 덜 헤매고, 검증 없이 완료를
+        주장할 가능성이 낮아진다.
+      </p>
+      <pre><code>project contract
+  -> slice spec
+  -> implementation plan
+  -> plan-bounded agent session
+  -> gate evidence
+  -> finish guard
+  -> next-session handoff</code></pre>
+      <p>
+        제품 관점에서 Devflow는 코딩 에이전트가 아니다. repo-local black box recorder이자
+        continuity layer다. 연구 관점에서는 이 continuity layer가 실제로 에이전트 continuation을
+        개선하는지 검증하는 harness다.
+      </p>
+
+      <h2>3. 연구 질문</h2>
+      <h3>RQ1. 작업 재개 성공률</h3>
+      <p>
+        Structured handoff는 no handoff, raw transcript, token-matched free-form summary보다 같은
+        작업의 다음 세션 성공률을 높이는가?
+      </p>
+      <h3>RQ2. 검증 증거와 허위 완료</h3>
+      <p>
+        Gate evidence를 포함하면 structured handoff alone이나 gate-only 조건보다 false completion이
+        줄어드는가?
+      </p>
+      <h3>RQ3. 비용과 반복 탐색</h3>
+      <p>
+        Structured handoff는 token cost, cold-start exploration cost, irrelevant file read count,
+        repeated exploration count, time to first useful edit를 줄이는가?
+      </p>
+
+      <h2>4. 비교 조건</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>조건</th>
+            <th>설명</th>
+            <th>비교 목적</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A. No handoff</td>
+            <td>원래 task와 현재 파일 상태만 제공</td>
+            <td>세션 단절 기준선</td>
+          </tr>
+          <tr>
+            <td>B. Raw transcript</td>
+            <td>이전 세션 대화/로그 전체 제공</td>
+            <td>정보량은 많지만 noisy한 조건</td>
+          </tr>
+          <tr>
+            <td>C. Token-matched summary</td>
+            <td>structured handoff와 비슷한 길이의 자유 요약</td>
+            <td>구조화 효과 분리</td>
+          </tr>
+          <tr>
+            <td>D. Artifact-only</td>
+            <td>changed files, git diff, command logs, gate outputs만 제공</td>
+            <td>파일/로그 노출 효과 분리</td>
+          </tr>
+          <tr>
+            <td>E. Structured handoff</td>
+            <td>정해진 schema로 상태 전달</td>
+            <td>구조화 자체의 효과</td>
+          </tr>
+          <tr>
+            <td>F. Gate evidence only</td>
+            <td>검증 결과와 위험만 제공</td>
+            <td>검증 증거 효과 분리</td>
+          </tr>
+          <tr>
+            <td>G. Structured handoff + gate evidence</td>
+            <td>제안 방식</td>
+            <td>최종 평가 조건</td>
+          </tr>
+          <tr>
+            <td>H. Human oracle</td>
+            <td>사람이 만든 최적 인수인계</td>
+            <td>상한선</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>5. 측정 지표</h2>
+      <ul>
+        <li>continuation success: acceptance criteria와 required gates를 만족했는가</li>
+        <li>false completion: 완료를 주장했지만 required gate가 실패/누락/unknown인가</li>
+        <li>token cost: 조건별 input/output token 또는 proxy log 비용</li>
+        <li>time to first useful edit: 첫 의미 있는 코드 수정까지 걸린 시간 또는 tool-call 단계</li>
+        <li>irrelevant file read count: gold context와 무관한 파일 읽기 수</li>
+        <li>repeated exploration count: 이전 세션이 이미 확인한 파일/명령을 다시 탐색한 횟수</li>
+        <li>handoff quality: completeness, faithfulness, minimality, actionability rubric 점수</li>
+      </ul>
+
+      <h2>6. 실험 설계</h2>
+      <p>
+        각 task fixture는 초기 prompt, 중단 시점 snapshot, acceptance criteria, required gates,
+        gold changed files, gold context pointers, expected risks를 가진다. 첫 세션은 의도적으로
+        중간 상태에서 멈춘다. 두 번째 세션은 조건 A-H 중 하나의 continuation package만 받고 작업을
+        이어간다. gold next action과 hidden acceptance oracle은 평가자 metadata에만 남긴다.
+      </p>
+      <p>
+        성공 여부는 가능한 한 deterministic evidence로 본다. 테스트, 타입체크, lint, build,
+        acceptance criteria, 실제 diff를 우선 사용한다. AI judge는 handoff quality처럼 의미 판단이
+        필요한 곳에서만 보조적으로 사용한다.
+      </p>
+
+      <h2>7. 결과 표 자리</h2>
+      <p class="placeholder">아래 표는 형식 예시이며 실제 수치가 아니다. 파일럿 실행 후 채운다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Condition</th>
+            <th>Success ↑</th>
+            <th>False completion ↓</th>
+            <th>Token cost ↓</th>
+            <th>Repeated exploration ↓</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>No handoff</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>
+          <tr><td>Raw transcript</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>
+          <tr><td>Token-matched summary</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>
+          <tr><td>Artifact-only</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>
+          <tr><td>Structured handoff</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>
+          <tr><td>Gate evidence only</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>
+          <tr><td>Structured handoff + gate evidence</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>
+          <tr><td>Human oracle</td><td>TBD</td><td>TBD</td><td>TBD</td><td>TBD</td></tr>
+        </tbody>
+      </table>
+
+      <h2>8. 결론 초안</h2>
+      <p>
+        Semble이나 CodeGraph 같은 token-efficient code search / code graph 도구는 관련 코드를
+        찾고 구조를 이해하는 비용을 줄여준다. 그러나 이전 세션의 작업 상태, 검증 증거, 완료
+        차단 요인을 다음 세션에 보존하지는 않는다. 따라서 이 도구들은 core A-H 실험 이후의
+        확장 baseline 또는 모든 조건에 동일하게 허용하는 controlled tool로 다룬다.
+      </p>
+      <p>
+        본 연구는 AI 코딩 에이전트의 장기 작업 문제를 일반적인 메모리 문제가 아니라, 세션 경계의
+        workflow-state handoff 문제로 좁힌다. Devflow는 repo-local event log, structured handoff,
+        gate evidence, finish guard를 통해 다음 세션이 필요한 상태를 더 작고 검증 가능한 형태로
+        받도록 한다. 파일럿 실험의 목적은 이 구조가 실제로 continuation success를 높이고 false
+        completion과 반복 탐색을 낮추는지 검증하는 것이다.
+      </p>
+
+      <footer>
+        Source direction: primer.md, paper-outline-ko.md, contract-first-sliced-execution.md
+      </footer>
+    </main>
+  </body>
+</html>

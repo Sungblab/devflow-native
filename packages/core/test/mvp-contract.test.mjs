@@ -81,6 +81,79 @@ test("finish summary records evidence, skipped checks, risks, and next-session p
   assert.match(summary.nextSession.prompt, /file-backed state persistence/);
 });
 
+test("finish summary blocks done claims when required gate evidence is missing", () => {
+  const summary = createFinishSummary({
+    workItem: {
+      id: "research-finish",
+      title: "Research-ready finish guard",
+    },
+    intent: "Close work with evidence-aware finish guard.",
+    changedFiles: [{ path: "packages/core/src/index.js", status: "modified" }],
+    requiredGates: [
+      {
+        id: "unit",
+        command: "npm test",
+      },
+    ],
+    gates: [],
+    risks: [],
+    nextTask: "Run missing unit gate.",
+  });
+
+  assert.equal(summary.canClaimDone, false);
+  assert.deepEqual(summary.unknownGates, [
+    {
+      id: "unit",
+      command: "npm test",
+      reason: "Required gate has no recorded gate.finished evidence.",
+    },
+  ]);
+  assert.match(summary.doneBlockers[0].message, /unit/);
+  assert.equal(summary.structuredHandoff.currentStatus, "blocked");
+  assert.match(summary.nextPrompt, /Run missing unit gate/);
+});
+
+test("finish summary blocks done claims when recorded gate evidence failed", () => {
+  const summary = createFinishSummary({
+    workItem: {
+      id: "failed-gate",
+      title: "Failed gate guard",
+    },
+    intent: "Check failed gate handling.",
+    changedFiles: [{ path: "packages/core/src/index.js", status: "modified" }],
+    requiredGates: [{ id: "unit", command: "npm test" }],
+    gates: [{ id: "unit", command: "npm test", status: "failed" }],
+    risks: [],
+    nextTask: "Fix failing unit gate.",
+  });
+
+  assert.equal(summary.canClaimDone, false);
+  assert.deepEqual(summary.failedGates, [{ id: "unit", command: "npm test", status: "failed" }]);
+  assert.equal(summary.doneBlockers[0].kind, "failed_gate");
+});
+
+test("finish summary allows done claim with passed required gate and no remaining risk", () => {
+  const summary = createFinishSummary({
+    workItem: {
+      id: "passed-gate",
+      title: "Passed gate guard",
+    },
+    intent: "Check passed gate handling.",
+    changedFiles: [{ path: "packages/core/src/index.js", status: "modified" }],
+    requiredGates: [{ id: "unit", command: "npm test" }],
+    gates: [{ id: "unit", command: "npm test", status: "passed" }],
+    risks: [],
+    nextTask: "Continue the next implementation slice.",
+  });
+
+  assert.equal(summary.canClaimDone, true);
+  assert.deepEqual(summary.doneBlockers, []);
+  assert.deepEqual(summary.failedGates, []);
+  assert.deepEqual(summary.unknownGates, []);
+  assert.equal(summary.structuredHandoff.currentStatus, "completed");
+  assert.match(summary.nextPrompt, /Continue the next implementation slice/);
+});
+
 test("next prompt includes objective, changed files, evidence, risks, and next task", () => {
   const prompt = createNextPrompt({
     objective: "Continue the MVP loop.",

@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solo-devflow-os.local/schemas/gate-evidence.schema.json",
+  "title": "Devflow Gate Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "workItemId",
+    "gateId",
+    "command",
+    "startedAt",
+    "finishedAt",
+    "exitCode",
+    "status",
+    "stdoutSummary",
+    "stderrSummary",
+    "relevance",
+    "remainingRisk"
+  ],
+  "properties": {
+    "version": {
+      "const": "devflow.gateEvidence.v1"
+    },
+    "workItemId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "gateId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "command": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finishedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "exitCode": {
+      "type": "integer"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["passed", "failed", "skipped", "unknown"]
+    },
+    "stdoutSummary": {
+      "type": "string"
+    },
+    "stderrSummary": {
+      "type": "string"
+    },
+    "relevance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["changedFilesCovered", "reason"],
+      "properties": {
+        "changedFilesCovered": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "remainingRisk": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

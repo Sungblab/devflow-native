@@ -23,6 +23,13 @@ Build a local-first workflow OS for solo maintainers using AI agents. It should
 make the development process observable, resumable, and enforceable across
 projects without forcing every project into a hosted SaaS.
 
+The short version:
+
+```text
+Agent IDEs and orchestrators run agents.
+Solo Devflow OS records the repo-local project truth those agents share.
+```
+
 ## Non-Goals
 
 - Do not start as another general coding agent.
@@ -32,6 +39,8 @@ projects without forcing every project into a hosted SaaS.
 - Do not assume the user wants many parallel agents by default.
 - Do not make a persistent visual dashboard the MVP. Visual output should be
   generated only when it helps the maintainer inspect dense state.
+- Do not treat generated HTML artifacts as durable evidence. They are views
+  over structured local state, not the source of truth.
 
 ## Target User
 
@@ -185,6 +194,49 @@ Idea
   -> searchable project memory
 ```
 
+## Contract-First Sliced Execution
+
+Solo Devflow OS should support a contract-first, sliced execution workflow.
+This is neither classic waterfall nor unconstrained vibe coding.
+
+The operating model:
+
+```text
+project contract
+  -> slice spec
+  -> implementation plan
+  -> plan-bounded agent session
+  -> gate evidence
+  -> finish guard
+  -> next-session handoff
+```
+
+The project contract captures durable product direction, domain constraints,
+architecture boundaries, coding rules, testing policy, and non-goals. Each work
+slice then gets a focused spec and implementation plan. A later agent session
+should implement the plan, avoid broad unplanned expansion, record assumptions,
+run or cite relevant gates, and produce a handoff for the next session.
+
+This workflow is designed to avoid two failure modes:
+
+- upfront over-design where implementation never starts
+- prompt-by-prompt improvisation where domain gaps, assumptions, and
+  verification state disappear into chat history
+
+### Question Budget
+
+Agents should not ask the maintainer unlimited clarifying questions. Questions
+consume input/output tokens, lengthen context, and often leave decisions only in
+chat. Devflow should encourage agents to ask only when:
+
+- local docs and state cannot answer the question
+- a wrong assumption would create real risk
+- the decision affects public behavior, data model, security, billing,
+  irreversible work, or a major architecture boundary
+
+Otherwise, the agent should choose a conservative default, record the
+assumption in the spec, plan, event log, or handoff, and continue.
+
 ## Opinionated Defaults
 
 - One primary implementation session and one optional review/audit session.
@@ -194,6 +246,11 @@ Idea
 - Direct commit allowed for small docs, private notes, and mechanical cleanup.
 - Every completed task should produce a next-session prompt.
 - Failed checks should be recorded as evidence, not hidden.
+- Slice-level work should prefer a written spec and implementation plan before
+  coding when domain constraints, public behavior, or cross-module contracts
+  are involved.
+- Agents should be plan-bounded by default: follow the slice plan, surface
+  evidence when blocked, and avoid broad opportunistic refactors.
 - AI API access is optional. Core status, split, finish, gates, and handoff
   recording must work from local files, git, docs, and agent history. AI assist
   features such as term explanation, prompt rewriting, and session summarization
@@ -215,6 +272,10 @@ Agent IDEs and orchestrators run agents.
 Solo Devflow OS records the project truth those agents share.
 ```
 
+That truth is the current task state plus verification context: active work
+items, agent/manual sessions, changed files, gate evidence, skipped checks,
+remaining risks, review state, and next-session handoff prompts.
+
 The product should own:
 
 - project contracts
@@ -230,3 +291,21 @@ The product should own:
 
 This allows Solo Devflow OS to integrate with Codex, Claude Code, Gemini,
 Hermes, Orca, Lanes, RCFlow, and future tools instead of trying to replace them.
+
+## Research Position
+
+The same local state can support a focused research harness. The research
+question is not whether a general agent memory system is useful. It is whether
+structured same-task handoff plus deterministic gate evidence improves
+multi-session coding-agent continuation.
+
+Research surfaces should stay separate from the product core:
+
+- `packages/core` owns the product contracts for work items, events, gates, and
+  handoffs.
+- `docs/research/` owns research questions, baselines, metrics, and rubrics.
+- `experiments/` owns condition templates, fixtures, run records, and later
+  scoring scripts.
+
+The source of truth remains structured `.devflow` state and append-only event
+logs. HTML artifacts are optional views for humans, not evidence records.

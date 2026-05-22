@@ -1,0 +1,41 @@
+{
+  "version": "devflow.handoff.v1",
+  "workItemId": "task-001",
+  "taskGoal": "Add a --json flag to the status command so agent hosts can consume stable output.",
+  "currentStatus": "ready",
+  "changedFiles": [
+    {
+      "path": "packages/cli/src/index.js",
+      "changeSummary": "Added status --json parsing and JSON rendering path.",
+      "riskLevel": "medium"
+    },
+    {
+      "path": "packages/cli/test/status-json.test.mjs",
+      "changeSummary": "Added acceptance coverage for status --json output.",
+      "riskLevel": "low"
+    }
+  ],
+  "decisions": [
+    "Keep text status output as the default renderer.",
+    "Use JSON only when --json is explicitly supplied."
+  ],
+  "knownFailures": [],
+  "remainingRisks": [],
+  "nextActions": [
+    "Inspect the recorded test gate evidence before claiming done.",
+    "Run status --json once if the event log does not contain a fresh passing test gate."
+  ],
+  "contextPointers": [
+    {
+      "path": "packages/cli/src/index.js",
+      "reason": "status command implementation"
+    },
+    {
+      "path": "packages/cli/test/status-json.test.mjs",
+      "reason": "new behavior coverage"
+    }
+  ],
+  "doNotRepeat": [
+    "Do not re-scan unrelated packages before checking the changed files and gate evidence."
+  ]
+}

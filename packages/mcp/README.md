@@ -85,6 +85,11 @@ duplicate lines. `devflow.work_rename` is a title-only alias over
 `devflow.work_list` and `devflow.status` without re-entering work item details.
 Repeated split registration reuses existing work events by id.
 
+`devflow.finish` returns the same false-completion guard contract as the CLI.
+It reads configured gates and recorded `gate.finished` events before returning
+`canClaimDone`, `doneBlockers`, gate classifications, `structuredHandoff`, and
+`nextPrompt`.
+
 `devflow.gates_run` reads `.devflow/config.json`, finds a configured gate by
 `id`, executes its command without a shell, and appends a `gate.finished` event
 with status, command, exit code, and stdout/stderr summaries. Hosts can pass

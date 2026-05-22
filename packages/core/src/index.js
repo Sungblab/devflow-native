@@ -61,20 +61,43 @@ export function createStatusSummary(input = {}) {
 }
 
 export function createFinishSummary(input) {
+  const changedFiles = input.changedFiles ?? [];
+  const gateEvidence = input.gateEvidence ?? input.gates ?? [];
+  const skippedGates = input.skipped ?? [];
+  const risks = input.risks ?? [];
+  const requiredGates = input.requiredGates ?? [];
+  const guard = evaluateFinishGuard({
+    requiredGates,
+    gateEvidence,
+    skippedGates,
+    risks,
+  });
   const nextTask = input.nextTask ?? "Continue from the recorded handoff.";
   const nextPrompt =
     input.nextPrompt ??
     createNextPrompt({
       objective: input.intent,
-      changedFiles: input.changedFiles?.map((file) => file.path) ?? [],
-      commands: input.gates?.map((gate) => gate.command) ?? [],
-      risks: input.risks?.map((risk) => risk.message) ?? [],
+      changedFiles: changedFiles.map((file) => file.path) ?? [],
+      commands: gateEvidence.map((gate) => gate.command) ?? [],
+      risks: risks.map((risk) => risk.message) ?? [],
       nextTask,
     });
+  const structuredHandoff = createStructuredHandoff({
+    workItem: input.workItem,
+    intent: input.intent,
+    changedFiles,
+    guard,
+    gateEvidence,
+    risks,
+    nextTask,
+    nextPrompt,
+    decisions: input.decisions ?? [],
+  });
 
   return {
     schemaVersion: "0.1",
     command: "finish",
+    workItemId: input.workItem.id,
     workItem: {
       id: input.workItem.id,
       title: input.workItem.title,
@@ -82,18 +105,29 @@ export function createFinishSummary(input) {
     },
     summary: {
       intent: input.intent,
-      changedFiles: input.changedFiles ?? [],
+      changedFiles,
     },
     evidence: {
-      gates: input.gates ?? [],
-      skipped: input.skipped ?? [],
+      gates: gateEvidence,
+      skipped: skippedGates,
     },
+    changedFiles,
+    gateEvidence,
+    requiredGates,
+    skippedGates,
+    failedGates: guard.failedGates,
+    unknownGates: guard.unknownGates,
+    remainingRisks: risks,
+    canClaimDone: guard.canClaimDone,
+    doneBlockers: guard.doneBlockers,
+    structuredHandoff,
+    nextPrompt,
     review: {
       recommendation: input.review?.recommendation ?? "local-record",
       reason: input.review?.reason ?? "MVP local evidence capture only.",
       prUrl: input.review?.prUrl ?? null,
     },
-    risks: input.risks ?? [],
+    risks,
     nextSession: {
       recommendedAgent: input.nextSession?.recommendedAgent ?? "Codex",
       profile: input.nextSession?.profile ?? "standard",
@@ -143,6 +177,117 @@ export function createNextPrompt(input) {
   ];
 
   return `${lines.join("\n")}\n`;
+}
+
+function evaluateFinishGuard(input) {
+  const requiredGates = input.requiredGates ?? [];
+  const gateEvidence = input.gateEvidence ?? [];
+  const skippedGates = input.skippedGates ?? [];
+  const risks = input.risks ?? [];
+  const evidenceById = new Map(gateEvidence.map((gate) => [gate.id, gate]));
+  const skippedById = new Map(skippedGates.map((gate) => [gate.id, gate]));
+  const failedGates = [];
+  const unknownGates = [];
+  const doneBlockers = [];
+
+  for (const gate of requiredGates) {
+    const skipped = skippedById.get(gate.id);
+    if (skipped) {
+      doneBlockers.push({
+        kind: "skipped_gate",
+        gateId: gate.id,
+        message: `Required gate ${gate.id} was skipped.`,
+      });
+      continue;
+    }
+
+    const evidence = evidenceById.get(gate.id);
+    if (!evidence) {
+      const unknownGate = {
+        id: gate.id,
+        command: gate.command,
+        reason: "Required gate has no recorded gate.finished evidence.",
+      };
+      unknownGates.push(unknownGate);
+      doneBlockers.push({
+        kind: "unknown_gate",
+        gateId: gate.id,
+        message: `Required gate ${gate.id} has no recorded gate.finished evidence.`,
+      });
+      continue;
+    }
+
+    if (evidence.status === "passed") {
+      continue;
+    }
+
+    if (evidence.status === "failed") {
+      failedGates.push(evidence);
+      doneBlockers.push({
+        kind: "failed_gate",
+        gateId: gate.id,
+        message: `Required gate ${gate.id} failed.`,
+      });
+      continue;
+    }
+
+    const unknownGate = {
+      id: gate.id,
+      command: gate.command ?? evidence.command,
+      status: evidence.status ?? "unknown",
+      reason: `Required gate has status ${evidence.status ?? "unknown"}.`,
+    };
+    unknownGates.push(unknownGate);
+    doneBlockers.push({
+      kind: "unknown_gate",
+      gateId: gate.id,
+      message: `Required gate ${gate.id} has status ${evidence.status ?? "unknown"}.`,
+    });
+  }
+
+  for (const risk of risks) {
+    doneBlockers.push({
+      kind: "remaining_risk",
+      message: risk.message ?? String(risk),
+    });
+  }
+
+  return {
+    canClaimDone: doneBlockers.length === 0,
+    failedGates,
+    unknownGates,
+    doneBlockers,
+  };
+}
+
+function createStructuredHandoff(input) {
+  return {
+    version: "devflow.handoff.v1",
+    workItemId: input.workItem.id,
+    taskGoal: input.intent ?? input.workItem.title,
+    currentStatus: input.guard.canClaimDone ? "completed" : "blocked",
+    changedFiles: input.changedFiles.map((file) => ({
+      path: file.path,
+      changeSummary: file.status ?? "changed",
+      riskLevel: file.riskLevel ?? "medium",
+    })),
+    decisions: input.decisions,
+    knownFailures: input.guard.failedGates.map((gate) => ({
+      summary: `Gate ${gate.id} failed.`,
+      evidenceRef: gate.id,
+    })),
+    remainingRisks: [
+      ...input.risks.map((risk) => risk.message ?? String(risk)),
+      ...input.guard.unknownGates.map((gate) => gate.reason),
+    ],
+    nextActions: [input.nextTask],
+    contextPointers: input.changedFiles.map((file) => ({
+      path: file.path,
+      reason: "Changed file in the current work item.",
+    })),
+    doNotRepeat: input.guard.doneBlockers.map((blocker) => blocker.message),
+    nextPrompt: input.nextPrompt,
+  };
 }
 
 export function createPromptRewrite(input = {}) {
