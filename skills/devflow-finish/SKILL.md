@@ -16,7 +16,11 @@ Use this skill before calling work complete.
 3. Summarize what changed by product intent, not only file names.
 4. Record commands run and whether they passed or failed.
 5. Identify skipped checks and why.
-6. Decide whether PR/review is needed.
+6. Decide whether PR/review is needed. If review is required, run `devflow
+   review request --work <id> --target <codex|claude-code|reviewer> --persona
+   strict-reviewer`, hand that prompt to the reviewer, then record the result
+   with `devflow review record --work <id> --reviewer <name> --status
+   <passed|changes-requested> --summary <text>`.
 7. Decide whether documentation needs an update. Update docs or skills before
    finishing when product behavior, workflow policy, plugin behavior, or
    repeated agent rules changed.
@@ -25,6 +29,9 @@ Use this skill before calling work complete.
 9. Prefer `gh` CLI for GitHub PR operations. Use connector tools only when
    `gh` is unavailable, unauthenticated, or explicitly requested.
 10. Generate a platform-appropriate next-session prompt.
+11. If `devflow finish` returns `review.nextAction.command` or `finish
+    --guided` prints `Review next`, run that `devflow review request` command
+    before claiming completion.
 
 ## Completion Output
 
@@ -34,6 +41,7 @@ Return:
 - verification evidence
 - known gaps
 - review/PR recommendation
+- review request and review record evidence when required
 - platform assumptions
 - suggested agent/profile for the next session
 - next task

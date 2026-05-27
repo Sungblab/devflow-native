@@ -11,7 +11,7 @@ if (claimsDone && !mentionsEvidence && !input.stop_hook_active) {
     `${JSON.stringify({
       decision: "block",
       reason:
-        "Devflow finish guard: before closing, verify relevant gates, record finish evidence or known gaps, and include the next-session handoff.",
+        "Devflow finish guard: before closing, verify relevant gates, run devflow review request when review is required, record review/finish evidence or known gaps, and include the next-session handoff.",
     })}\n`,
   );
   process.exit(0);

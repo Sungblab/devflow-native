@@ -211,7 +211,9 @@ When enabled, `devflow finish` requires a passing `review.completed` record for
 the work item before `canClaimDone` becomes true. `devflow review request` and
 MCP `devflow.review_request` generate the strict copy-paste prompt for that
 separate reviewer; `devflow review record` and MCP `devflow.review_record`
-capture the resulting evidence.
+capture the resulting evidence. The native finish skill and prompt hooks also
+mention `devflow review request` so required review is visible inside Codex or
+Claude Code before a session closes.
 
 Reviewer profiles can help break self-review bias:
 

@@ -498,6 +498,7 @@ test("harness install writes missing native files only after confirmation", asyn
   const claudeManifest = JSON.parse(
     await readFile(join(repoPath, "plugins", "devflow", ".claude-plugin", "plugin.json"), "utf8"),
   );
+  const finishSkill = await readFile(join(repoPath, "plugins", "devflow", "skills", "finish", "SKILL.md"), "utf8");
 
   assert.equal(result.command, "harness_install");
   assert.equal(result.status, "installed");
@@ -506,6 +507,8 @@ test("harness install writes missing native files only after confirmation", asyn
   assert.equal(agents, "# Existing Agent Guide\n");
   assert.equal(codexManifest.name, "devflow");
   assert.equal(claudeManifest.name, "devflow");
+  assert.match(finishSkill, /devflow review request/);
+  assert.match(finishSkill, /devflow review record/);
   await assert.rejects(() => readFile(join(repoPath, ".codegraph"), "utf8"), {
     code: "ENOENT",
   });

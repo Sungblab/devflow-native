@@ -17,7 +17,7 @@ const context = [
   "- Prefer plugin/MCP state restoration over manual CLI instructions.",
   "- Superpowers may guide method; Devflow records project truth, gates, sessions, and handoffs.",
   "- Do not generate HTML unless requested, state is visually dense, or an artifact is explicitly useful.",
-  "- On finish/review intent, verify gates and record finish evidence before claiming completion.",
+  "- On finish/review intent, verify gates, run devflow review request when review is required, record devflow review record evidence, and record finish evidence before claiming completion.",
   "",
   "Current compact status:",
   compactJson(status, 3000),

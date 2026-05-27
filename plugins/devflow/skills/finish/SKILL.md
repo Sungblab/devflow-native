@@ -23,17 +23,26 @@ repository.
    completion against the goal objective before claiming the work is complete.
 5. Run the relevant gates. Never mark a gate as passed unless command output was
    observed.
-6. Prefer gh CLI (`gh`) for GitHub PR operations. Use connector tools only when
+6. If review is required or the work should get a second agent pass, run
+   `devflow review request --work <id> --target <codex|claude-code|reviewer>
+   --persona strict-reviewer` and hand that prompt to the reviewer. After the
+   reviewer responds, record the outcome with `devflow review record --work
+   <id> --reviewer <name> --status <passed|changes-requested> --summary
+   <text>`.
+7. Prefer gh CLI (`gh`) for GitHub PR operations. Use connector tools only when
    `gh` is unavailable, unauthenticated, or explicitly requested by the
    maintainer.
-7. Record the task with `devflow finish`. If the executable is not installed
+8. Record the task with `devflow finish`. If the executable is not installed
    yet, use `node packages/cli/src/index.js finish` with explicit `--work`,
    `--title`, `--intent`, `--gate`, `--risk`, and `--next-task` values.
    Use `--guided` when the maintainer wants a plain checklist in addition to
    the local evidence record.
-8. Final output must include changed files, verification evidence, known gaps,
+9. If `devflow finish` returns `review.nextAction.command` or `finish --guided`
+   prints `Review next`, run that `devflow review request` command before
+   claiming the task is done.
+10. Final output must include changed files, verification evidence, known gaps,
    and the next recommended implementation slice.
-9. End with a closing question asking whether to commit, PR, continue, or
+11. End with a closing question asking whether to commit, PR, continue, or
    next-session prompt, when relevant.
 
 ## Output
@@ -45,6 +54,7 @@ Return:
 - documentation update decision
 - Codex goal completion check when available
 - verification evidence
+- review request and review record evidence when required
 - known gaps or risks
 - next implementation slice
 - `devflow finish` record status

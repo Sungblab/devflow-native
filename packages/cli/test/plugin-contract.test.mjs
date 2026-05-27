@@ -91,6 +91,8 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.match(sessionsSkill, /confirmation-gated/);
 
   assert.match(finishSkill, /devflow finish/);
+  assert.match(finishSkill, /devflow review request/);
+  assert.match(finishSkill, /devflow review record/);
   assert.match(finishSkill, /documentation needs an update/);
   assert.match(finishSkill, /Codex goal/);
   assert.match(finishSkill, /gh CLI/);
@@ -115,6 +117,7 @@ test("repo-local plugin hooks emit compact context for agent sessions", async ()
   assert.equal(userPrompt.hookSpecificOutput.hookEventName, "UserPromptSubmit");
   assert.match(userPrompt.hookSpecificOutput.additionalContext, /continue_or_start/);
   assert.match(userPrompt.hookSpecificOutput.additionalContext, /Do not generate HTML unless requested/);
+  assert.match(userPrompt.hookSpecificOutput.additionalContext, /devflow review request/);
 });
 
 async function runHook(path, payload) {
