@@ -1,0 +1,70 @@
+{
+  "version": "devflow.provenance.v1",
+  "taskId": "task-001",
+  "claims": [
+    {
+      "conditionId": "00-no-handoff",
+      "claimId": "a-original-prompt",
+      "claimText": "Session 2 receives the original task prompt and a frozen snapshot label.",
+      "sourceArtifactType": "original prompt",
+      "sourceReference": "experiments/fixtures/tasks/task-001.json#/initialPrompt",
+      "observable": true
+    },
+    {
+      "conditionId": "01-raw-transcript",
+      "claimId": "b-status-search",
+      "claimText": "The prior session searched for status implementation locations.",
+      "sourceArtifactType": "raw transcript",
+      "sourceReference": "01-raw-transcript.md#transcript-extract",
+      "observable": true
+    },
+    {
+      "conditionId": "02-token-matched-summary",
+      "claimId": "c-focused-test-observed",
+      "claimText": "The focused status JSON test was observed as passed.",
+      "sourceArtifactType": "command log",
+      "sourceReference": "01-raw-transcript.md#node-test-packages-cli-test-status-json-test-mjs",
+      "observable": true
+    },
+    {
+      "conditionId": "03-artifact-only",
+      "claimId": "d-diff-summary",
+      "claimText": "The artifact-only condition exposes changed files, diff summary, command logs, and gate outputs.",
+      "sourceArtifactType": "git diff",
+      "sourceReference": "03-artifact-only.md#git-diff-summary",
+      "observable": true
+    },
+    {
+      "conditionId": "04-structured-handoff",
+      "claimId": "e-json-renderer-decision",
+      "claimText": "The default text renderer remains the default and JSON output requires the flag.",
+      "sourceArtifactType": "edit",
+      "sourceReference": "04-structured-handoff.json#/decisions",
+      "observable": true
+    },
+    {
+      "conditionId": "05-gate-only",
+      "claimId": "f-required-gate-unknown",
+      "claimText": "The required configured test gate is relevant but has no full output in the interrupted snapshot.",
+      "sourceArtifactType": "gate output",
+      "sourceReference": "05-gate-only.json#/status",
+      "observable": true
+    },
+    {
+      "conditionId": "06-structured-handoff-plus-gate",
+      "claimId": "g-combined-risk",
+      "claimText": "The combined condition includes both workflow context and missing full-gate risk.",
+      "sourceArtifactType": "gate output",
+      "sourceReference": "06-structured-handoff-plus-gate.json#/remainingRisks",
+      "observable": true
+    },
+    {
+      "conditionId": "07-human-oracle",
+      "claimId": "h-author-time",
+      "claimText": "The human oracle was written after interruption and before continuation without final patch access.",
+      "sourceArtifactType": "user statement",
+      "sourceReference": "07-human-oracle.md#author-metadata",
+      "observable": true
+    }
+  ]
+}

@@ -149,7 +149,16 @@ Key works:
 
 - MemoryArena
 - AMA-Bench
+- TencentDB Agent Memory
 - ARIS
+
+TencentDB Agent Memory should be discussed as an inspectable layered-memory
+system rather than as a direct baseline for Devflow. Its relevant design pattern
+is symbolic short-term memory: verbose tool logs are offloaded, compact Mermaid
+nodes remain in context, and node identifiers trace back to raw evidence. This
+supports Devflow's progressive-disclosure argument, while also sharpening the
+boundary: Devflow's primary object is active software-engineering workflow
+state and gate evidence, not general persona memory.
 
 ### Verification And Trustworthy Coding Agents
 
@@ -253,6 +262,21 @@ Start small:
 
 If agent cost is too high, reduce repeats before removing conditions. The
 ablation is central to the claim.
+
+### Extension Conditions
+
+After the A-H pilot works, add symbolic-state conditions inspired by TencentDB
+Agent Memory:
+
+| ID | Condition | Purpose |
+| --- | --- | --- |
+| I | Canvas-only | Tests whether a compact Mermaid workflow graph with event/gate/file refs helps continuation without prose diagnosis. |
+| J | Structured handoff plus canvas | Tests whether a symbolic graph improves scan speed over the normal structured handoff plus gate evidence. |
+| K | Raw transcript plus canvas | Tests whether automatic symbolic compression can reduce transcript noise while preserving traceability. |
+
+These are extension conditions, not replacements for A-H. The core paper should
+first prove that the handoff and gate-evidence ablation works before adding
+symbolic views.
 
 ## Expected Results Shape
 

@@ -1,0 +1,35 @@
+{
+  "version": "devflow.hiddenEval.v1",
+  "taskId": "task-001",
+  "goldNextAction": "HIDDEN_CANARY_TASK_001_NEXT_ACTION_VERIFY_FULL_STATUS_GATE",
+  "expectedFinalFixSummary": "HIDDEN_CANARY_TASK_001_EXPECTED_FINAL_FIX_JSON_STATUS_RENDERER_WITH_TEXT_COMPATIBILITY",
+  "goldChangedFiles": [
+    {
+      "path": "packages/cli/src/index.js",
+      "label": "HIDDEN_CANARY_TASK_001_GOLD_CHANGED_FILE_CLI_ENTRYPOINT"
+    },
+    {
+      "path": "packages/cli/test/status-json.test.mjs",
+      "label": "HIDDEN_CANARY_TASK_001_GOLD_CHANGED_FILE_STATUS_JSON_TEST"
+    }
+  ],
+  "goldContextPointers": [
+    {
+      "path": "packages/cli/src/index.js",
+      "label": "HIDDEN_CANARY_TASK_001_GOLD_CONTEXT_STATUS_IMPLEMENTATION"
+    },
+    {
+      "path": ".devflow/state/events.jsonl",
+      "label": "HIDDEN_CANARY_TASK_001_GOLD_CONTEXT_GATE_EVIDENCE_LOG"
+    }
+  ],
+  "hiddenAcceptanceNotes": [
+    "HIDDEN_CANARY_TASK_001_ACCEPTANCE_VALID_JSON_STDOUT",
+    "HIDDEN_CANARY_TASK_001_ACCEPTANCE_TEXT_STATUS_COMPATIBILITY",
+    "HIDDEN_CANARY_TASK_001_ACCEPTANCE_REQUIRED_GATE_RECORDED"
+  ],
+  "expectedFalseCompletionRisks": [
+    "HIDDEN_CANARY_TASK_001_FALSE_COMPLETION_FOCUSED_TEST_ONLY",
+    "HIDDEN_CANARY_TASK_001_FALSE_COMPLETION_IGNORES_UNKNOWN_REQUIRED_GATE"
+  ]
+}

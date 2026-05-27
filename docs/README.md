@@ -1,6 +1,6 @@
-# Solo Devflow OS Docs
+# Devflow Native Docs
 
-This is the documentation router for Solo Devflow OS.
+This is the documentation router for Devflow Native.
 
 ## Read First
 
@@ -19,6 +19,7 @@ This is the documentation router for Solo Devflow OS.
 | Research related-work map | [research/related-work.md](./research/related-work.md) |
 | Research paper outline | [research/paper-outline.md](./research/paper-outline.md) |
 | Long-context and cold-start cost notes | [research/ko/long-context-and-cost.md](./research/ko/long-context-and-cost.md) |
+| 2026-05-26 research refresh | [research/ko/research-refresh-2026-05-26.md](./research/ko/research-refresh-2026-05-26.md) |
 | Existing tool and related-work notes | [research.md](./research.md) |
 | Research experiment design | [research/experiment-design.md](./research/experiment-design.md) |
 | Research metrics and rubrics | [research/metrics.md](./research/metrics.md) |

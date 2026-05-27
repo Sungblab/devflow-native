@@ -23,6 +23,9 @@
 7. [Contract-First Sliced Execution](./contract-first-sliced-execution.md)
    - 프로젝트 계약, slice spec, implementation plan, 질문 예산, plan-bounded
      agent session 운영 모델을 설명한다.
+8. [2026-05-26 연구 리서치 갱신](./research-refresh-2026-05-26.md)
+   - Devflow 연구 자체를 coding-agent harness, context reuse, memory/task
+     resumption, verification/evidence 축으로 다시 정리한다.
 
 ## 연구 한 문장
 

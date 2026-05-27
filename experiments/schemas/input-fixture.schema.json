@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solo-devflow-os.local/experiments/input-fixture.schema.json",
+  "title": "Devflow Experiment Input Fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "taskId",
+    "conditionId",
+    "visibleInputPath",
+    "inputKind",
+    "session2Visible",
+    "provenancePath"
+  ],
+  "properties": {
+    "taskId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "conditionId": {
+      "type": "string",
+      "pattern": "^[0-7][0-9]?-"
+    },
+    "visibleInputPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "inputKind": {
+      "type": "string",
+      "enum": [
+        "markdown",
+        "json"
+      ]
+    },
+    "session2Visible": {
+      "const": true
+    },
+    "provenancePath": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

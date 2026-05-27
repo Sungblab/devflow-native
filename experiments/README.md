@@ -8,17 +8,22 @@ and recorded state, but `packages/core` must not depend on experiment scripts.
 
 ## Current Scope
 
-This skeleton defines condition templates, task/run/result schemas, and
-placeholder scorer scripts. It does not yet automate agent execution or fixture
-reset.
+This skeleton defines condition templates, task/input/run/result schemas,
+task-001 A-H pilot inputs, hidden evaluation metadata, observable-only
+provenance, and placeholder scorer scripts. It does not yet automate agent
+execution or fixture reset.
 
 ## Protocol
 
 - [Experiment protocol](./protocol.md)
 - [Task schema](./schemas/task.schema.json)
+- [Input fixture schema](./schemas/input-fixture.schema.json)
+- [Provenance schema](./schemas/provenance.schema.json)
+- [Hidden evaluation metadata schema](./schemas/hidden-eval.schema.json)
 - [Run schema](./schemas/run.schema.json)
 - [Result schema](./schemas/result.schema.json)
 - [Sample task fixture](./fixtures/tasks/task-001.json)
+- [Task 001 A-H pilot inputs](./fixtures/inputs/task-001/)
 
 ## Conditions
 
@@ -72,5 +77,6 @@ experiments/
   results/
 ```
 
-The next implementation slice should add sample task fixtures and a dry-run
-pilot flow that writes run/result JSON without invoking real agents.
+The next implementation slice should add a dry-run pilot flow that reads the
+task-001 A-H input package and writes run/result JSON without invoking real
+agents.

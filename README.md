@@ -1,7 +1,7 @@
-# Solo Devflow OS
+# Devflow Native
 
-Solo Devflow OS is a repo-local continuity layer and black box recorder for
-solo developers using AI coding agents.
+Devflow Native is a repo-local workflow companion for Claude Code, Codex, and
+other AI coding agents.
 
 Codex, Claude Code, Gemini, Superpowers, and shell sessions do the work.
 Devflow records the shared project truth they need to start, finish, and hand
@@ -109,7 +109,7 @@ same state.
 
 ## Research Framing
 
-Solo Devflow OS can also be used as a research harness for studying
+Devflow Native can also be used as a research harness for studying
 multi-session AI coding agents.
 
 The core research question is:

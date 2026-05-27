@@ -1,0 +1,45 @@
+{
+  "version": "devflow.handoff.v1",
+  "workItemId": "task-001",
+  "taskGoal": "Add a --json flag to the status command so agent hosts can consume stable output.",
+  "currentStatus": "in_progress",
+  "changedFiles": [
+    {
+      "path": "packages/cli/src/index.js",
+      "changeSummary": "Status command parsing and rendering were extended with an explicit JSON output path.",
+      "riskLevel": "medium"
+    },
+    {
+      "path": "packages/cli/test/status-json.test.mjs",
+      "changeSummary": "Focused coverage was added for parsing status --json stdout as JSON.",
+      "riskLevel": "low"
+    }
+  ],
+  "decisions": [
+    "Keep the existing text status renderer as the default behavior.",
+    "Require --json before returning machine-readable status output."
+  ],
+  "knownFailures": [],
+  "remainingRisks": [
+    "The broader configured test gate has not been observed in this interrupted snapshot.",
+    "Default text status output still needs to remain covered by existing tests."
+  ],
+  "nextActions": [
+    "Inspect the edited status code and focused JSON test before doing broad exploration.",
+    "Check the available configured test evidence before making a completion claim."
+  ],
+  "contextPointers": [
+    {
+      "path": "packages/cli/src/index.js",
+      "reason": "Status command parsing and rendering are edited here."
+    },
+    {
+      "path": "packages/cli/test/status-json.test.mjs",
+      "reason": "Focused JSON status behavior is covered here."
+    }
+  ],
+  "doNotRepeat": [
+    "Do not re-scan unrelated packages before reading the edited status command files.",
+    "Do not claim completion from the focused test alone."
+  ]
+}

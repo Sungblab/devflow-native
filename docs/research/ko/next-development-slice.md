@@ -4,6 +4,14 @@
 기능 추가가 아니라 research experiment harness를 실제 파일럿 입력까지 밀어내는
 것이다.
 
+## 구현 상태
+
+2026-05-22 현재 이 slice의 첫 구현은 완료되었다. `experiments/fixtures/inputs/task-001/`
+아래 A-H visible input, `provenance.json`, `hidden-eval.json`이 추가되었고,
+`experiments/schemas/`에는 input fixture, provenance, hidden evaluation metadata
+schema가 추가되었다. 다음 slice는 이 입력 패키지를 읽어 dry-run pilot run/result
+JSON을 생성하는 쪽이 맞다.
+
 ## 한 문장 목표
 
 `task-001`에 대해 canonical interrupted snapshot, hidden evaluator metadata,

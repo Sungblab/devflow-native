@@ -1,11 +1,11 @@
-# Solo Devflow OS Agent Guide
+# Devflow Native Agent Guide
 
 Respond in Korean when working with the maintainer.
 
-Solo Devflow OS is a local-first workflow operating layer for solo developers
-who build with AI coding agents. The product is not another coding agent. It
-records, verifies, visualizes, splits, and resumes the development process
-around coding agents.
+Devflow Native is a local-first workflow companion for solo developers who use
+Claude Code, Codex, and other AI coding agents. The product is not another
+coding agent. It records, verifies, visualizes, splits, and resumes the
+development process around coding agents.
 
 ## Read Order
 

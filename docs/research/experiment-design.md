@@ -84,6 +84,21 @@ The core ablation should distinguish structure, evidence, and artifact exposure:
 | G. Structured handoff + gate evidence | Proposed method. |
 | H. Human oracle handoff | Expert-authored diagnostic ceiling, reported with observability and author-time metadata. |
 
+Keep all eight conditions in the core pilot. Recent related work gives good
+reasons not to collapse them:
+
+- Context and experience-reuse benchmarks show that unfiltered context can help
+  or hurt depending on selection quality, so raw transcript, token-matched
+  summary, and artifact-only conditions must remain separate.
+- Static instruction-file work shows that durable repo rules are not equivalent
+  to current task state, so AGENTS.md-style context should be an extension
+  condition, not a replacement for A-H.
+- Memory-granularity work suggests that one flat prior-session memory can
+  retrieve the wrong reasoning stage, so structured handoff must be tested
+  separately from raw transcript and free-form summary.
+- Verification and trust work motivates separating gate evidence from workflow
+  state so false-completion effects can be measured directly.
+
 ## Task Requirements
 
 Good tasks should require multiple files, include meaningful context pointers,

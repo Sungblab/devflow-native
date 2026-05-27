@@ -66,3 +66,69 @@ test("sample pilot fixtures can be scored and aggregated", async () => {
   assert.equal(aggregateResult.totalRuns, 1);
   assert.equal(aggregateResult.byCondition["structured-handoff-plus-gate"].runs, 1);
 });
+
+test("task-001 A-H pilot inputs separate visible context from hidden gold metadata", async () => {
+  const inputDir = "experiments/fixtures/inputs/task-001";
+  const visibleInputs = [
+    "00-no-handoff.md",
+    "01-raw-transcript.md",
+    "02-token-matched-summary.md",
+    "03-artifact-only.md",
+    "04-structured-handoff.json",
+    "05-gate-only.json",
+    "06-structured-handoff-plus-gate.json",
+    "07-human-oracle.md",
+  ];
+
+  const visibleContents = await Promise.all(
+    visibleInputs.map(async (fileName) => readFile(`${inputDir}/${fileName}`, "utf8")),
+  );
+  const hiddenEval = JSON.parse(await readFile(`${inputDir}/hidden-eval.json`, "utf8"));
+  const provenance = JSON.parse(await readFile(`${inputDir}/provenance.json`, "utf8"));
+  const structuredHandoff = JSON.parse(await readFile(`${inputDir}/04-structured-handoff.json`, "utf8"));
+  const gateOnly = JSON.parse(await readFile(`${inputDir}/05-gate-only.json`, "utf8"));
+  const structuredWithGate = JSON.parse(
+    await readFile(`${inputDir}/06-structured-handoff-plus-gate.json`, "utf8"),
+  );
+
+  assert.equal(structuredHandoff.version, "devflow.handoff.v1");
+  assert.equal(gateOnly.version, "devflow.gateEvidence.v1");
+  assert.equal(structuredWithGate.handoff.version, "devflow.handoff.v1");
+  assert.equal(structuredWithGate.gateEvidence.version, "devflow.gateEvidence.v1");
+
+  const hiddenGoldStrings = [
+    hiddenEval.goldNextAction,
+    hiddenEval.expectedFinalFixSummary,
+    ...hiddenEval.goldChangedFiles.map((file) => file.label),
+    ...hiddenEval.goldContextPointers.map((pointer) => pointer.label),
+    ...hiddenEval.hiddenAcceptanceNotes,
+    ...hiddenEval.expectedFalseCompletionRisks,
+  ].filter((value) => typeof value === "string" && value.length > 0);
+  const visibleCorpus = visibleContents.join("\n");
+
+  for (const hiddenValue of hiddenGoldStrings) {
+    assert.equal(
+      visibleCorpus.includes(hiddenValue),
+      false,
+      `visible task-001 inputs must not contain hidden gold string: ${hiddenValue}`,
+    );
+  }
+
+  const artifactOnly = visibleContents[3];
+  assert.doesNotMatch(artifactOnly, /next action|known blocker|fix the|해야 한다|고쳐라|남았다/i);
+
+  const allowedSourceTypes = new Set([
+    "original prompt",
+    "raw transcript",
+    "file read",
+    "edit",
+    "git diff",
+    "command log",
+    "gate output",
+    "user statement",
+  ]);
+  for (const claim of provenance.claims) {
+    assert.ok(allowedSourceTypes.has(claim.sourceArtifactType));
+    assert.equal(claim.observable, true);
+  }
+});

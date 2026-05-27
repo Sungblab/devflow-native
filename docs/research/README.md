@@ -15,6 +15,7 @@ notes first:
 - [Long Context And Cost](./ko/long-context-and-cost.md)
 - [Korean Paper Outline](./ko/paper-outline-ko.md)
 - [Contract-First Sliced Execution](./ko/contract-first-sliced-execution.md)
+- [2026-05-26 Research Refresh](./ko/research-refresh-2026-05-26.md)
 
 ## Research Question
 

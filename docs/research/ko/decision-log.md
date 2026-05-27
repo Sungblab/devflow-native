@@ -292,3 +292,49 @@ diff, command logs, gate outputs만 제공하고 narrative diagnosis는 제공�
 
 AGENTS.md, Semble, CodeGraph, long-context, compressed-continuation baseline은
 core A-H 파일럿이 돌아간 뒤 확장 조건으로 추가한다.
+
+## 2026-05-26: TencentDB Agent Memory 리서치 반영
+
+### 확인한 내용
+
+[TencentDB Agent Memory](https://github.com/Tencent/TencentDB-Agent-Memory)는
+OpenClaw/Hermes에 붙는 memory plugin으로, Devflow 같은 workflow OS가 아니다.
+현재 npm 패키지 설명은 `L0→L1→L2→L3` four-layer local memory system이고,
+README는 다음 두 축을 강조한다.
+
+- symbolic short-term memory: verbose tool log를 외부 파일과 JSONL로 빼고,
+  Mermaid task canvas만 context에 남긴다.
+- layered long-term memory: L0 Conversation, L1 Atom, L2 Scenario, L3 Persona로
+  conversation memory를 계층화한다.
+
+소스 기준으로도 short-term offload record에는 `node_id`, `summary`,
+`result_ref`, `tool_call_id`가 있고, Mermaid node는 다시 raw result ref로
+드릴다운할 수 있다. 검색 도구는 `tdai_memory_search`와
+`tdai_conversation_search`이며, L1 memory search는 FTS5 keyword와 embedding
+검색을 RRF로 합치는 hybrid path를 둔다.
+
+### 판단
+
+이 시스템은 Devflow의 직접 경쟁자라기보다 "상위 구조 + 하위 증거" 설계의 좋은
+related work다. 특히 compact Mermaid canvas와 `node_id`/`result_ref` trace는
+Devflow의 `status`, `finish`, `next prompt`가 나중에 그래프 view를 만들 때
+참고할 만하다.
+
+하지만 Devflow 연구 주장은 여전히 agent memory가 아니다. Devflow가 검증해야
+할 것은 persona recall이나 장기 사용자 기억이 아니라, interrupted coding task의
+active work state, changed files, failed/skipped gates, remaining risk가 다음
+세션의 continuation success와 false completion에 미치는 영향이다.
+
+### 문서/실험 반영
+
+core A-H 조건은 그대로 둔다. TencentDB식 symbolic canvas는 core 파일럿 뒤의
+확장 조건으로 둔다.
+
+확장 후보:
+
+- canvas-only: event/gate/file ref가 붙은 compact Mermaid workflow graph만 제공
+- structured handoff plus canvas: structured handoff와 gate evidence에 graph view 추가
+- raw transcript plus canvas: raw transcript 위에 자동 생성 task graph를 추가
+
+Devflow canvas가 생기더라도 source of truth는 Mermaid가 아니라 append-only event
+log, gate evidence, changed-file records, handoff schema여야 한다.
