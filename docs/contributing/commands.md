@@ -473,7 +473,7 @@ Inputs:
 - work item id
 - title
 - optional description
-- optional repeated `--owned-path <glob>`
+- optional repeated `--owned-path <glob>` or shorter `--path <glob>` alias
 
 Outputs:
 
@@ -522,7 +522,7 @@ Inputs:
 - work item id as the first positional argument, or `--id <id>`
 - optional `--title <title>`
 - optional `--description <description>`
-- optional repeated `--owned-path <glob>`
+- optional repeated `--owned-path <glob>` or shorter `--path <glob>` alias
 
 Outputs:
 

@@ -1871,6 +1871,37 @@ test("status summary can derive gate evidence recorded independently", async () 
   assert.equal(status.gates[0].lastRun.workItemId, "docs-check");
 });
 
+test("devflow state keeps latest gate evidence indexed by work item", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-gate-scope-"));
+
+  await recordGateEvent(
+    repoPath,
+    {
+      id: "unit",
+      command: "npm test",
+      status: "passed",
+      workItemId: "other-work",
+    },
+    { observedAt: "2026-05-16T10:00:00+09:00" },
+  );
+  await recordGateEvent(
+    repoPath,
+    {
+      id: "unit",
+      command: "npm test",
+      status: "passed",
+      workItemId: "target-work",
+    },
+    { observedAt: "2026-05-16T11:00:00+09:00" },
+  );
+
+  const state = await readDevflowState(repoPath);
+
+  assert.equal(state.gates.latestById.unit.workItemId, "target-work");
+  assert.equal(state.gates.latestByWorkItemId["other-work"].unit.workItemId, "other-work");
+  assert.equal(state.gates.latestByWorkItemId["target-work"].unit.workItemId, "target-work");
+});
+
 test("configured gate runner executes a configured command and records evidence", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-gate-run-"));
   const scriptPath = join(repoPath, "gate-script.mjs");

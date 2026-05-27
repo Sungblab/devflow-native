@@ -11,5 +11,8 @@
       "id": "unit",
       "command": "npm test"
     }
-  ]
+  ],
+  "review": {
+    "required": true
+  }
 }

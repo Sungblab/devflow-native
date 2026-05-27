@@ -95,7 +95,9 @@ full-session parsing unless the user asks for it.
 Session-start hooks may read `.devflow/next-prompt.md` directly as the latest
 human-readable handoff projection. The canonical history remains
 `.devflow/state/events.jsonl`; the Markdown file is only the compact latest
-prompt shown to the next agent.
+prompt shown to the next agent. Repositories should treat this projection as
+local generated state and ignore it by default unless a project explicitly wants
+to publish the latest handoff.
 
 ## Harness Commands
 

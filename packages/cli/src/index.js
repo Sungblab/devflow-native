@@ -274,8 +274,10 @@ async function renderFinish(argsForCommand) {
   const repoPath = options.repo ?? cwd();
   const config = await readDevflowConfig(repoPath);
   const state = await readDevflowState(repoPath);
+  const workItemId = options.work ?? "local-work";
   const gates = collectRepeated(options.gate).map(parseGate);
-  const gateEvidence = [...Object.values(state.gates.latestById), ...gates];
+  const recordedGates = Object.values(state.gates.latestByWorkItemId?.[workItemId] ?? {});
+  const gateEvidence = [...recordedGates, ...gates];
   const risks = collectRepeated(options.risk).map((message) => ({
     severity: "low",
     message,
@@ -283,7 +285,7 @@ async function renderFinish(argsForCommand) {
 
   const summary = createFinishSummary({
     workItem: {
-      id: options.work ?? "local-work",
+      id: workItemId,
       title: options.title ?? options.work ?? "Local work",
     },
     intent: options.intent ?? "Record local completion evidence.",
@@ -291,7 +293,7 @@ async function renderFinish(argsForCommand) {
     gates: gateEvidence,
     requiredGates: config.gates ?? [],
     reviewRequired: Boolean(config.review?.required),
-    reviewEvidence: state.reviews.latestByWorkItemId[options.work ?? "local-work"] ?? null,
+    reviewEvidence: state.reviews.latestByWorkItemId[workItemId] ?? null,
     skipped: collectRepeated(options.skipped).map((reason, index) => ({
       id: `skipped-${index + 1}`,
       reason,
@@ -597,7 +599,7 @@ async function renderWorkCreate(argsForCommand) {
     id: options.id,
     title: options.title,
     description: options.description,
-    ownedPaths: collectRepeated(options["owned-path"]),
+    ownedPaths: collectOwnedPaths(options),
   });
 
   render(
@@ -632,8 +634,8 @@ async function renderWorkStart(argsForCommand) {
 async function renderWorkUpdate(argsForCommand) {
   const { options, positional } = parseOptionsAndPositionals(argsForCommand);
   const repoPath = options.repo ?? cwd();
-  const ownedPaths = Object.hasOwn(options, "owned-path")
-    ? collectRepeated(options["owned-path"])
+  const ownedPaths = Object.hasOwn(options, "owned-path") || Object.hasOwn(options, "path")
+    ? collectOwnedPaths(options)
     : undefined;
   const event = await recordWorkUpdatedEvent(repoPath, {
     id: positional[0] ?? options.id,
@@ -960,6 +962,10 @@ function collectRepeated(value) {
   }
 
   return Array.isArray(value) ? value : [value];
+}
+
+function collectOwnedPaths(options) {
+  return [...collectRepeated(options["owned-path"]), ...collectRepeated(options.path)];
 }
 
 function parseTargetList(value) {

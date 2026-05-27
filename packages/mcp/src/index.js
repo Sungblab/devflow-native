@@ -752,13 +752,15 @@ async function callFinish(args) {
   const repoPath = args.repo ?? process.cwd();
   const config = await readDevflowConfig(repoPath);
   const state = await readDevflowState(repoPath);
+  const workItemId = args.work ?? "local-work";
   const risks = (args.risks ?? []).map((risk) =>
     typeof risk === "string" ? { severity: "low", message: risk } : risk,
   );
-  const gateEvidence = [...Object.values(state.gates.latestById), ...(args.gates ?? [])];
+  const recordedGates = Object.values(state.gates.latestByWorkItemId?.[workItemId] ?? {});
+  const gateEvidence = [...recordedGates, ...(args.gates ?? [])];
   const summary = createFinishSummary({
     workItem: {
-      id: args.work ?? "local-work",
+      id: workItemId,
       title: args.title ?? args.work ?? "Local work",
     },
     intent: args.intent ?? "Record local completion evidence.",
@@ -766,7 +768,7 @@ async function callFinish(args) {
     gates: gateEvidence,
     requiredGates: args.requiredGates ?? config.gates ?? [],
     reviewRequired: Boolean(config.review?.required),
-    reviewEvidence: state.reviews.latestByWorkItemId[args.work ?? "local-work"] ?? null,
+    reviewEvidence: state.reviews.latestByWorkItemId[workItemId] ?? null,
     skipped: args.skipped ?? [],
     risks,
     nextTask: args.nextTask,

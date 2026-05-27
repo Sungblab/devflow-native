@@ -1099,6 +1099,31 @@ test("CLI work create, start, and list persist local work item state", async () 
   assert.deepEqual(listJson.items[0].ownedPaths, ["packages/core/**", "packages/cli/**"]);
 });
 
+test("CLI work create accepts repeated --path aliases for owned paths", async () => {
+  const repoPath = await createTempGitRepo();
+
+  const created = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "path-alias-work",
+    "--title",
+    "Path alias work",
+    "--path",
+    "packages/core/**",
+    "--path",
+    "packages/cli/**",
+    "--json",
+  ]);
+  const createJson = JSON.parse(created.stdout);
+
+  assert.equal(createJson.command, "work_create");
+  assert.deepEqual(createJson.workItem.ownedPaths, ["packages/core/**", "packages/cli/**"]);
+});
+
 test("CLI work create is idempotent for existing ids", async () => {
   const repoPath = await createTempGitRepo();
 
@@ -1240,9 +1265,9 @@ test("CLI work update changes metadata without changing lifecycle state", async 
     "Updated title",
     "--description",
     "Updated description",
-    "--owned-path",
+    "--path",
     "packages/core/**",
-    "--owned-path",
+    "--path",
     "packages/cli/**",
     "--json",
   ]);
@@ -1671,6 +1696,77 @@ test("CLI finish allows done claim when configured gate evidence was recorded", 
   assert.equal(parsed.canClaimDone, true);
   assert.deepEqual(parsed.doneBlockers, []);
   assert.equal(parsed.gateEvidence[0].id, "node-version");
+});
+
+test("CLI finish keeps gate evidence scoped to the requested work item", async () => {
+  const repoPath = await createTempGitRepo();
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [{ id: "node-version", command: "node --version" }],
+    })}\n`,
+  );
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "gates",
+    "run",
+    "node-version",
+    "--repo",
+    repoPath,
+    "--work",
+    "other-work",
+    "--json",
+  ]);
+
+  const blocked = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "target-work",
+    "--title",
+    "Target work",
+    "--intent",
+    "Do not borrow gate evidence from another work item.",
+    "--json",
+  ]);
+  const blockedJson = JSON.parse(blocked.stdout);
+  assert.equal(blockedJson.canClaimDone, false);
+  assert.equal(blockedJson.unknownGates[0].id, "node-version");
+  assert.equal(blockedJson.doneBlockers[0].kind, "unknown_gate");
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "gates",
+    "run",
+    "node-version",
+    "--repo",
+    repoPath,
+    "--work",
+    "target-work",
+    "--json",
+  ]);
+
+  const finished = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "target-work",
+    "--title",
+    "Target work",
+    "--intent",
+    "Use only target work gate evidence.",
+    "--json",
+  ]);
+  const finishedJson = JSON.parse(finished.stdout);
+  assert.equal(finishedJson.canClaimDone, true);
+  assert.equal(finishedJson.gateEvidence.length, 1);
+  assert.equal(finishedJson.gateEvidence[0].workItemId, "target-work");
 });
 
 test("CLI finish renders guided checklist and still records evidence", async () => {

@@ -4,6 +4,7 @@ dist/
 .env.*
 !.env.example
 .devflow/state/
+.devflow/next-prompt.md
 *.log
 .obsidian/
 .trash/

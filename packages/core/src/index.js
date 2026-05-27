@@ -2557,6 +2557,7 @@ function deriveStateFromEvents(events, warnings = []) {
     },
     gates: {
       latestById: createLatestGateEvidence(events),
+      latestByWorkItemId: createLatestGateEvidenceByWorkItem(events),
     },
     work: createWorkState(events),
     reviews: {
@@ -2635,6 +2636,52 @@ function createLatestGateEvidence(events) {
   }
 
   return latestById;
+}
+
+function createLatestGateEvidenceByWorkItem(events) {
+  const latestByWorkItemId = {};
+
+  for (const event of events) {
+    if (event.type === "gate.finished") {
+      const workItemId = event.payload.workItemId;
+      if (!workItemId) {
+        continue;
+      }
+
+      latestByWorkItemId[workItemId] ??= {};
+      latestByWorkItemId[workItemId][event.payload.id] = {
+        id: event.payload.id,
+        command: event.payload.command,
+        status: event.payload.status,
+        observedAt: event.payload.observedAt ?? event.observedAt,
+        summary: event.payload.summary ?? null,
+        workItemId,
+        exitCode: event.payload.exitCode ?? null,
+        stdout: event.payload.stdout ?? null,
+        stderr: event.payload.stderr ?? null,
+      };
+      continue;
+    }
+
+    if (event.type !== "work.completed" || event.payload?.command !== "finish") {
+      continue;
+    }
+
+    const workItemId = event.payload.workItem.id;
+    latestByWorkItemId[workItemId] ??= {};
+    for (const gate of event.payload.evidence.gates ?? []) {
+      latestByWorkItemId[workItemId][gate.id] = {
+        id: gate.id,
+        command: gate.command,
+        status: gate.status,
+        observedAt: gate.observedAt ?? event.observedAt,
+        summary: gate.summary ?? null,
+        workItemId,
+      };
+    }
+  }
+
+  return latestByWorkItemId;
 }
 
 function createWorkState(events) {
@@ -3047,6 +3094,7 @@ function emptyDevflowState() {
     },
     gates: {
       latestById: {},
+      latestByWorkItemId: {},
     },
     work: {
       items: [],

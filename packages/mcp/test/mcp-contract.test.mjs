@@ -522,6 +522,53 @@ test("MCP finish allows done claim when configured gate evidence was recorded", 
   assert.equal(result.structuredContent.gateEvidence[0].id, "unit");
 });
 
+test("MCP finish keeps gate evidence scoped to the requested work item", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-finish-gate-scope-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({
+      gates: [{ id: "unit", command: "npm test" }],
+    })}\n`,
+  );
+  await callTool("devflow.record_gate", {
+    repo: repoPath,
+    id: "unit",
+    command: "npm test",
+    status: "passed",
+    workItemId: "other-work",
+  });
+
+  const blocked = await callTool("devflow.finish", {
+    repo: repoPath,
+    work: "target-work",
+    title: "Target work",
+    intent: "Do not borrow gate evidence from another work item.",
+  });
+
+  assert.equal(blocked.structuredContent.canClaimDone, false);
+  assert.equal(blocked.structuredContent.unknownGates[0].id, "unit");
+  assert.equal(blocked.structuredContent.doneBlockers[0].kind, "unknown_gate");
+
+  await callTool("devflow.record_gate", {
+    repo: repoPath,
+    id: "unit",
+    command: "npm test",
+    status: "passed",
+    workItemId: "target-work",
+  });
+  const finished = await callTool("devflow.finish", {
+    repo: repoPath,
+    work: "target-work",
+    title: "Target work",
+    intent: "Use only target work gate evidence.",
+  });
+
+  assert.equal(finished.structuredContent.canClaimDone, true);
+  assert.equal(finished.structuredContent.gateEvidence.length, 1);
+  assert.equal(finished.structuredContent.gateEvidence[0].workItemId, "target-work");
+});
+
 test("MCP record_gate records standalone gate evidence", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-record-gate-"));
   const result = await callTool("devflow.record_gate", {
