@@ -32,6 +32,7 @@ import {
   readProjectHealth,
   readDevflowConfig,
   readDevflowState,
+  readLatestHandoff,
   readMistakeMemory,
   recordFinishEvent,
   recordManualSessionNoteEvent,
@@ -87,6 +88,8 @@ try {
     await renderReviewRequest(args.slice(2));
   } else if (command === "prompt" && args[1] === "next") {
     renderNextPrompt(args.slice(2));
+  } else if (command === "prompt" && args[1] === "latest") {
+    await renderLatestHandoff(args.slice(2));
   } else if (command === "prompt" && args[1] === "rewrite") {
     renderPromptRewrite(args.slice(2));
   } else if (command === "sessions" && args[1] === "codex") {
@@ -417,6 +420,24 @@ function renderPromptRewrite(argsForCommand) {
   });
 
   render(rewrite, options.json);
+}
+
+async function renderLatestHandoff(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const latest = await readLatestHandoff(repoPath);
+
+  if (options.json) {
+    render(latest, true);
+    return;
+  }
+
+  if (!latest.prompt) {
+    process.stdout.write("No latest handoff prompt recorded.\n");
+    return;
+  }
+
+  process.stdout.write(latest.prompt);
 }
 
 async function renderCodexSessions(argsForCommand) {

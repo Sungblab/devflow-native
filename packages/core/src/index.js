@@ -1463,6 +1463,7 @@ export async function recordFinishEvent(repoPath, finishSummary, options = {}) {
   };
 
   await appendDevflowEvent(repoPath, event);
+  await writeNextPromptProjection(repoPath, finishSummary.nextSession.prompt);
 
   return event;
 }
@@ -1702,10 +1703,50 @@ export async function readDevflowState(repoPath) {
   return deriveStateFromEvents(events, warnings);
 }
 
+export async function readLatestHandoff(repoPath) {
+  const state = await readDevflowState(repoPath);
+  const handoff = state.handoffs.latest;
+
+  if (!handoff) {
+    return {
+      schemaVersion: "0.1",
+      command: "handoff_latest",
+      path: ".devflow/next-prompt.md",
+      handoff: null,
+      prompt: null,
+      warnings: state.warnings,
+    };
+  }
+
+  let prompt = handoff.prompt;
+  try {
+    prompt = await readFile(join(repoPath, ".devflow", "next-prompt.md"), "utf8");
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      throw error;
+    }
+  }
+
+  return {
+    schemaVersion: "0.1",
+    command: "handoff_latest",
+    path: ".devflow/next-prompt.md",
+    handoff,
+    prompt,
+    warnings: state.warnings,
+  };
+}
+
 async function appendDevflowEvent(repoPath, event) {
   const stateDir = join(repoPath, ".devflow", "state");
   await mkdir(stateDir, { recursive: true });
   await appendFile(join(stateDir, "events.jsonl"), `${JSON.stringify(event)}\n`, "utf8");
+}
+
+async function writeNextPromptProjection(repoPath, prompt) {
+  const path = join(repoPath, ".devflow", "next-prompt.md");
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, prompt, "utf8");
 }
 
 async function findWorkEvent(repoPath, type, id) {

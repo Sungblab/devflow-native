@@ -84,11 +84,15 @@ node packages/cli/src/index.js doctor --platform windows-powershell --json
 node packages/cli/src/index.js status --simple
 node packages/cli/src/index.js finish --json
 node packages/cli/src/index.js prompt next
+node packages/cli/src/index.js prompt latest
 npm run mcp:stdio
 ```
 
 `devflow finish` records local evidence in `.devflow/state/events.jsonl`.
-`devflow prompt next` emits a compact handoff prompt for the next session.
+It also writes the latest human-readable prompt projection to
+`.devflow/next-prompt.md`. `devflow prompt next` emits an ad hoc compact
+handoff prompt, and `devflow prompt latest` reads the persisted prompt for the
+next session.
 
 ## Core Loop
 
@@ -170,8 +174,8 @@ The current MVP is plugin-first and MCP-backed:
 
 The MCP package exposes the same core contracts through `devflow.doctor`,
 `devflow.status`, `devflow.finish`, `devflow.record_gate`,
-`devflow.gates_run`, and `devflow.next_prompt`, plus work, split, prompt,
-session, and health tools.
+`devflow.gates_run`, `devflow.next_prompt`, and `devflow.handoff_latest`, plus
+work, split, prompt, session, and health tools.
 
 `devflow finish --json` now returns a false-completion guard contract with
 `canClaimDone`, `doneBlockers`, changed files, gate evidence, skipped or failed

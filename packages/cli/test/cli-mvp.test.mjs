@@ -1746,6 +1746,51 @@ test("CLI finish persists evidence and status reads the latest local state", asy
   assert.equal(parsed.gates[0].lastRun.status, "passed");
 });
 
+test("CLI prompt latest reads the persisted next prompt projection", async () => {
+  const repoPath = await createTempGitRepo();
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "cli-handoff-latest",
+    "--title",
+    "CLI handoff latest",
+    "--intent",
+    "Persist a latest prompt for CLI lookup.",
+    "--gate",
+    "unit:npm test:passed",
+    "--next-task",
+    "Load this prompt in the next CLI session.",
+    "--json",
+  ]);
+
+  const json = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "prompt",
+    "latest",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const text = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "prompt",
+    "latest",
+    "--repo",
+    repoPath,
+  ]);
+  const parsed = JSON.parse(json.stdout);
+
+  assert.equal(parsed.command, "handoff_latest");
+  assert.equal(parsed.handoff.workItemId, "cli-handoff-latest");
+  assert.equal(parsed.path, ".devflow/next-prompt.md");
+  assert.match(parsed.prompt, /Persist a latest prompt for CLI lookup/);
+  assert.match(text.stdout, /Persist a latest prompt for CLI lookup/);
+});
+
 test("CLI doctor renders platform and mistake memory JSON", async () => {
   const repoPath = await createTempGitRepo();
   await mkdir(join(repoPath, ".devflow"), { recursive: true });

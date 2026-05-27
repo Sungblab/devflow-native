@@ -30,6 +30,7 @@ import {
   readHarnessHealth,
   readDevflowConfig,
   readDevflowState,
+  readLatestHandoff,
   runConfiguredGate,
   writeHarnessInstall,
   writeHarnessRepair,
@@ -1682,6 +1683,36 @@ test("finish evidence is appended to the local devflow event log", async () => {
   assert.deepEqual(JSON.parse(lines[0]), event);
   assert.equal(event.type, "work.completed");
   assert.equal(event.payload.workItem.id, "state-persistence");
+});
+
+test("finish persistence writes latest next prompt projection", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-finish-next-prompt-"));
+  const summary = createFinishSummary({
+    workItem: {
+      id: "handoff-persistence",
+      title: "Handoff persistence",
+    },
+    intent: "Persist next prompt for the next agent session.",
+    changedFiles: [{ path: "packages/core/src/index.js", status: "modified" }],
+    gates: [{ id: "unit", command: "node --test", status: "passed" }],
+    nextTask: "Read latest handoff through MCP.",
+  });
+
+  await recordFinishEvent(repoPath, summary, {
+    observedAt: "2026-05-27T10:00:00.000Z",
+  });
+
+  const eventLog = await readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8");
+  const projection = await readFile(join(repoPath, ".devflow", "next-prompt.md"), "utf8");
+  const latest = await readLatestHandoff(repoPath);
+
+  assert.match(eventLog, /"type":"work.completed"/);
+  assert.match(projection, /Persist next prompt for the next agent session/);
+  assert.match(projection, /Read latest handoff through MCP/);
+  assert.equal(latest.command, "handoff_latest");
+  assert.equal(latest.handoff.workItemId, "handoff-persistence");
+  assert.equal(latest.path, ".devflow/next-prompt.md");
+  assert.equal(latest.prompt, projection);
 });
 
 test("status summary can derive latest handoff and gate evidence from devflow state", async () => {

@@ -26,6 +26,7 @@ import {
   readProjectHealth,
   readDevflowConfig,
   readDevflowState,
+  readLatestHandoff,
   readMistakeMemory,
   recordFinishEvent,
   recordGateEvent,
@@ -161,6 +162,10 @@ const tools = [
     name: "devflow.next_prompt",
     description: "Generate a copy-paste next-session prompt.",
   },
+  {
+    name: "devflow.handoff_latest",
+    description: "Read the latest persisted next-session handoff prompt.",
+  },
 ];
 
 export function listTools() {
@@ -282,6 +287,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.next_prompt") {
     return callNextPrompt(args);
+  }
+
+  if (name === "devflow.handoff_latest") {
+    return callLatestHandoff(args);
   }
 
   throw new Error(`Unknown devflow MCP tool: ${name}`);
@@ -823,6 +832,16 @@ function callNextPrompt(args) {
     },
     "devflow next_prompt",
   );
+}
+
+async function callLatestHandoff(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const latest = await readLatestHandoff(repoPath);
+  const text = latest.handoff
+    ? `devflow handoff_latest: ${latest.handoff.workItemId}`
+    : "devflow handoff_latest: none";
+
+  return toolResult(latest, text);
 }
 
 function toolResult(structuredContent, text) {

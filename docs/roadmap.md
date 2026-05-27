@@ -25,6 +25,7 @@ Build:
 - `devflow finish`
 - `devflow doctor`
 - `devflow prompt next`
+- `devflow prompt latest`
 - repo-local Codex/Claude plugin hooks for start, prompt intent, and finish
   guard context
 - local `.devflow/` state files
@@ -33,7 +34,7 @@ Build:
 - platform execution contract and repeated-mistake memory capture
 - repo-local Codex plugin wrappers for the start/status/doctor and finish
   evidence loops
-- Markdown next-session handoff output
+- Markdown next-session handoff output and latest prompt projection
 
 Exit criteria:
 
@@ -185,6 +186,7 @@ Build:
 - `devflow.record_gate` MCP tool
 - `devflow.gates_run` MCP tool
 - `devflow.next_prompt` MCP tool
+- `devflow.handoff_latest` MCP tool
 - `devflow.rewrite_prompt` MCP tool
 - `devflow.sessions_codex` MCP tool
 - `devflow.sessions_attach_plan` MCP tool
@@ -220,8 +222,8 @@ Current implementation note: `packages/mcp` has testable handler functions for
 `devflow.harness_health`, confirmed-write `devflow.harness_repair`,
 `devflow.split`, `devflow.explain_term`,
 `devflow.doctor`, `devflow.finish`, `devflow.record_gate`, `devflow.gates_run`,
-`devflow.next_prompt`, and `devflow.rewrite_prompt`, plus adapter-backed
-`devflow.sessions_codex` and
+`devflow.next_prompt`, `devflow.handoff_latest`, and `devflow.rewrite_prompt`,
+plus adapter-backed `devflow.sessions_codex` and
 dry-run `devflow.sessions_attach_plan`, confirmed-write
 `devflow.sessions_attach`, read-only `devflow.sessions_list`, manual
 `devflow.sessions_note`, local work item tools `devflow.work_create`,
@@ -240,7 +242,10 @@ later work. `devflow finish` now honors `.devflow/config.json`
 reviewer prompt that should precede `devflow review record`. Finish and Stop
 surfaces now show both the request and record follow-up commands. The repo-local plugin ships shared `start`, `split`, `next`,
 `explain`, `rewrite`, `sessions`, and `finish` skills for Codex and Claude Code style plugin
-workflows.
+workflows. `devflow finish` keeps `.devflow/state/events.jsonl` as canonical
+handoff history and rewrites `.devflow/next-prompt.md` as the latest
+human-readable projection; CLI `devflow prompt latest` and MCP
+`devflow.handoff_latest` read that projection for the next session.
 
 ## Phase 6: Session Import
 

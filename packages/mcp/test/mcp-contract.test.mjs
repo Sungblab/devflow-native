@@ -20,6 +20,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.harness_repair"));
   assert.ok(names.includes("devflow.finish"));
   assert.ok(names.includes("devflow.next_prompt"));
+  assert.ok(names.includes("devflow.handoff_latest"));
   assert.ok(names.includes("devflow.record_gate"));
   assert.ok(names.includes("devflow.gates_run"));
   assert.ok(names.includes("devflow.split"));
@@ -376,6 +377,29 @@ test("MCP finish blocks done claim when configured gate has no recorded evidence
   assert.equal(result.structuredContent.canClaimDone, false);
   assert.equal(result.structuredContent.unknownGates[0].id, "unit");
   assert.equal(result.structuredContent.doneBlockers[0].kind, "unknown_gate");
+});
+
+test("MCP handoff latest returns persisted next prompt projection", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-handoff-latest-"));
+
+  await callTool("devflow.finish", {
+    repo: repoPath,
+    work: "mcp-handoff-latest",
+    title: "MCP handoff latest",
+    intent: "Persist a latest prompt for MCP lookup.",
+    gates: [{ id: "unit", command: "node --test", status: "passed" }],
+    nextTask: "Load this prompt in the next MCP session.",
+  });
+
+  const latest = await callTool("devflow.handoff_latest", {
+    repo: repoPath,
+  });
+
+  assert.equal(latest.structuredContent.command, "handoff_latest");
+  assert.equal(latest.structuredContent.handoff.workItemId, "mcp-handoff-latest");
+  assert.equal(latest.structuredContent.path, ".devflow/next-prompt.md");
+  assert.match(latest.structuredContent.prompt, /Persist a latest prompt for MCP lookup/);
+  assert.match(latest.content[0].text, /devflow handoff_latest: mcp-handoff-latest/);
 });
 
 test("MCP finish requires recorded review when configured", async () => {

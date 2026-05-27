@@ -35,6 +35,7 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.record_gate`
 - `devflow.gates_run`
 - `devflow.next_prompt`
+- `devflow.handoff_latest`
 
 Handlers call `packages/core` or `packages/adapters` and return structured
 content plus a short text summary for agent hosts.
@@ -128,6 +129,12 @@ classifications, review evidence, `structuredHandoff`, and `nextPrompt`. If
 passing `review.completed` record for the work item and includes
 `review.nextAction.command` and `review.nextAction.recordCommand` when the
 required review still needs to be requested and then recorded.
+
+`devflow.finish` also appends the canonical `work.completed` event to
+`.devflow/state/events.jsonl` and rewrites `.devflow/next-prompt.md` as the
+latest human-readable prompt projection. `devflow.handoff_latest` reads the
+latest derived handoff metadata plus that persisted prompt so a new MCP-backed
+session can resume without regenerating an ad hoc prompt.
 
 `devflow.gates_run` reads `.devflow/config.json`, finds a configured gate by
 `id`, executes its command without a shell, and appends a `gate.finished` event

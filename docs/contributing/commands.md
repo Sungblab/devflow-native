@@ -36,6 +36,7 @@ devflow finish
 devflow review request
 devflow review record
 devflow prompt next
+devflow prompt latest
 devflow prompt rewrite
 devflow sessions codex
 devflow sessions attach-plan
@@ -55,6 +56,7 @@ devflow split
 devflow finish
 devflow doctor
 devflow prompt next
+devflow prompt latest
 ```
 
 This loop should answer three daily questions before larger surfaces exist:
@@ -98,7 +100,10 @@ The MVP loop stores local evidence in an append-only JSONL event log:
 ```
 
 `devflow finish` appends one `work.completed` event containing the finish JSON
-contract. `devflow gates run` and agent hosts may also record standalone
+contract and writes the latest human-readable prompt projection to
+`.devflow/next-prompt.md`. `devflow prompt latest` reads that projection and
+returns the matching latest handoff metadata derived from the event log.
+`devflow gates run` and agent hosts may also record standalone
 `gate.finished` evidence before a work item is closed. `devflow review record`
 can append `review.completed` evidence; when `.devflow/config.json` sets
 `review.required` to `true`, finish is blocked until the selected work item has
@@ -1149,6 +1154,11 @@ to generate the reviewer prompt before recording that evidence. When review is
 required but not recorded, `finish` includes `review.nextAction.command` and
 `review.nextAction.recordCommand`; `finish --guided` prints them as
 `Review next` and `Review record`.
+
+`devflow finish` keeps `.devflow/state/events.jsonl` as the canonical source of
+handoff history and rewrites `.devflow/next-prompt.md` as the latest
+human-readable prompt projection. Use `devflow prompt latest --json` to return
+the latest derived handoff metadata plus that prompt content.
 
 ## `devflow review request`
 
