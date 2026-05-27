@@ -1391,6 +1391,41 @@ test("CLI finish requires recorded review when configured", async () => {
   assert.equal(finishedJson.review.reviewer, "Claude Code");
 });
 
+test("CLI review request emits a strict reviewer prompt", async () => {
+  const repoPath = await createTempGitRepo();
+  await writeFile(join(repoPath, "src.js"), "export const value = 1;\n");
+  await execFileAsync("git", ["add", "src.js"], { cwd: repoPath });
+  await execFileAsync("git", ["commit", "-m", "initial"], { cwd: repoPath });
+  await writeFile(join(repoPath, "src.js"), "export const value = 2;\n");
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "review",
+    "request",
+    "--repo",
+    repoPath,
+    "--work",
+    "review-request",
+    "--title",
+    "Review request",
+    "--intent",
+    "Review before finish.",
+    "--target",
+    "claude-code",
+    "--persona",
+    "strict-reviewer",
+    "--json",
+  ]);
+
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.command, "review_request");
+  assert.equal(parsed.target, "claude-code");
+  assert.equal(parsed.persona, "strict-reviewer");
+  assert.match(parsed.prompt, /Assume another coding agent wrote this change/);
+  assert.match(parsed.prompt, /src\.js/);
+  assert.match(parsed.prompt, /devflow review record --work review-request/);
+});
+
 test("CLI finish allows done claim when configured gate evidence was recorded", async () => {
   const repoPath = await createTempGitRepo();
   await mkdir(join(repoPath, ".devflow"), { recursive: true });

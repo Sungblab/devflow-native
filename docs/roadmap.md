@@ -197,6 +197,7 @@ Build:
 - `devflow.work_block` MCP tool
 - `devflow.work_unblock` MCP tool
 - `devflow.work_list` MCP tool
+- `devflow.review_request` MCP tool
 - `devflow.review_record` MCP tool
 - Codex native plugin readiness and install surface
 - Claude Code plugin draft with slash commands
@@ -223,15 +224,17 @@ dry-run `devflow.sessions_attach_plan`, confirmed-write
 `devflow.sessions_note`, local work item tools `devflow.work_create`,
 `devflow.work_start`, `devflow.work_update`, `devflow.work_rename`,
 `devflow.work_ready`, `devflow.work_block`, `devflow.work_unblock`, and
-`devflow.work_list`, local review evidence tool `devflow.review_record`, and a
-minimal stdio JSON-RPC transport. The CLI also has `devflow split --json` with
+`devflow.work_list`, local review request tool `devflow.review_request`, local
+review evidence tool `devflow.review_record`, and a minimal stdio JSON-RPC
+transport. The CLI also has `devflow split --json` with
 optional work registration and `devflow explain` renderers, plus `devflow prompt rewrite` for converting
 vague maintainer intent into agent-ready requirements. Host-specific Codex and
 Gemini MCP config templates are present. Project-specific split discovery can now read
 `.devflow/config.json` `split.tasks`; richer docs/code map inference remains
 later work. `devflow finish` now honors `.devflow/config.json`
 `review.required` by requiring a passing `review.completed` record before
-`canClaimDone` becomes true. The repo-local plugin ships shared `start`, `split`, `next`,
+`canClaimDone` becomes true, and `devflow review request` generates the strict
+reviewer prompt that should precede `devflow review record`. The repo-local plugin ships shared `start`, `split`, `next`,
 `explain`, `rewrite`, `sessions`, and `finish` skills for Codex and Claude Code style plugin
 workflows.
 

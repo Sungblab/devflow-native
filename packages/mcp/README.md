@@ -28,6 +28,7 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.work_block`
 - `devflow.work_unblock`
 - `devflow.work_list`
+- `devflow.review_request`
 - `devflow.review_record`
 - `devflow.finish`
 - `devflow.record_gate`
@@ -95,6 +96,11 @@ duplicate lines. `devflow.work_rename` is a title-only alias over
 `work.started` events so agent hosts can make split tasks visible in
 `devflow.work_list` and `devflow.status` without re-entering work item details.
 Repeated split registration reuses existing work events by id.
+
+`devflow.review_request` creates the copy-paste prompt for a separate reviewer
+agent or reviewer persona. It returns the work item, changed files supplied by
+the host, recorded gate evidence, a strict blocker-first checklist, and the
+follow-up `devflow review record` command.
 
 `devflow.review_record` writes local `review.completed` evidence for a work
 item. Use it after a separate reviewer agent or reviewer persona has inspected

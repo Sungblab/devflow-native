@@ -16,6 +16,7 @@ import {
   createTermExplanation,
   createNextPrompt,
   createPromptRewrite,
+  createReviewRequest,
   createSessionListSummary,
   createSplitPlan,
   createStatusSummary,
@@ -209,6 +210,37 @@ test("finish summary blocks review evidence that still requests changes", () => 
 
   assert.equal(summary.canClaimDone, false);
   assert.ok(summary.doneBlockers.some((blocker) => blocker.kind === "review_changes_requested"));
+});
+
+test("review request creates an agent-ready strict review prompt", () => {
+  const request = createReviewRequest({
+    workItem: {
+      id: "review-request",
+      title: "Review request prompt",
+    },
+    intent: "Make finish-time review hard to skip.",
+    target: "claude-code",
+    persona: "strict-reviewer",
+    changedFiles: [
+      { path: "packages/core/src/index.js", status: "modified" },
+      { path: "packages/cli/src/index.js", status: "modified" },
+    ],
+    gates: [{ id: "unit", command: "npm test", status: "passed" }],
+    reviewRecordCommand:
+      "devflow review record --work review-request --reviewer Claude --status passed --summary <summary>",
+  });
+
+  assert.equal(request.schemaVersion, "0.1");
+  assert.equal(request.command, "review_request");
+  assert.equal(request.workItemId, "review-request");
+  assert.equal(request.target, "claude-code");
+  assert.equal(request.persona, "strict-reviewer");
+  assert.match(request.prompt, /Assume another coding agent wrote this change/);
+  assert.match(request.prompt, /Make finish-time review hard to skip/);
+  assert.match(request.prompt, /packages\/core\/src\/index\.js/);
+  assert.match(request.prompt, /npm test/);
+  assert.match(request.prompt, /devflow review record --work review-request/);
+  assert.ok(request.checklist.some((item) => item.includes("Blockers")));
 });
 
 test("next prompt includes objective, changed files, evidence, risks, and next task", () => {

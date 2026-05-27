@@ -18,6 +18,7 @@ import {
   createInitPlan,
   createNextPrompt,
   createPromptRewrite,
+  createReviewRequest,
   createSessionAttachPlan,
   createSessionListSummary,
   createSplitPlan,
@@ -82,6 +83,8 @@ try {
     await renderGatesRun(args.slice(2));
   } else if (command === "review" && args[1] === "record") {
     await renderReviewRecord(args.slice(2));
+  } else if (command === "review" && args[1] === "request") {
+    await renderReviewRequest(args.slice(2));
   } else if (command === "prompt" && args[1] === "next") {
     renderNextPrompt(args.slice(2));
   } else if (command === "prompt" && args[1] === "rewrite") {
@@ -317,6 +320,31 @@ async function renderReviewRecord(argsForCommand) {
     },
     options.json,
   );
+}
+
+async function renderReviewRequest(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const state = await readDevflowState(repoPath);
+  const workItemId = options.work ?? options.id ?? "local-work";
+  const recordedGates = Object.values(state.gates.latestById).filter(
+    (gate) => !gate.workItemId || gate.workItemId === workItemId,
+  );
+  const gates = [...recordedGates, ...collectRepeated(options.gate).map(parseGate)];
+  const request = createReviewRequest({
+    workItem: {
+      id: workItemId,
+      title: options.title ?? workItemId,
+    },
+    intent: options.intent,
+    target: options.target ?? "reviewer",
+    persona: options.persona ?? "strict-reviewer",
+    changedFiles: readChangedFiles(repoPath),
+    gates,
+    reviewRecordCommand: `devflow review record --work ${workItemId} --reviewer <reviewer> --status <passed|changes-requested> --summary <summary>`,
+  });
+
+  render(request, options.json);
 }
 
 async function renderDoctor(argsForCommand) {

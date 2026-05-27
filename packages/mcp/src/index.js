@@ -10,6 +10,7 @@ import {
   createFinishSummary,
   createNextPrompt,
   createPromptRewrite,
+  createReviewRequest,
   createSessionAttachPlan,
   createSessionListSummary,
   createSplitPlan,
@@ -132,6 +133,10 @@ const tools = [
     description: "Record local code review evidence for a work item.",
   },
   {
+    name: "devflow.review_request",
+    description: "Create a copy-paste prompt for strict agent code review before finish.",
+  },
+  {
     name: "devflow.doctor",
     description: "Inspect local execution rules and repeated-mistake memory.",
   },
@@ -244,6 +249,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.review_record") {
     return callReviewRecord(args);
+  }
+
+  if (name === "devflow.review_request") {
+    return callReviewRequest(args);
   }
 
   if (name === "devflow.doctor") {
@@ -656,6 +665,29 @@ async function callReviewRecord(args) {
     },
     `devflow review_record: ${event.payload.workItemId}`,
   );
+}
+
+async function callReviewRequest(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const state = await readDevflowState(repoPath);
+  const workItemId = args.workItemId ?? args.work ?? "local-work";
+  const recordedGates = Object.values(state.gates.latestById).filter(
+    (gate) => !gate.workItemId || gate.workItemId === workItemId,
+  );
+  const request = createReviewRequest({
+    workItem: {
+      id: workItemId,
+      title: args.title ?? workItemId,
+    },
+    intent: args.intent,
+    target: args.target ?? "reviewer",
+    persona: args.persona ?? "strict-reviewer",
+    changedFiles: args.changedFiles ?? [],
+    gates: [...recordedGates, ...(args.gates ?? [])],
+    reviewRecordCommand: `devflow review record --work ${workItemId} --reviewer <reviewer> --status <passed|changes-requested> --summary <summary>`,
+  });
+
+  return toolResult(request, `devflow review_request: ${request.workItemId}`);
 }
 
 async function callDoctor(args) {

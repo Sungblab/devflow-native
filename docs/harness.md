@@ -208,9 +208,10 @@ findings should be recorded as dismissed with a reason.
 
 Repos can set `"review": { "required": true }` in `.devflow/config.json`.
 When enabled, `devflow finish` requires a passing `review.completed` record for
-the work item before `canClaimDone` becomes true. `devflow review record` and
-MCP `devflow.review_record` capture that evidence after a separate reviewer
-agent or reviewer persona has inspected the work.
+the work item before `canClaimDone` becomes true. `devflow review request` and
+MCP `devflow.review_request` generate the strict copy-paste prompt for that
+separate reviewer; `devflow review record` and MCP `devflow.review_record`
+capture the resulting evidence.
 
 Reviewer profiles can help break self-review bias:
 

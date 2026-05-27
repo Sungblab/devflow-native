@@ -188,6 +188,66 @@ export function createNextPrompt(input) {
   return `${lines.join("\n")}\n`;
 }
 
+export function createReviewRequest(input = {}) {
+  const workItem = input.workItem ?? {};
+  const workItemId = workItem.id ?? input.workItemId ?? "local-work";
+  const title = workItem.title ?? input.title ?? workItemId;
+  const changedFiles = input.changedFiles ?? [];
+  const gates = input.gates ?? [];
+  const checklist = input.checklist ?? [
+    "Blockers: correctness bugs, data loss, security issues, broken user flows, and missing required tests.",
+    "Regressions: behavior that contradicts existing docs, contracts, CLI/MCP schemas, or persisted state.",
+    "Evidence: identify the exact files, commands, or tests that prove each finding.",
+    "Outcome: return passed or changes-requested, then provide the summary for devflow review record.",
+  ];
+  const reviewRecordCommand =
+    input.reviewRecordCommand ??
+    `devflow review record --work ${workItemId} --reviewer <reviewer> --status <passed|changes-requested> --summary <summary>`;
+  const promptLines = [
+    `Review work item ${workItemId}: ${title}`,
+    "",
+    "Assume another coding agent wrote this change. Review it strictly before finish.",
+    "",
+    `Intent: ${input.intent ?? "Review the current local work before it is claimed done."}`,
+    `Target agent: ${input.target ?? "reviewer"}`,
+    `Persona: ${input.persona ?? "strict-reviewer"}`,
+    "",
+    "Changed files:",
+    ...formatList(changedFiles.map((file) => `${file.path}${file.status ? ` (${file.status})` : ""}`)),
+    "",
+    "Gate evidence:",
+    ...formatList(gates.map((gate) => `${gate.id}: ${gate.command ?? "unknown command"} -> ${gate.status ?? "unknown"}`)),
+    "",
+    "Review checklist:",
+    ...formatList(checklist),
+    "",
+    "Required response:",
+    "- Findings first, ordered by severity, with file paths and line references when available.",
+    "- If there are no blockers, say that clearly and mention residual test gaps.",
+    "- End with the exact devflow review record command to capture the outcome.",
+    "",
+    `Record command: ${reviewRecordCommand}`,
+  ];
+
+  return {
+    schemaVersion: "0.1",
+    command: "review_request",
+    workItemId,
+    workItem: {
+      id: workItemId,
+      title,
+    },
+    target: input.target ?? "reviewer",
+    persona: input.persona ?? "strict-reviewer",
+    intent: input.intent ?? null,
+    changedFiles,
+    gates,
+    checklist,
+    reviewRecordCommand,
+    prompt: `${promptLines.join("\n")}\n`,
+  };
+}
+
 function evaluateFinishGuard(input) {
   const requiredGates = input.requiredGates ?? [];
   const gateEvidence = input.gateEvidence ?? [];

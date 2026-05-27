@@ -33,6 +33,7 @@ devflow status
 devflow split
 devflow explain
 devflow finish
+devflow review request
 devflow review record
 devflow prompt next
 devflow prompt rewrite
@@ -1124,7 +1125,32 @@ JSON output:
 If `.devflow/config.json` contains `"review": { "required": true }`, finish
 also requires review evidence for the work item. The latest
 `review.completed` event for that work item must have a passing status;
-`changes-requested` keeps `canClaimDone` false.
+`changes-requested` keeps `canClaimDone` false. Use `devflow review request`
+to generate the reviewer prompt before recording that evidence.
+
+## `devflow review request`
+
+Creates a copy-paste prompt for a separate reviewer agent or reviewer persona.
+The command does not run a review; it packages the current work item, dirty
+files, recorded gate evidence, a blocker-first checklist, and the exact
+follow-up record command.
+
+Example:
+
+```powershell
+devflow review request --work worker-static-quality --target claude-code --persona strict-reviewer --json
+```
+
+Outputs:
+
+- `review_request` JSON wrapper
+- `prompt` text suitable for Claude Code, Codex, or another reviewer host
+- `reviewRecordCommand` to capture the reviewer outcome locally
+
+The generated prompt intentionally tells the reviewer to assume another coding
+agent wrote the change. That keeps the review stance independent from the
+implementation session and avoids treating the current agent's own code as
+already trustworthy.
 
 ## `devflow review record`
 

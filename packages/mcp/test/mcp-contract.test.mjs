@@ -38,6 +38,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.work_unblock"));
   assert.ok(names.includes("devflow.work_list"));
   assert.ok(names.includes("devflow.review_record"));
+  assert.ok(names.includes("devflow.review_request"));
 });
 
 test("MCP harness tools inspect, plan, and health-check native setup", async () => {
@@ -304,6 +305,52 @@ test("MCP finish requires recorded review when configured", async () => {
 
   assert.equal(finished.structuredContent.canClaimDone, true);
   assert.equal(finished.structuredContent.review.status, "passed");
+});
+
+test("MCP review_request emits a strict reviewer prompt", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-review-request-"));
+  const result = await callTool("devflow.review_request", {
+    repo: repoPath,
+    work: "review-request",
+    title: "Review request",
+    intent: "Review before finish.",
+    target: "codex",
+    persona: "strict-reviewer",
+    changedFiles: [{ path: "packages/mcp/src/index.js", status: "modified" }],
+  });
+
+  assert.equal(result.structuredContent.command, "review_request");
+  assert.equal(result.structuredContent.target, "codex");
+  assert.match(result.structuredContent.prompt, /Assume another coding agent wrote this change/);
+  assert.match(result.structuredContent.prompt, /packages\/mcp\/src\/index\.js/);
+  assert.match(result.structuredContent.prompt, /devflow review record --work review-request/);
+});
+
+test("MCP review_request keeps recorded gate evidence scoped to the work item", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-review-request-scope-"));
+  await callTool("devflow.record_gate", {
+    repo: repoPath,
+    id: "other-unit",
+    command: "npm test",
+    status: "passed",
+    work: "other-work",
+  });
+  await callTool("devflow.record_gate", {
+    repo: repoPath,
+    id: "target-unit",
+    command: "node --test packages/mcp/test/mcp-contract.test.mjs",
+    status: "passed",
+    work: "target-work",
+  });
+
+  const result = await callTool("devflow.review_request", {
+    repo: repoPath,
+    work: "target-work",
+    title: "Target work",
+  });
+
+  assert.match(result.structuredContent.prompt, /target-unit/);
+  assert.doesNotMatch(result.structuredContent.prompt, /other-unit/);
 });
 
 test("MCP finish allows done claim when configured gate evidence was recorded", async () => {

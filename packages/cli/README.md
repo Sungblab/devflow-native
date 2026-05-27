@@ -66,6 +66,7 @@ packages/cli/
 - `devflow work list`
 - `devflow split`
 - `devflow finish`
+- `devflow review request`
 - `devflow review record`
 - `devflow doctor`
 - `devflow prompt next`
@@ -139,4 +140,7 @@ unknown required gates block `canClaimDone`. When `.devflow/config.json` sets
 `review.required` to `true`, `devflow finish` also requires a matching
 `review.completed` event for the work item. `devflow review record --work <id>
 --reviewer <name> --status passed --summary <text>` records that local review
-evidence.
+evidence. `devflow review request --work <id> --target claude-code --persona
+strict-reviewer` creates the copy-paste prompt for that separate review. It
+includes the work item, dirty files, recorded gate evidence, a blocker-first
+checklist, and the follow-up `devflow review record` command.
