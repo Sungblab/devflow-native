@@ -5,7 +5,11 @@ const input = await readHookInput();
 const repoPath = input.cwd ?? process.cwd();
 const message = input.last_assistant_message ?? "";
 const claimsDone = /(완료|마무리|done|complete|implemented|finished)/i.test(message);
-const mentionsEvidence = /(verified|verification|테스트|검증|gate|finish|next-session|handoff)/i.test(message);
+const mentionsEvidence = /(verified|verification|tests?|테스트|검증|gate|finish|next-session|handoff)/i.test(message);
+const mentionsReviewEvidence = /(review request|review record|review\.completed|리뷰)/i.test(message);
+const status = input.devflow_status_json ?? runDevflow(repoPath, ["status", "--json"]);
+const parsedStatus = parseJson(status);
+const reviewRecommendation = parsedStatus?.recommendations?.find((item) => item.kind === "review");
 
 if (claimsDone && !mentionsEvidence && !input.stop_hook_active) {
   process.stdout.write(
@@ -18,7 +22,17 @@ if (claimsDone && !mentionsEvidence && !input.stop_hook_active) {
   process.exit(0);
 }
 
-const status = runDevflow(repoPath, ["status", "--json"]);
+if (claimsDone && reviewRecommendation && !mentionsReviewEvidence && !input.stop_hook_active) {
+  process.stdout.write(
+    `${JSON.stringify({
+      decision: "block",
+      reason:
+        `Devflow review guard: status recommends ${reviewRecommendation.command}. Run the review request and record the review outcome before claiming completion.`,
+    })}\n`,
+  );
+  process.exit(0);
+}
+
 const context = [
   "Devflow stop context:",
   "- Before ending, check whether status recommends review, gates, finish, or handoff work.",
@@ -30,3 +44,14 @@ const context = [
 ].join("\n");
 
 writeHookContext(input.hook_event_name ?? "Stop", context);
+
+function parseJson(value) {
+  if (!value) {
+    return null;
+  }
+  try {
+    return typeof value === "string" ? JSON.parse(value) : value;
+  } catch {
+    return null;
+  }
+}

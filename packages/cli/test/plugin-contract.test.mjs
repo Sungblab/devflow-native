@@ -131,6 +131,26 @@ test("repo-local plugin hooks emit compact context for agent sessions", async ()
   assert.match(stop.hookSpecificOutput.additionalContext, /Current compact status/);
 });
 
+test("repo-local stop hook blocks completion when status still recommends review", async () => {
+  const blocked = await runHook("plugins/devflow/hooks/stop.mjs", {
+    hook_event_name: "Stop",
+    cwd: process.cwd(),
+    last_assistant_message: "Implemented and tests pass. Done.",
+    devflow_status_json: JSON.stringify({
+      recommendations: [
+        {
+          kind: "review",
+          command: "devflow review request --work guarded-work --target reviewer --persona strict-reviewer",
+        },
+      ],
+    }),
+  });
+
+  assert.equal(blocked.decision, "block");
+  assert.match(blocked.reason, /devflow review request --work guarded-work/);
+  assert.match(blocked.reason, /record the review outcome/);
+});
+
 async function runHook(path, payload) {
   const child = spawn(process.execPath, [path], {
     cwd: process.cwd(),
