@@ -2414,6 +2414,9 @@ function createHarnessHookScript(defaultEventName) {
   return [
     "#!/usr/bin/env node",
     "",
+    "const { readFileSync } = await import('node:fs');",
+    "const { join } = await import('node:path');",
+    "",
     "const chunks = [];",
     "for await (const chunk of process.stdin) {",
     "  chunks.push(chunk);",
@@ -2428,6 +2431,8 @@ function createHarnessHookScript(defaultEventName) {
     "}",
     "",
     `const eventName = payload.hook_event_name ?? ${JSON.stringify(defaultEventName)};`,
+    "const repoPath = payload.cwd ?? process.cwd();",
+    "const latestHandoffPrompt = readLatestHandoffPrompt(repoPath);",
     "const additionalContext = [",
     "  'Devflow Native harness context:',",
     "  '- Run devflow harness inspect before changing harness files.',",
@@ -2435,6 +2440,7 @@ function createHarnessHookScript(defaultEventName) {
     "  '- Finish with review, gate evidence, risks, and a next-session prompt.',",
     "  '- If review is required, run devflow review request --work <id>, then devflow review record --work <id> before devflow finish.',",
     "  '- If finish returns review.nextAction.command or review.nextAction.recordCommand, follow both before claiming completion.',",
+    "  ...(latestHandoffPrompt ? ['', 'Latest handoff prompt:', latestHandoffPrompt] : []),",
     "].join('\\n');",
     "",
     "process.stdout.write(`${JSON.stringify({",
@@ -2443,6 +2449,15 @@ function createHarnessHookScript(defaultEventName) {
     "    additionalContext,",
     "  },",
     "})}\\n`);",
+    "",
+    "function readLatestHandoffPrompt(repoPath) {",
+    "  try {",
+    "    const prompt = readFileSync(join(repoPath, '.devflow', 'next-prompt.md'), 'utf8').trim();",
+    "    return prompt.length > 2200 ? `${prompt.slice(0, 2200)}\\n...truncated...` : prompt;",
+    "  } catch {",
+    "    return '';",
+    "  }",
+    "}",
   ].join("\n");
 }
 

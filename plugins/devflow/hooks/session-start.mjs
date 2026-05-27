@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-import { compactJson, readHookInput, runDevflow, writeHookContext } from "./devflow-hook-lib.mjs";
+import { compactJson, readHookInput, readLatestHandoffPrompt, runDevflow, writeHookContext } from "./devflow-hook-lib.mjs";
 
 const input = await readHookInput();
 const repoPath = input.cwd ?? process.cwd();
 const doctor = runDevflow(repoPath, ["doctor", "--json"]);
 const status = runDevflow(repoPath, ["status", "--json"]);
+const latestHandoffPrompt = readLatestHandoffPrompt(repoPath);
 
 const context = [
   "Devflow start context:",
@@ -18,6 +19,13 @@ const context = [
   "",
   "Status:",
   compactJson(status, 2200),
+  ...(latestHandoffPrompt
+    ? [
+        "",
+        "Latest handoff prompt:",
+        latestHandoffPrompt,
+      ]
+    : []),
 ].join("\n");
 
 writeHookContext(input.hook_event_name ?? "SessionStart", context);

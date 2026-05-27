@@ -270,6 +270,11 @@ The harness command group is adoption-first. Mature repos should keep their
 existing instructions; Devflow should add the minimum bridge needed for native
 Codex and Claude Code workflow continuity.
 
+Installed session-start hooks include the latest `.devflow/next-prompt.md`
+projection when present. This gives Codex or Claude Code the latest handoff at
+startup while keeping `.devflow/state/events.jsonl` as the canonical event
+source.
+
 ## `devflow gates run`
 
 Runs one configured gate from `.devflow/config.json` and records the command

@@ -245,7 +245,9 @@ surfaces now show both the request and record follow-up commands. The repo-local
 workflows. `devflow finish` keeps `.devflow/state/events.jsonl` as canonical
 handoff history and rewrites `.devflow/next-prompt.md` as the latest
 human-readable projection; CLI `devflow prompt latest` and MCP
-`devflow.handoff_latest` read that projection for the next session.
+`devflow.handoff_latest` read that projection for the next session. Repo-local
+and installed SessionStart hooks now include the same latest prompt projection
+when present, so a new agent session receives the handoff automatically.
 
 ## Phase 6: Session Import
 

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { spawn } from "node:child_process";
+import { join } from "node:path";
 import test from "node:test";
 
 test("repo-local Codex plugin exposes devflow start skill and marketplace entry", async () => {
@@ -129,6 +131,28 @@ test("repo-local plugin hooks emit compact context for agent sessions", async ()
   assert.match(stop.hookSpecificOutput.additionalContext, /devflow review request/);
   assert.match(stop.hookSpecificOutput.additionalContext, /devflow review record/);
   assert.match(stop.hookSpecificOutput.additionalContext, /Current compact status/);
+});
+
+test("repo-local session start hook surfaces the latest persisted handoff", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-plugin-handoff-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "next-prompt.md"),
+    "# Next Prompt\n\nContinue the session-start handoff smoke slice.\n",
+    "utf8",
+  );
+
+  const sessionStart = await runHook("plugins/devflow/hooks/session-start.mjs", {
+    hook_event_name: "SessionStart",
+    source: "startup",
+    cwd: repoPath,
+  });
+
+  assert.match(sessionStart.hookSpecificOutput.additionalContext, /Latest handoff prompt/);
+  assert.match(
+    sessionStart.hookSpecificOutput.additionalContext,
+    /Continue the session-start handoff smoke slice/,
+  );
 });
 
 test("repo-local stop hook blocks completion when status still recommends review", async () => {

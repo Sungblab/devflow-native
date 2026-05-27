@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -780,6 +781,32 @@ test("harness repair restores broken installed harness files only after confirma
   assert.ok(repaired.repaired.some((file) => file.path === "plugins/devflow/hooks/session-start.mjs"));
   assert.equal(JSON.parse(await readFile(join(repoPath, "plugins", "devflow", ".codex-plugin", "plugin.json"), "utf8")).name, "devflow");
   assert.equal(health.status, "ok");
+});
+
+test("installed session start hook surfaces the latest persisted handoff", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-harness-handoff-"));
+  await writeHarnessInstall(repoPath, {
+    targets: ["codex"],
+    confirmed: true,
+  });
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "next-prompt.md"),
+    "# Next Prompt\n\nContinue from the installed harness handoff.\n",
+    "utf8",
+  );
+
+  const output = await runInstalledHook(
+    repoPath,
+    "plugins/devflow/hooks/session-start.mjs",
+    {
+      hook_event_name: "SessionStart",
+      cwd: repoPath,
+    },
+  );
+
+  assert.match(output.hookSpecificOutput.additionalContext, /Latest handoff prompt/);
+  assert.match(output.hookSpecificOutput.additionalContext, /installed harness handoff/);
 });
 
 test("harness repair enables required review without dropping existing gates", async () => {
@@ -1930,3 +1957,30 @@ test("doctor summary renders platform rules and repeated mistake memory", () => 
   assert.equal(summary.memory.repeatedMistakes[0].id, "powershell-literal-path");
   assert.match(summary.recommendations[0].message, /Use Get-Content -LiteralPath/);
 });
+
+async function runInstalledHook(repoPath, path, payload) {
+  const child = spawn(process.execPath, [join(repoPath, path)], {
+    cwd: repoPath,
+    stdio: ["pipe", "pipe", "pipe"],
+    windowsHide: true,
+  });
+  let stdout = "";
+  let stderr = "";
+
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => {
+    stdout += chunk;
+  });
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk;
+  });
+  child.stdin.end(`${JSON.stringify(payload)}\n`);
+
+  const exitCode = await new Promise((resolve) => {
+    child.on("close", resolve);
+  });
+
+  assert.equal(exitCode, 0, stderr);
+  return JSON.parse(stdout);
+}

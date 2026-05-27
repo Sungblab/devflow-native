@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 export async function readHookInput() {
@@ -52,6 +52,15 @@ export function runDevflow(repoPath, args) {
 export function compactJson(value, maxLength = 4000) {
   const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
   return text.length > maxLength ? `${text.slice(0, maxLength)}\n...truncated...` : text;
+}
+
+export function readLatestHandoffPrompt(repoPath, maxLength = 2200) {
+  try {
+    const prompt = readFileSync(join(repoPath, ".devflow", "next-prompt.md"), "utf8").trim();
+    return compactJson(prompt, maxLength);
+  } catch {
+    return "";
+  }
 }
 
 export function detectIntent(prompt = "") {

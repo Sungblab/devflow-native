@@ -48,6 +48,9 @@ The Codex plugin should provide daily workflow skills for status, split, next,
 finish, sessions, prompt rewrite, and explanation. Lifecycle hooks should feed
 Devflow cheap continuity signals at session start, user prompt submit, and stop.
 Future hook slices can cover pre-tool or permission-request decisions.
+On session start, the hook should include the latest persisted
+`.devflow/next-prompt.md` projection when it exists so a resumed Codex session
+sees the prior handoff without an extra manual lookup.
 
 Codex authentication remains owned by Codex. Devflow must not read or reuse
 Codex OAuth tokens or API keys.
@@ -89,6 +92,10 @@ PLUGIN_DATA or CLAUDE_PLUGIN_DATA
 The hook command should stay thin. It should locate the repo, call the local
 Devflow command or MCP contract, record compact evidence, and avoid expensive
 full-session parsing unless the user asks for it.
+Session-start hooks may read `.devflow/next-prompt.md` directly as the latest
+human-readable handoff projection. The canonical history remains
+`.devflow/state/events.jsonl`; the Markdown file is only the compact latest
+prompt shown to the next agent.
 
 ## Harness Commands
 
