@@ -45,6 +45,7 @@ import {
   recordWorkUnblockedEvent,
   runConfiguredGate,
   writeHarnessInstall,
+  writeHarnessRepair,
   writeInitPlan,
 } from "../../core/src/index.js";
 
@@ -64,6 +65,8 @@ try {
     await renderHarnessInstall(args.slice(2));
   } else if (command === "harness" && args[1] === "health") {
     await renderHarnessHealth(args.slice(2));
+  } else if (command === "harness" && args[1] === "repair") {
+    await renderHarnessRepair(args.slice(2));
   } else if (command === "status") {
     await renderStatus(args.slice(1));
   } else if (command === "explain") {
@@ -177,6 +180,17 @@ async function renderHarnessHealth(argsForCommand) {
   const repoPath = options.repo ?? cwd();
   const summary = await readHarnessHealth(repoPath, {
     targets: parseTargetList(options.targets),
+  });
+
+  render(summary, options.json);
+}
+
+async function renderHarnessRepair(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const summary = await writeHarnessRepair(repoPath, {
+    targets: parseTargetList(options.targets),
+    confirmed: Boolean(options.confirm),
   });
 
   render(summary, options.json);

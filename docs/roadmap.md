@@ -109,7 +109,11 @@ checks. `devflow harness install --confirm` executes only native
 Superpowers/CodeGraph actions. `devflow harness health` validates installed
 native harness files by parsing plugin manifests and MCP config, executing hook
 scripts with a synthetic payload, accepting Claude Stop decision payloads, and
-checking configured gates.
+checking configured gates. `devflow harness repair --confirm` now restores
+broken installed harness files with built-in canonical content, limited to
+malformed plugin manifests, malformed MCP config, and hook scripts that fail
+the health contract. Gate config repair remains a reported issue rather than an
+automatic rewrite.
 
 ## Phase 3: Split Planning
 

@@ -31,6 +31,7 @@ import {
   readDevflowState,
   runConfiguredGate,
   writeHarnessInstall,
+  writeHarnessRepair,
   recordGateEvent,
   recordFinishEvent,
   writeInitPlan,
@@ -495,6 +496,41 @@ test("harness health accepts Claude stop hook decision payloads", async () => {
         /valid decision payload/.test(check.message),
     ),
   );
+});
+
+test("harness repair restores broken installed harness files only after confirmation", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-harness-repair-"));
+  await writeHarnessInstall(repoPath, {
+    targets: ["codex", "claude"],
+    confirmed: true,
+  });
+  await writeFile(join(repoPath, "plugins", "devflow", ".codex-plugin", "plugin.json"), "{bad json\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "hooks", "session-start.mjs"), "process.exit(1);\n", "utf8");
+
+  const failed = await readHarnessHealth(repoPath, {
+    targets: ["codex", "claude"],
+  });
+  assert.equal(failed.status, "failed");
+
+  await assert.rejects(
+    () => writeHarnessRepair(repoPath, { targets: ["codex", "claude"] }),
+    /requires --confirm/,
+  );
+
+  const repaired = await writeHarnessRepair(repoPath, {
+    targets: ["codex", "claude"],
+    confirmed: true,
+  });
+  const health = await readHarnessHealth(repoPath, {
+    targets: ["codex", "claude"],
+  });
+
+  assert.equal(repaired.command, "harness_repair");
+  assert.equal(repaired.status, "repaired");
+  assert.ok(repaired.repaired.some((file) => file.path === "plugins/devflow/.codex-plugin/plugin.json"));
+  assert.ok(repaired.repaired.some((file) => file.path === "plugins/devflow/hooks/session-start.mjs"));
+  assert.equal(JSON.parse(await readFile(join(repoPath, "plugins", "devflow", ".codex-plugin", "plugin.json"), "utf8")).name, "devflow");
+  assert.equal(health.status, "ok");
 });
 
 test("work item events can create, start, list, and feed status", async () => {

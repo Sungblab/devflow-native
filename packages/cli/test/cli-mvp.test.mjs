@@ -797,6 +797,64 @@ test("CLI harness health validates installed native harness", async () => {
   assert.ok(parsed.checks.some((check) => check.kind === "hook-script" && check.status === "passed"));
 });
 
+test("CLI harness repair restores broken installed harness files", async () => {
+  const repoPath = await createTempGitRepo();
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "install",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex,claude",
+    "--confirm",
+    "--json",
+  ]);
+  await writeFile(join(repoPath, "plugins", "devflow", ".claude-plugin", "plugin.json"), "{bad json\n", "utf8");
+
+  await assert.rejects(
+    execFileAsync("node", [
+      "packages/cli/src/index.js",
+      "harness",
+      "repair",
+      "--repo",
+      repoPath,
+      "--targets",
+      "codex,claude",
+      "--json",
+    ]),
+    /requires --confirm/,
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "repair",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex,claude",
+    "--confirm",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+  const health = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "health",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex,claude",
+    "--json",
+  ]);
+
+  assert.equal(parsed.command, "harness_repair");
+  assert.equal(parsed.status, "repaired");
+  assert.ok(parsed.repaired.some((file) => file.path === "plugins/devflow/.claude-plugin/plugin.json"));
+  assert.equal(JSON.parse(health.stdout).status, "ok");
+});
+
 test("CLI status reads gate definitions from devflow config", async () => {
   const repoPath = await createTempGitRepo();
   await mkdir(join(repoPath, ".devflow"), { recursive: true });

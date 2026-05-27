@@ -610,6 +610,51 @@ export async function writeHarnessInstall(repoPath, options = {}) {
   };
 }
 
+export async function writeHarnessRepair(repoPath, options = {}) {
+  if (!options.confirmed) {
+    throw new Error("devflow harness repair requires --confirm.");
+  }
+
+  const health = await readHarnessHealth(repoPath, options);
+  const repaired = [];
+  const skipped = [];
+
+  for (const check of health.checks ?? []) {
+    if (check.status !== "failed") {
+      continue;
+    }
+
+    const content = harnessFileContent(check.path);
+    if (content === null) {
+      skipped.push({
+        path: check.path,
+        reason: "no-built-in-repair",
+        message: check.message,
+      });
+      continue;
+    }
+
+    const target = join(repoPath, check.path);
+    await mkdir(dirname(target), { recursive: true });
+    await writeFile(target, content, "utf8");
+    repaired.push({
+      path: check.path,
+      kind: check.kind,
+      reason: check.message,
+    });
+  }
+
+  return {
+    schemaVersion: "0.1",
+    command: "harness_repair",
+    repo: health.repo,
+    status: repaired.length > 0 ? "repaired" : "no-op",
+    repaired,
+    skipped,
+    health,
+  };
+}
+
 export async function readHarnessHealth(repoPath, options = {}) {
   const inspect = await readHarnessInspect(repoPath, options);
   const config = await readDevflowConfig(repoPath);

@@ -241,8 +241,9 @@ Responsibilities:
   rich project instructions
 - `health`: verify hook paths, MCP launchers, plugin manifests, gates, and the
   status/review/finish/next-prompt loop
-- `repair`: fix narrow issues such as stale plugin path variables, missing hook
-  files, malformed gates, or stale MCP command paths
+- `repair`: restore confirmed broken installed files that have built-in
+  canonical content, such as malformed plugin manifests, malformed MCP config,
+  or hook scripts that fail the health contract
 
 The harness command group is adoption-first. Mature repos should keep their
 existing instructions; Devflow should add the minimum bridge needed for native

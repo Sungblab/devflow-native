@@ -129,9 +129,12 @@ small Devflow section or adding companion files over replacing mature docs.
 plugin manifests are present, hook commands resolve, MCP launchers start, gates
 are valid, and the finish/review/next-prompt loop is reachable.
 
-`devflow harness repair` should handle narrow fixes such as stale plugin path
-variables, missing hook scripts, malformed gate definitions, and stale MCP
-command paths.
+`devflow harness repair` should handle narrow confirmed fixes. The current
+implemented repair scope is intentionally conservative: it restores broken
+installed files that have canonical Devflow content, such as malformed plugin
+manifests, malformed MCP config, or hook scripts that fail `harness health`.
+Project instructions and gate definitions are reported but not rewritten
+automatically.
 
 ## Install UX
 

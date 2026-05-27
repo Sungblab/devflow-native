@@ -55,6 +55,7 @@ packages/cli/
 - `devflow harness plan`
 - `devflow harness install`
 - `devflow harness health`
+- `devflow harness repair`
 - `devflow work create`
 - `devflow work start`
 - `devflow work update`
@@ -95,6 +96,10 @@ existing files, and ignores optional Superpowers/CodeGraph actions.
 plugin manifest JSON, MCP config JSON, executable hook scripts, and configured
 gates. Stop hooks may return Claude decision payloads while context-injection
 hooks must return structured hook context.
+`devflow harness repair --confirm` restores only broken installed files that
+have built-in canonical content, such as malformed plugin manifests, malformed
+MCP config, or hook scripts that fail the health contract. It does not rewrite
+project instructions or auto-edit gate definitions.
 `devflow work create`,
 `devflow work start`, `devflow work update`, `devflow work rename`,
 `devflow work ready`, `devflow work block`, `devflow work unblock`, and
