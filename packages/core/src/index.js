@@ -826,6 +826,7 @@ export async function readHarnessHealth(repoPath, options = {}) {
   ];
   const gates = createHarnessGateHealth(config.gates);
   const failed = checks.some((check) => check.status === "failed") || gates.status === "invalid";
+  const nextAction = createHarnessHealthNextAction({ checks });
 
   return {
     schemaVersion: "0.1",
@@ -836,8 +837,34 @@ export async function readHarnessHealth(repoPath, options = {}) {
     checks,
     gates,
     review: createHarnessReviewSummary(config),
+    ...(nextAction ? { nextAction } : {}),
     warnings: [...(inspect.warnings ?? []), ...(config.warnings ?? [])],
   };
+}
+
+export function createHarnessHealthNextAction(summary) {
+  const failedChecks = summary.checks?.filter((check) => check.status === "failed") ?? [];
+  if (failedChecks.length === 0) {
+    return null;
+  }
+
+  if (failedChecks.some((check) => check.kind === "review-required")) {
+    return {
+      kind: "harness_repair",
+      command: "devflow harness repair --confirm",
+      reason: "Required review evidence is disabled or missing; repair can enable review.required without dropping existing gates.",
+    };
+  }
+
+  if (failedChecks.some((check) => check.kind === "manifest-json" || check.kind === "mcp-config" || check.kind === "hook-script")) {
+    return {
+      kind: "harness_repair",
+      command: "devflow harness repair --confirm",
+      reason: "Installed native harness files failed health checks and may have built-in repair content.",
+    };
+  }
+
+  return null;
 }
 
 export async function readProjectHealth(repoPath, config = {}) {

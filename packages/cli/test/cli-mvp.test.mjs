@@ -912,6 +912,18 @@ test("CLI harness health fails when required review is not configured", async ()
   assert.equal(parsed.command, "harness_health");
   assert.equal(parsed.status, "failed");
   assert.ok(parsed.checks.some((check) => check.kind === "review-required" && check.status === "failed"));
+  assert.equal(parsed.nextAction.command, "devflow harness repair --confirm");
+
+  const text = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "health",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex",
+  ]);
+  assert.match(text.stdout, /Next action: devflow harness repair --confirm/);
 });
 
 test("CLI harness repair restores broken installed harness files", async () => {

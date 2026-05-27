@@ -188,7 +188,12 @@ async function renderHarnessHealth(argsForCommand) {
     targets: parseTargetList(options.targets),
   });
 
-  render(summary, options.json);
+  if (options.json) {
+    render(summary, true);
+    return;
+  }
+
+  renderHarnessHealthText(summary);
 }
 
 async function renderHarnessRepair(argsForCommand) {
@@ -752,6 +757,21 @@ function render(summary, asJson) {
   }
 
   process.stdout.write(`${summary.command}: ${summary.schemaVersion}\n`);
+}
+
+function renderHarnessHealthText(summary) {
+  const lines = [
+    `harness_health: ${summary.status}`,
+  ];
+
+  if (summary.nextAction) {
+    lines.push(
+      `Next action: ${summary.nextAction.command}`,
+      `Reason: ${summary.nextAction.reason}`,
+    );
+  }
+
+  process.stdout.write(`${lines.join("\n")}\n`);
 }
 
 function renderReviewRequestText(request) {

@@ -130,7 +130,9 @@ a minimal config when missing and preserving existing gates when present.
 `devflow harness health` should verify that the installed harness can run:
 plugin manifests are present, hook commands resolve, MCP launchers start, gates
 are valid, required review is enabled, and the finish/review/next-prompt loop
-is reachable.
+is reachable. When a failed check is repairable, health should surface the
+repair command directly in JSON as `nextAction.command` and in text output as a
+next action.
 
 `devflow harness repair` should handle narrow confirmed fixes. The current
 implemented repair scope is intentionally conservative: it restores broken
