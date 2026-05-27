@@ -1,5 +1,5 @@
-import { mkdir, readFile, appendFile, writeFile } from "node:fs/promises";
-import { execFile } from "node:child_process";
+import { mkdir, readFile, appendFile, writeFile, stat } from "node:fs/promises";
+import { execFile, spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 
@@ -465,6 +465,170 @@ export function createHealthSummary(input = {}) {
     invalidGates,
     recommendations: createHealthRecommendations(missingFiles, gates, invalidGates),
     warnings: input.warnings ?? [],
+  };
+}
+
+export function createHarnessInspectSummary(input = {}) {
+  const targets = normalizeHarnessTargets(input.targets);
+  const existingPaths = input.existingPaths ?? [];
+  const gates = normalizeGates(input.config?.gates);
+  const invalidGates = validateGates(gates);
+  const targetSummaries = {};
+
+  for (const target of targets) {
+    targetSummaries[target] = createHarnessTargetSummary(target, existingPaths);
+  }
+
+  const recommendations = createHarnessRecommendations(targetSummaries, gates, invalidGates);
+  const hasRepair = recommendations.some((item) => item.action === "repair");
+  const hasInstall = recommendations.some((item) => item.action === "install");
+
+  return {
+    schemaVersion: "0.1",
+    command: "harness_inspect",
+    repo: {
+      absolutePath: input.repo?.absolutePath ?? process.cwd(),
+    },
+    status: hasRepair ? "needs-repair" : hasInstall ? "needs-install" : "ok",
+    filters: {
+      targets,
+    },
+    instructions: createInstructionChecks(existingPaths),
+    targets: targetSummaries,
+    mcp: {
+      status: existingPaths.includes("plugins/devflow/.mcp.json") ? "configured" : "missing",
+      path: "plugins/devflow/.mcp.json",
+    },
+    gates: {
+      status: invalidGates.length > 0 ? "invalid" : gates.length > 0 ? "configured" : "missing",
+      configured: gates,
+      invalid: invalidGates,
+    },
+    recommendations,
+    warnings: input.warnings ?? [],
+  };
+}
+
+export async function readHarnessInspect(repoPath, options = {}) {
+  const paths = harnessProbePaths();
+  const existingPaths = [];
+
+  for (const path of paths) {
+    if (await pathExists(join(repoPath, path))) {
+      existingPaths.push(path);
+    }
+  }
+
+  const config = await readDevflowConfig(repoPath);
+
+  return createHarnessInspectSummary({
+    repo: { absolutePath: repoPath },
+    targets: options.targets,
+    existingPaths,
+    config,
+    warnings: config.warnings,
+  });
+}
+
+export function createHarnessPlanSummary(input = {}) {
+  const inspect = input.inspect ?? createHarnessInspectSummary(input);
+  const actions = createHarnessPlanActions(inspect);
+  const writesPlanned = actions.some((action) => action.action === "create-if-missing" || action.action === "repair");
+  const optionalAdoption = actions.some((action) => action.action === "adopt-optional");
+
+  return {
+    schemaVersion: "0.1",
+    command: "harness_plan",
+    repo: inspect.repo,
+    dryRun: true,
+    status: writesPlanned || optionalAdoption ? "changes-proposed" : "no-changes",
+    inspectStatus: inspect.status,
+    filters: inspect.filters,
+    actions,
+    warnings: inspect.warnings ?? [],
+  };
+}
+
+export async function readHarnessPlan(repoPath, options = {}) {
+  const inspect = await readHarnessInspect(repoPath, options);
+  return createHarnessPlanSummary({ inspect });
+}
+
+export async function writeHarnessInstall(repoPath, options = {}) {
+  if (!options.confirmed) {
+    throw new Error("devflow harness install requires --confirm.");
+  }
+
+  const plan = await readHarnessPlan(repoPath, options);
+  const written = [];
+  const skipped = [];
+  const ignored = [];
+
+  for (const action of plan.actions) {
+    if (action.action !== "create-if-missing") {
+      ignored.push(action);
+      continue;
+    }
+
+    for (const path of action.paths ?? []) {
+      const content = harnessFileContent(path);
+      if (content === null) {
+        ignored.push({
+          ...action,
+          paths: [path],
+          reason: `No built-in installer content exists for ${path}.`,
+        });
+        continue;
+      }
+
+      const target = join(repoPath, path);
+      try {
+        await readFile(target, "utf8");
+        skipped.push({ path, reason: "already-exists" });
+        continue;
+      } catch (error) {
+        if (error.code !== "ENOENT") {
+          throw error;
+        }
+      }
+
+      await mkdir(dirname(target), { recursive: true });
+      await writeFile(target, content, "utf8");
+      written.push({ path, target: action.target });
+    }
+  }
+
+  return {
+    schemaVersion: "0.1",
+    command: "harness_install",
+    repo: plan.repo,
+    status: written.length > 0 ? "installed" : "no-op",
+    written,
+    skipped,
+    ignored,
+    plan,
+  };
+}
+
+export async function readHarnessHealth(repoPath, options = {}) {
+  const inspect = await readHarnessInspect(repoPath, options);
+  const config = await readDevflowConfig(repoPath);
+  const checks = [
+    ...(await validateHarnessJsonFiles(repoPath, inspect)),
+    ...(await validateHarnessHookScripts(repoPath, inspect)),
+  ];
+  const gates = createHarnessGateHealth(config.gates);
+  const failed = checks.some((check) => check.status === "failed") || gates.status === "invalid";
+
+  return {
+    schemaVersion: "0.1",
+    command: "harness_health",
+    repo: inspect.repo,
+    status: failed ? "failed" : "ok",
+    filters: inspect.filters,
+    checks,
+    gates,
+    warnings: [...(inspect.warnings ?? []), ...(config.warnings ?? [])],
   };
 }
 
@@ -1354,6 +1518,579 @@ function normalizePlatform(platform = {}) {
     name,
     shell: platform.shell ?? "unknown",
     pathStyle: platform.pathStyle ?? "unknown",
+  };
+}
+
+async function pathExists(path) {
+  try {
+    await stat(path);
+    return true;
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return false;
+    }
+
+    throw error;
+  }
+}
+
+function normalizeHarnessTargets(targets) {
+  const rawTargets = Array.isArray(targets) && targets.length > 0
+    ? targets
+    : ["codex", "claude"];
+  return [...new Set(rawTargets.flatMap((target) => String(target).split(",")).map((target) => target.trim()).filter(Boolean))];
+}
+
+function harnessProbePaths() {
+  return [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    ".github/copilot-instructions.md",
+    ".github/instructions",
+    ".cursor/rules",
+    ".devflow/config.json",
+    ".devflow/state",
+    "plugins/devflow/.codex-plugin/plugin.json",
+    "plugins/devflow/.claude-plugin/plugin.json",
+    "plugins/devflow/hooks/hooks.json",
+    "plugins/devflow/hooks/session-start.mjs",
+    "plugins/devflow/hooks/user-prompt-submit.mjs",
+    "plugins/devflow/hooks/stop.mjs",
+    "plugins/devflow/.mcp.json",
+    "plugins/devflow/skills/start/SKILL.md",
+    "plugins/devflow/skills/finish/SKILL.md",
+    "docs/superpowers/specs",
+    "docs/superpowers/plans",
+    ".superpowers",
+    ".codegraph",
+    "codegraph.json",
+    "graphify.config.js",
+    "graphify.config.mjs",
+  ];
+}
+
+function createInstructionChecks(existingPaths) {
+  return [
+    { path: "AGENTS.md", kind: "codex-shared", present: existingPaths.includes("AGENTS.md") },
+    { path: "CLAUDE.md", kind: "claude-compat", present: existingPaths.includes("CLAUDE.md") },
+    { path: "GEMINI.md", kind: "gemini", present: existingPaths.includes("GEMINI.md") },
+    {
+      path: ".github/copilot-instructions.md",
+      kind: "copilot",
+      present: existingPaths.includes(".github/copilot-instructions.md"),
+    },
+    { path: ".github/instructions", kind: "copilot-instructions", present: existingPaths.includes(".github/instructions") },
+    { path: ".cursor/rules", kind: "cursor", present: existingPaths.includes(".cursor/rules") },
+  ];
+}
+
+function createHarnessTargetSummary(target, existingPaths) {
+  if (target === "codex") {
+    return createRequiredPathTarget("codex", existingPaths, [
+      { path: "AGENTS.md", kind: "instruction" },
+      { path: "plugins/devflow/.codex-plugin/plugin.json", kind: "plugin-manifest" },
+      { path: "plugins/devflow/hooks/hooks.json", kind: "hooks" },
+      { path: "plugins/devflow/hooks/session-start.mjs", kind: "hook-script" },
+      { path: "plugins/devflow/hooks/user-prompt-submit.mjs", kind: "hook-script" },
+      { path: "plugins/devflow/hooks/stop.mjs", kind: "hook-script" },
+      { path: "plugins/devflow/.mcp.json", kind: "mcp-config" },
+      { path: "plugins/devflow/skills/start/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/finish/SKILL.md", kind: "skill" },
+    ]);
+  }
+
+  if (target === "claude") {
+    return createRequiredPathTarget("claude", existingPaths, [
+      { path: "AGENTS.md", kind: "shared-instruction" },
+      { path: "plugins/devflow/.claude-plugin/plugin.json", kind: "plugin-manifest" },
+      { path: "plugins/devflow/hooks/hooks.json", kind: "hooks" },
+      { path: "plugins/devflow/hooks/session-start.mjs", kind: "hook-script" },
+      { path: "plugins/devflow/hooks/user-prompt-submit.mjs", kind: "hook-script" },
+      { path: "plugins/devflow/hooks/stop.mjs", kind: "hook-script" },
+      { path: "plugins/devflow/.mcp.json", kind: "mcp-config" },
+      { path: "plugins/devflow/skills/start/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/finish/SKILL.md", kind: "skill" },
+    ]);
+  }
+
+  if (target === "superpowers") {
+    const signals = [
+      { path: "docs/superpowers/specs", kind: "specs", present: existingPaths.includes("docs/superpowers/specs") },
+      { path: "docs/superpowers/plans", kind: "plans", present: existingPaths.includes("docs/superpowers/plans") },
+      { path: ".superpowers", kind: "config", present: existingPaths.includes(".superpowers") },
+    ];
+    const present = signals.some((item) => item.present);
+    return {
+      status: present ? "available" : "missing",
+      signals,
+      missingPaths: present ? [] : signals.map((item) => item.path),
+      evidenceRole: present ? "methodology-profile" : "not-detected",
+    };
+  }
+
+  if (target === "codegraph") {
+    const signals = [
+      { path: ".codegraph", kind: "index", present: existingPaths.includes(".codegraph") },
+      { path: "codegraph.json", kind: "config", present: existingPaths.includes("codegraph.json") },
+      { path: "graphify.config.js", kind: "graphify-config", present: existingPaths.includes("graphify.config.js") },
+      { path: "graphify.config.mjs", kind: "graphify-config", present: existingPaths.includes("graphify.config.mjs") },
+    ];
+    const present = signals.some((item) => item.present);
+    return {
+      status: present ? "available" : "missing",
+      signals,
+      freshness: present ? "unknown" : "missing",
+      missingPaths: present ? [] : signals.map((item) => item.path),
+    };
+  }
+
+  return {
+    status: "unknown-target",
+    checks: [],
+    missingPaths: [],
+  };
+}
+
+function createRequiredPathTarget(target, existingPaths, requiredPaths) {
+  const checks = requiredPaths.map((item) => ({
+    ...item,
+    present: existingPaths.includes(item.path),
+  }));
+  const missingPaths = checks.filter((item) => !item.present).map((item) => item.path);
+
+  return {
+    status: missingPaths.length === 0 ? "ready" : "missing",
+    checks,
+    missingPaths,
+    evidenceRole: target === "codex" || target === "claude" ? "native-agent-host" : "optional",
+  };
+}
+
+function createHarnessRecommendations(targetSummaries, gates, invalidGates) {
+  const recommendations = [];
+
+  for (const [target, summary] of Object.entries(targetSummaries)) {
+    if (summary.status === "missing") {
+      recommendations.push({
+        target,
+        action: "install",
+        message: `Install or adopt missing ${target} harness files: ${summary.missingPaths.join(", ")}.`,
+        paths: summary.missingPaths,
+      });
+    }
+
+    if (summary.status === "unknown-target") {
+      recommendations.push({
+        target,
+        action: "inspect",
+        message: `No harness inspector exists for target ${target}.`,
+        paths: [],
+      });
+    }
+  }
+
+  for (const gate of invalidGates) {
+    recommendations.push({
+      target: "gates",
+      action: "repair",
+      message: `Fix gate ${gate.index} in .devflow/config.json: ${gate.message}`,
+      paths: [".devflow/config.json"],
+    });
+  }
+
+  if (gates.length === 0) {
+    recommendations.push({
+      target: "gates",
+      action: "install",
+      message: "Configure at least one verification gate in .devflow/config.json.",
+      paths: [".devflow/config.json"],
+    });
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push({
+      target: "harness",
+      action: "ok",
+      message: "Native harness targets are ready.",
+      paths: [],
+    });
+  }
+
+  return recommendations;
+}
+
+function createHarnessPlanActions(inspect) {
+  const actions = [];
+
+  for (const [target, summary] of Object.entries(inspect.targets ?? {})) {
+    if (target === "superpowers") {
+      actions.push(createSuperpowersPlanAction(summary));
+      continue;
+    }
+
+    if (target === "codegraph") {
+      actions.push(createCodeGraphPlanAction(summary));
+      continue;
+    }
+
+    if (summary.status === "ready") {
+      actions.push({
+        target,
+        action: "no-op",
+        writes: false,
+        reason: `${target} native harness is already ready.`,
+        paths: [],
+      });
+      continue;
+    }
+
+    if (summary.status === "missing") {
+      actions.push({
+        target,
+        action: "create-if-missing",
+        writes: false,
+        reason: `Create missing ${target} native harness files without overwriting existing project instructions.`,
+        paths: summary.missingPaths ?? [],
+      });
+      continue;
+    }
+
+    actions.push({
+      target,
+      action: "inspect",
+      writes: false,
+      reason: `Inspect unsupported harness target ${target} manually.`,
+      paths: [],
+    });
+  }
+
+  for (const gate of inspect.gates?.invalid ?? []) {
+    actions.push({
+      target: "gates",
+      action: "repair",
+      writes: false,
+      reason: `Repair invalid gate ${gate.index}: ${gate.message}`,
+      paths: [".devflow/config.json"],
+    });
+  }
+
+  if (actions.length === 0) {
+    actions.push({
+      target: "harness",
+      action: "no-op",
+      writes: false,
+      reason: "No harness targets were requested.",
+      paths: [],
+    });
+  }
+
+  return actions;
+}
+
+function harnessFileContent(path) {
+  const contents = {
+    "AGENTS.md": [
+      "# Agent Guide",
+      "",
+      "Start with `devflow harness inspect`, `devflow doctor`, and `devflow status` before command-heavy work.",
+      "Finish by recording review, gate evidence, risks, and a next-session prompt.",
+      "",
+    ].join("\n"),
+    "plugins/devflow/.codex-plugin/plugin.json": `${JSON.stringify(
+      {
+        name: "devflow",
+        version: "0.0.0",
+        displayName: "Devflow Native",
+        description: "Repo-local workflow continuity for Codex.",
+        skills: "./skills/",
+        hooks: "./hooks/hooks.json",
+        mcpServers: "./.mcp.json",
+        interface: {
+          shortDescription: "Records project truth, gates, review state, and handoffs.",
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "plugins/devflow/.claude-plugin/plugin.json": `${JSON.stringify(
+      {
+        name: "devflow",
+        version: "0.0.0",
+        description: "Repo-local workflow continuity for Claude Code.",
+        skills: "./skills/",
+        hooks: "./hooks/hooks.json",
+        mcpServers: "./.mcp.json",
+        keywords: ["handoff", "review", "gates", "continuity"],
+      },
+      null,
+      2,
+    )}\n`,
+    "plugins/devflow/hooks/hooks.json": `${JSON.stringify(
+      {
+        hooks: {
+          SessionStart: [
+            {
+              matcher: "startup|resume",
+              hooks: [{ type: "command", command: "node \"$PLUGIN_ROOT/hooks/session-start.mjs\"" }],
+            },
+          ],
+          UserPromptSubmit: [
+            {
+              hooks: [{ type: "command", command: "node \"$PLUGIN_ROOT/hooks/user-prompt-submit.mjs\"" }],
+            },
+          ],
+          Stop: [
+            {
+              hooks: [{ type: "command", command: "node \"$PLUGIN_ROOT/hooks/stop.mjs\"" }],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "plugins/devflow/.mcp.json": `${JSON.stringify(
+      {
+        mcpServers: {
+          devflow: {
+            command: "node",
+            args: ["packages/mcp/src/stdio.js"],
+            cwd: ".",
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "plugins/devflow/hooks/session-start.mjs": createHarnessHookScript("SessionStart"),
+    "plugins/devflow/hooks/user-prompt-submit.mjs": createHarnessHookScript("UserPromptSubmit"),
+    "plugins/devflow/hooks/stop.mjs": createHarnessHookScript("Stop"),
+    "plugins/devflow/skills/start/SKILL.md": [
+      "---",
+      "name: devflow-start",
+      "description: Start a Devflow Native session by reading local execution and status context.",
+      "---",
+      "",
+      "# Devflow Start",
+      "",
+      "Run `devflow doctor --json` and `devflow status --json` before command-heavy work.",
+      "",
+    ].join("\n"),
+    "plugins/devflow/skills/finish/SKILL.md": [
+      "---",
+      "name: devflow-finish",
+      "description: Finish work with review, gate evidence, risks, and a next-session prompt.",
+      "---",
+      "",
+      "# Devflow Finish",
+      "",
+      "Run or record relevant gates, evaluate review findings as evidence, and call `devflow finish`.",
+      "",
+    ].join("\n"),
+  };
+
+  return contents[path] ?? null;
+}
+
+async function validateHarnessJsonFiles(repoPath, inspect) {
+  const checks = [];
+  const jsonPaths = [];
+
+  for (const target of Object.values(inspect.targets ?? {})) {
+    for (const check of target.checks ?? []) {
+      if (check.present && (check.kind === "plugin-manifest" || check.kind === "mcp-config")) {
+        jsonPaths.push(check.path);
+      }
+    }
+  }
+
+  for (const path of [...new Set(jsonPaths)]) {
+    try {
+      const raw = await readFile(join(repoPath, path), "utf8");
+      JSON.parse(raw);
+      checks.push({
+        kind: path.endsWith(".mcp.json") ? "mcp-config" : "manifest-json",
+        path,
+        status: "passed",
+      });
+    } catch (error) {
+      checks.push({
+        kind: path.endsWith(".mcp.json") ? "mcp-config" : "manifest-json",
+        path,
+        status: "failed",
+        message: error.message,
+      });
+    }
+  }
+
+  return checks;
+}
+
+async function validateHarnessHookScripts(repoPath, inspect) {
+  const checks = [];
+  const hookPaths = [];
+
+  for (const target of Object.values(inspect.targets ?? {})) {
+    for (const check of target.checks ?? []) {
+      if (check.present && check.kind === "hook-script") {
+        hookPaths.push(check.path);
+      }
+    }
+  }
+
+  for (const path of [...new Set(hookPaths)]) {
+    const result = await executeHarnessHook(repoPath, path);
+    checks.push({
+      kind: "hook-script",
+      path,
+      status: result.ok ? "passed" : "failed",
+      message: result.message,
+    });
+  }
+
+  return checks;
+}
+
+async function executeHarnessHook(repoPath, path) {
+  const file = join(repoPath, path);
+  const child = spawn(process.execPath, [file], {
+    cwd: repoPath,
+    stdio: ["pipe", "pipe", "pipe"],
+    windowsHide: true,
+  });
+  let stdout = "";
+  let stderr = "";
+
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk) => {
+    stdout += chunk;
+  });
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk;
+  });
+  child.stdin.end(`${JSON.stringify({ hook_event_name: "HarnessHealth", cwd: repoPath })}\n`);
+
+  try {
+    const exitCode = await new Promise((resolve) => {
+      child.on("close", resolve);
+    });
+    if (exitCode !== 0) {
+      return { ok: false, message: stderr || `Hook exited with code ${exitCode}.` };
+    }
+    const parsed = JSON.parse(stdout);
+    const validation = validateHarnessHookOutput(path, parsed);
+    if (!validation.ok) {
+      return validation;
+    }
+    return { ok: true, message: validation.message };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error.message,
+    };
+  }
+}
+
+function validateHarnessHookOutput(path, parsed) {
+  if (path.endsWith("/stop.mjs")) {
+    const empty = parsed && typeof parsed === "object" && Object.keys(parsed).length === 0;
+    const decision = parsed?.decision;
+    if (empty || decision === "block" || decision === "approve" || parsed.hookSpecificOutput?.hookEventName) {
+      return { ok: true, message: "Stop hook executed and returned a valid decision payload." };
+    }
+    return { ok: false, message: "Stop hook output must be empty JSON, include a valid decision, or include hook context." };
+  }
+
+  if (!parsed.hookSpecificOutput?.hookEventName) {
+    return { ok: false, message: "Hook output did not include hookSpecificOutput.hookEventName." };
+  }
+  return { ok: true, message: "Hook script executed and returned structured output." };
+}
+
+function createHarnessGateHealth(gates) {
+  const normalized = normalizeGates(gates);
+  const invalid = validateGates(normalized);
+
+  return {
+    status: invalid.length > 0 ? "invalid" : normalized.length > 0 ? "configured" : "missing",
+    configured: normalized,
+    invalid,
+  };
+}
+
+function createHarnessHookScript(defaultEventName) {
+  return [
+    "#!/usr/bin/env node",
+    "",
+    "const chunks = [];",
+    "for await (const chunk of process.stdin) {",
+    "  chunks.push(chunk);",
+    "}",
+    "",
+    "let payload = {};",
+    "try {",
+    "  const raw = Buffer.concat(chunks).toString('utf8').trim();",
+    "  payload = raw ? JSON.parse(raw) : {};",
+    "} catch {",
+    "  payload = {};",
+    "}",
+    "",
+    `const eventName = payload.hook_event_name ?? ${JSON.stringify(defaultEventName)};`,
+    "const additionalContext = [",
+    "  'Devflow Native harness context:',",
+    "  '- Run devflow harness inspect before changing harness files.',",
+    "  '- Run devflow status before command-heavy work.',",
+    "  '- Finish with review, gate evidence, risks, and a next-session prompt.',",
+    "].join('\\n');",
+    "",
+    "process.stdout.write(`${JSON.stringify({",
+    "  hookSpecificOutput: {",
+    "    hookEventName: eventName,",
+    "    additionalContext,",
+    "  },",
+    "})}\\n`);",
+  ].join("\n");
+}
+
+function createSuperpowersPlanAction(summary) {
+  if (summary.status === "available") {
+    return {
+      target: "superpowers",
+      action: "no-op",
+      writes: false,
+      reason: "Superpowers evidence signals are already present.",
+      paths: [],
+    };
+  }
+
+  return {
+    target: "superpowers",
+    action: "adopt-optional",
+    writes: false,
+    reason: "Superpowers is optional; plan can add profile/evidence folders only after explicit install confirmation.",
+    paths: summary.missingPaths ?? [],
+  };
+}
+
+function createCodeGraphPlanAction(summary) {
+  if (summary.status === "available") {
+    return {
+      target: "codegraph",
+      action: "check-freshness",
+      writes: false,
+      reason: "CodeGraph-style context exists; verify freshness before using it as handoff context.",
+      paths: summary.signals?.filter((item) => item.present).map((item) => item.path) ?? [],
+    };
+  }
+
+  return {
+    target: "codegraph",
+    action: "skip-optional",
+    writes: false,
+    reason: "CodeGraph-style context is optional and should not be installed as part of the core harness.",
+    paths: summary.missingPaths ?? [],
   };
 }
 

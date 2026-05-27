@@ -13,9 +13,10 @@ Start with the project context in this order:
 
 1. `docs/README.md`
 2. `docs/product-plan.md`
-3. `docs/architecture.md`
-4. `docs/roadmap.md`
-5. Relevant files under `docs/contributing/`, `docs/architecture/maps/`,
+3. `docs/harness.md`
+4. `docs/architecture.md`
+5. `docs/roadmap.md`
+6. Relevant files under `docs/contributing/`, `docs/architecture/maps/`,
    `docs/examples/`, and `skills/`
 
 ## Product Position

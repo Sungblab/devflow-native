@@ -7,6 +7,8 @@ import test from "node:test";
 import {
   createFinishSummary,
   createHealthSummary,
+  createHarnessInspectSummary,
+  createHarnessPlanSummary,
   createDoctorSummary,
   createInitPlan,
   createSessionAttachPlan,
@@ -22,9 +24,13 @@ import {
   parseSessionListSort,
   parseGitStatusLines,
   readProjectHealth,
+  readHarnessInspect,
+  readHarnessPlan,
+  readHarnessHealth,
   readDevflowConfig,
   readDevflowState,
   runConfiguredGate,
+  writeHarnessInstall,
   recordGateEvent,
   recordFinishEvent,
   writeInitPlan,
@@ -282,6 +288,213 @@ test("health summary reports invalid gate definitions", () => {
   assert.ok(summary.invalidGates.some((gate) => gate.reason === "missing-id"));
   assert.ok(summary.invalidGates.some((gate) => gate.reason === "missing-command"));
   assert.ok(summary.recommendations.some((item) => item.kind === "invalid-gate"));
+});
+
+test("harness inspect summary reports native target readiness and recommendations", () => {
+  const summary = createHarnessInspectSummary({
+    repo: { absolutePath: "C:\\repo" },
+    targets: ["codex", "claude", "superpowers", "codegraph"],
+    existingPaths: [
+      "AGENTS.md",
+      "plugins/devflow/.codex-plugin/plugin.json",
+      "plugins/devflow/hooks/hooks.json",
+      "plugins/devflow/hooks/session-start.mjs",
+      "plugins/devflow/hooks/user-prompt-submit.mjs",
+      "plugins/devflow/hooks/stop.mjs",
+      "plugins/devflow/.mcp.json",
+      "plugins/devflow/skills/start/SKILL.md",
+      "plugins/devflow/skills/finish/SKILL.md",
+      "docs/superpowers/specs",
+    ],
+    config: {
+      gates: [{ id: "docs-check", command: "npm run docs:check" }],
+    },
+  });
+
+  assert.equal(summary.schemaVersion, "0.1");
+  assert.equal(summary.command, "harness_inspect");
+  assert.equal(summary.status, "needs-install");
+  assert.equal(summary.targets.codex.status, "ready");
+  assert.equal(summary.targets.claude.status, "missing");
+  assert.equal(summary.targets.superpowers.status, "available");
+  assert.equal(summary.targets.codegraph.status, "missing");
+  assert.ok(summary.instructions.some((item) => item.path === "AGENTS.md" && item.present));
+  assert.ok(summary.recommendations.some((item) => item.target === "claude"));
+});
+
+test("harness inspector reads repo files without writing", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-harness-inspect-"));
+  await mkdir(join(repoPath, "plugins", "devflow", ".codex-plugin"), { recursive: true });
+  await mkdir(join(repoPath, "plugins", "devflow", "hooks"), { recursive: true });
+  await mkdir(join(repoPath, "plugins", "devflow", "skills", "start"), { recursive: true });
+  await mkdir(join(repoPath, "plugins", "devflow", "skills", "finish"), { recursive: true });
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(join(repoPath, "AGENTS.md"), "# Agent Guide\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", ".codex-plugin", "plugin.json"), "{}\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "hooks", "hooks.json"), "{}\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "hooks", "session-start.mjs"), "\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "hooks", "user-prompt-submit.mjs"), "\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "hooks", "stop.mjs"), "\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "skills", "start", "SKILL.md"), "# Start\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "skills", "finish", "SKILL.md"), "# Finish\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", ".mcp.json"), "{}\n", "utf8");
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ gates: [{ id: "unit", command: "npm test" }] })}\n`,
+    "utf8",
+  );
+
+  const summary = await readHarnessInspect(repoPath, {
+    targets: ["codex", "claude"],
+  });
+
+  assert.equal(summary.command, "harness_inspect");
+  assert.equal(summary.targets.codex.status, "ready");
+  assert.equal(summary.targets.claude.status, "missing");
+  assert.equal(summary.gates.status, "configured");
+});
+
+test("harness plan converts inspect findings into dry-run adoption actions", () => {
+  const inspect = createHarnessInspectSummary({
+    repo: { absolutePath: "C:\\repo" },
+    targets: ["codex", "superpowers", "codegraph"],
+    existingPaths: ["AGENTS.md"],
+    config: {
+      gates: [{ id: "docs-check", command: "npm run docs:check" }],
+    },
+  });
+  const plan = createHarnessPlanSummary({ inspect });
+
+  assert.equal(plan.schemaVersion, "0.1");
+  assert.equal(plan.command, "harness_plan");
+  assert.equal(plan.dryRun, true);
+  assert.equal(plan.status, "changes-proposed");
+  assert.ok(plan.actions.some((action) => action.target === "codex" && action.action === "create-if-missing"));
+  assert.ok(plan.actions.some((action) => action.target === "superpowers" && action.action === "adopt-optional"));
+  assert.ok(plan.actions.some((action) => action.target === "codegraph" && action.action === "skip-optional"));
+  assert.ok(plan.actions.every((action) => action.writes === false));
+});
+
+test("harness plan reads inspection state without writing files", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-harness-plan-"));
+  await writeFile(join(repoPath, "AGENTS.md"), "# Agent Guide\n", "utf8");
+
+  const plan = await readHarnessPlan(repoPath, {
+    targets: ["codex", "claude", "codegraph"],
+  });
+
+  assert.equal(plan.command, "harness_plan");
+  assert.equal(plan.repo.absolutePath, repoPath);
+  assert.ok(plan.actions.some((action) => action.target === "codex"));
+  assert.ok(plan.actions.some((action) => action.target === "claude"));
+  assert.ok(plan.actions.some((action) => action.target === "codegraph" && action.action === "skip-optional"));
+  await assert.rejects(() => readFile(join(repoPath, "plugins", "devflow", ".codex-plugin", "plugin.json"), "utf8"), {
+    code: "ENOENT",
+  });
+});
+
+test("harness install writes missing native files only after confirmation", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-harness-install-"));
+  await writeFile(join(repoPath, "AGENTS.md"), "# Existing Agent Guide\n", "utf8");
+
+  await assert.rejects(
+    () => writeHarnessInstall(repoPath, { targets: ["codex", "claude", "codegraph"] }),
+    /requires --confirm/,
+  );
+
+  const result = await writeHarnessInstall(repoPath, {
+    targets: ["codex", "claude", "codegraph"],
+    confirmed: true,
+  });
+  const agents = await readFile(join(repoPath, "AGENTS.md"), "utf8");
+  const codexManifest = JSON.parse(
+    await readFile(join(repoPath, "plugins", "devflow", ".codex-plugin", "plugin.json"), "utf8"),
+  );
+  const claudeManifest = JSON.parse(
+    await readFile(join(repoPath, "plugins", "devflow", ".claude-plugin", "plugin.json"), "utf8"),
+  );
+
+  assert.equal(result.command, "harness_install");
+  assert.equal(result.status, "installed");
+  assert.ok(result.written.some((file) => file.path === "plugins/devflow/.codex-plugin/plugin.json"));
+  assert.ok(result.ignored.some((action) => action.target === "codegraph" && action.action === "skip-optional"));
+  assert.equal(agents, "# Existing Agent Guide\n");
+  assert.equal(codexManifest.name, "devflow");
+  assert.equal(claudeManifest.name, "devflow");
+  await assert.rejects(() => readFile(join(repoPath, ".codegraph"), "utf8"), {
+    code: "ENOENT",
+  });
+});
+
+test("harness health validates manifests, hook scripts, MCP config, and gates", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-harness-health-"));
+  await writeFile(join(repoPath, "AGENTS.md"), "# Existing Agent Guide\n", "utf8");
+  await writeHarnessInstall(repoPath, {
+    targets: ["codex", "claude"],
+    confirmed: true,
+  });
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ gates: [{ id: "unit", command: "npm test" }] })}\n`,
+    "utf8",
+  );
+
+  const health = await readHarnessHealth(repoPath, {
+    targets: ["codex", "claude"],
+  });
+
+  assert.equal(health.schemaVersion, "0.1");
+  assert.equal(health.command, "harness_health");
+  assert.equal(health.status, "ok");
+  assert.ok(health.checks.some((check) => check.kind === "manifest-json" && check.status === "passed"));
+  assert.ok(health.checks.some((check) => check.kind === "hook-script" && check.status === "passed"));
+  assert.ok(health.checks.some((check) => check.kind === "mcp-config" && check.status === "passed"));
+  assert.equal(health.gates.status, "configured");
+});
+
+test("harness health reports invalid manifest JSON as failed", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-harness-health-invalid-"));
+  await mkdir(join(repoPath, "plugins", "devflow", ".codex-plugin"), { recursive: true });
+  await writeFile(join(repoPath, "AGENTS.md"), "# Agent Guide\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", ".codex-plugin", "plugin.json"), "{bad json\n", "utf8");
+
+  const health = await readHarnessHealth(repoPath, {
+    targets: ["codex"],
+  });
+
+  assert.equal(health.status, "failed");
+  assert.ok(health.checks.some((check) => check.path === "plugins/devflow/.codex-plugin/plugin.json" && check.status === "failed"));
+});
+
+test("harness health accepts Claude stop hook decision payloads", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-harness-health-stop-"));
+  await writeHarnessInstall(repoPath, {
+    targets: ["claude"],
+    confirmed: true,
+  });
+  await writeFile(
+    join(repoPath, "plugins", "devflow", "hooks", "stop.mjs"),
+    [
+      "#!/usr/bin/env node",
+      "process.stdout.write(`${JSON.stringify({ decision: 'block', reason: 'verify first' })}\\n`);",
+    ].join("\n"),
+    "utf8",
+  );
+
+  const health = await readHarnessHealth(repoPath, {
+    targets: ["claude"],
+  });
+
+  assert.equal(health.status, "ok");
+  assert.ok(
+    health.checks.some(
+      (check) =>
+        check.path === "plugins/devflow/hooks/stop.mjs" &&
+        check.status === "passed" &&
+        /valid decision payload/.test(check.message),
+    ),
+  );
 });
 
 test("work item events can create, start, list, and feed status", async () => {

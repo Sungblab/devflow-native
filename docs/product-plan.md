@@ -19,16 +19,22 @@ loss of continuity:
 
 ## Product Goal
 
-Build a local-first workflow OS for solo maintainers using AI agents. It should
-make the development process observable, resumable, and enforceable across
-projects without forcing every project into a hosted SaaS.
+Build a local-first workflow continuity harness for solo maintainers using AI
+agents. It should make the development process observable, resumable, and
+enforceable across projects without forcing every project into a hosted SaaS.
 
 The short version:
 
 ```text
 Agent IDEs and orchestrators run agents.
-Solo Devflow OS records the repo-local project truth those agents share.
+Devflow Native records the repo-local project truth those agents share.
 ```
+
+The first native targets are Codex and Claude Code. Superpowers is a workflow
+methodology profile, not a dependency. CodeGraph-style systems are optional
+context providers, not the product center. See [Native Harness](./harness.md)
+for the concrete Codex, Claude Code, Superpowers, CodeGraph, review-gate, and
+handoff direction.
 
 ## Non-Goals
 
@@ -269,7 +275,7 @@ The intended position is lower and more durable:
 
 ```text
 Agent IDEs and orchestrators run agents.
-Solo Devflow OS records the project truth those agents share.
+Devflow Native records the project truth those agents share.
 ```
 
 That truth is the current task state plus verification context: active work
@@ -289,7 +295,7 @@ The product should own:
   views
 - adapter-neutral integration points
 
-This allows Solo Devflow OS to integrate with Codex, Claude Code, Gemini,
+This allows Devflow Native to integrate with Codex, Claude Code, Gemini,
 Hermes, Orca, Lanes, RCFlow, and future tools instead of trying to replace them.
 
 ## Research Position

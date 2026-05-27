@@ -11,6 +11,9 @@ import {
 } from "../../adapters/src/index.js";
 import {
   createFinishSummary,
+  readHarnessInspect,
+  readHarnessHealth,
+  readHarnessPlan,
   createDoctorSummary,
   createInitPlan,
   createNextPrompt,
@@ -41,6 +44,7 @@ import {
   recordWorkUpdatedEvent,
   recordWorkUnblockedEvent,
   runConfiguredGate,
+  writeHarnessInstall,
   writeInitPlan,
 } from "../../core/src/index.js";
 
@@ -52,6 +56,14 @@ try {
     await renderInit(args.slice(1));
   } else if (command === "health") {
     await renderHealth(args.slice(1));
+  } else if (command === "harness" && args[1] === "inspect") {
+    await renderHarnessInspect(args.slice(2));
+  } else if (command === "harness" && args[1] === "plan") {
+    await renderHarnessPlan(args.slice(2));
+  } else if (command === "harness" && args[1] === "install") {
+    await renderHarnessInstall(args.slice(2));
+  } else if (command === "harness" && args[1] === "health") {
+    await renderHarnessHealth(args.slice(2));
   } else if (command === "status") {
     await renderStatus(args.slice(1));
   } else if (command === "explain") {
@@ -125,6 +137,47 @@ async function renderHealth(argsForCommand) {
   const repoPath = options.repo ?? cwd();
   const config = await readDevflowConfig(repoPath);
   const summary = await readProjectHealth(repoPath, config);
+
+  render(summary, options.json);
+}
+
+async function renderHarnessInspect(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const summary = await readHarnessInspect(repoPath, {
+    targets: parseTargetList(options.targets),
+  });
+
+  render(summary, options.json);
+}
+
+async function renderHarnessPlan(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const summary = await readHarnessPlan(repoPath, {
+    targets: parseTargetList(options.targets),
+  });
+
+  render(summary, options.json);
+}
+
+async function renderHarnessInstall(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const summary = await writeHarnessInstall(repoPath, {
+    targets: parseTargetList(options.targets),
+    confirmed: Boolean(options.confirm),
+  });
+
+  render(summary, options.json);
+}
+
+async function renderHarnessHealth(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const summary = await readHarnessHealth(repoPath, {
+    targets: parseTargetList(options.targets),
+  });
 
   render(summary, options.json);
 }
@@ -774,6 +827,17 @@ function collectRepeated(value) {
   }
 
   return Array.isArray(value) ? value : [value];
+}
+
+function parseTargetList(value) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return collectRepeated(value)
+    .flatMap((item) => String(item).split(","))
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function parseGate(value) {

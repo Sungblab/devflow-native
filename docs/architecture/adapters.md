@@ -1,11 +1,11 @@
 # Adapters
 
-Solo Devflow OS should support many agent tools and operating systems without
+Devflow Native should support many agent tools and operating systems without
 making any one of them mandatory.
 
 ## Integration Strategy
 
-Solo Devflow OS should integrate with coding agents through the narrowest
+Devflow Native should integrate with coding agents through the narrowest
 stable surface each host provides:
 
 - MCP tools when the host supports MCP.
@@ -86,7 +86,7 @@ confirmation.
 | Agent | Priority | Notes |
 | --- | --- | --- |
 | Claude Code | P0 | Rich hooks, project history, todos, subagents. |
-| Codex | P0 | Current maintainer workflow; JSONL sessions and resume model. |
+| Codex | P0 | Native plugin/hooks, MCP, JSONL sessions, and resume model. |
 | Gemini CLI | P1 | Useful second reviewer and alternate model. |
 | GitHub Copilot CLI | P1 | Common enterprise/dev workflow target. |
 | OpenCode | P1 | Local DB/session model, useful cross-provider target. |
@@ -100,10 +100,17 @@ confirmation.
 
 Preferred integration:
 
+- Native `.codex-plugin` manifest with skills and hooks.
 - MCP config pointing Codex at the local Devflow MCP server.
+- Optional bundled `.mcp.json` and repo-local `.codex/config.toml` when
+  appropriate.
 - Session discovery from Codex local history and resume metadata.
 - Optional launch helpers that call the installed Codex CLI rather than
   embedding OpenAI credentials.
+
+Lifecycle hooks should cover cheap continuity moments such as session start,
+user prompt submit, and stop. MCP remains the shared structured contract for
+status, split, finish, session, gate, and next-prompt state.
 
 Useful commands/tools:
 

@@ -75,6 +75,8 @@ automation.
 Build:
 
 - `devflow init`
+- `devflow harness inspect`
+- `devflow harness plan`
 - template installer
 - `.devflow/config.json`
 - docs/maps/testing/workflow templates
@@ -93,6 +95,21 @@ instead of overwriting them. `devflow health` and MCP `devflow.health` can now
 report missing scaffold files, configured gates, and invalid gate definitions
 with missing ids, missing commands, or duplicate ids. Template customization
 remains later Phase 2 work.
+
+Current implementation note: `devflow harness inspect --targets
+codex,claude,superpowers,codegraph` reports native plugin readiness, MCP launch
+readiness, hook presence, Superpowers evidence availability, CodeGraph-style
+provider signals, gate availability, and install/repair recommendations.
+`devflow harness plan` converts that inspection into a dry-run adoption plan
+without writing files. Native Codex/Claude gaps become `create-if-missing`
+actions, Superpowers is treated as optional profile adoption, and CodeGraph is
+treatable as optional context unless an existing provider needs freshness
+checks. `devflow harness install --confirm` executes only native
+`create-if-missing` actions, skips existing files, and ignores optional
+Superpowers/CodeGraph actions. `devflow harness health` validates installed
+native harness files by parsing plugin manifests and MCP config, executing hook
+scripts with a synthetic payload, accepting Claude Stop decision payloads, and
+checking configured gates.
 
 ## Phase 3: Split Planning
 
@@ -173,6 +190,7 @@ Build:
 - `devflow.work_block` MCP tool
 - `devflow.work_unblock` MCP tool
 - `devflow.work_list` MCP tool
+- Codex native plugin readiness and install surface
 - Claude Code plugin draft with slash commands
 - Codex MCP config template
 - Gemini MCP config template

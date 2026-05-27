@@ -2,9 +2,9 @@
 
 ## System Overview
 
-Solo Devflow OS is a local application with repo-aware plugin hooks, a CLI
-fallback, a small database, a local MCP server, agent integrations, generated
-artifact views, and project scaffolding templates.
+Devflow Native is a local workflow continuity harness with repo-aware plugin
+hooks, a CLI fallback, local state, a local MCP server, agent integrations,
+generated artifact views, and project scaffolding templates.
 
 ```text
              AI tools / terminals / IDEs
@@ -45,13 +45,13 @@ packages/core
   shared JSON schemas for handoff and gate evidence
 
 packages/cli
-  devflow init/status/split/finish/doctor/gates/session/review
+  devflow harness/init/status/split/finish/doctor/gates/session/review
 
 packages/mcp
   devflow.status/devflow.split/devflow.finish/devflow.doctor/devflow.next_prompt/devflow.rewrite_prompt/devflow.sessions_codex/devflow.sessions_attach_plan/devflow.sessions_attach/devflow.sessions_list/devflow.sessions_note tools
 
 packages/integrations
-  Claude Code plugin, Codex MCP config, Gemini MCP config, editor hooks
+  Claude Code plugin, Codex plugin and MCP config, Gemini MCP config, editor hooks
 
 plugins/devflow
   repo-local Codex and Claude Code plugin drafts with hooks, skills, and MCP
@@ -124,6 +124,11 @@ than appending duplicates.
 
 ```text
 devflow init
+devflow harness inspect
+devflow harness plan
+devflow harness install
+devflow harness health
+devflow harness repair
 devflow status
 devflow work create
 devflow work start
@@ -190,11 +195,12 @@ Rules:
 Agent integrations are distribution and UX layers over the same core and MCP
 contracts.
 
-- Codex: MCP configuration, session discovery, resume metadata, and local
-  history import. Codex authentication remains owned by Codex.
-- Codex plugin: repo-local `plugins/devflow` package with skills that call the
-  same local CLI/MCP contracts, starting with `devflow doctor` and
-  `devflow status`.
+- Codex: native plugin, lifecycle hooks, MCP configuration, session discovery,
+  resume metadata, and local history import. Codex authentication remains owned
+  by Codex.
+- Codex plugin: repo-local `plugins/devflow` package with `.codex-plugin`,
+  skills, hooks, and optional bundled MCP config that call the same local
+  CLI/MCP contracts.
 - Claude Code: plugin with slash commands, skills, hooks, and optional bundled
   MCP server configuration. Claude authentication remains owned by Claude Code.
 - Claude Code plugin draft: repo-local `plugins/devflow/.claude-plugin`
@@ -221,6 +227,12 @@ general failure categories. Project-local state may contain repo-specific
 corrections. Private maintainer memory may contain personal paths, preferred
 tools, or historical examples. The core model stores the category and scope so
 public scaffolds do not leak personal workflow details.
+
+Superpowers is a methodology/profile input, not a required runtime. CodeGraph
+and similar systems are optional context providers whose freshness must be
+reported when used. The core finish path should rely on explicit status,
+session, gate, review, and handoff evidence rather than assuming a methodology
+plugin or graph index is current.
 
 ## Agent Adapters
 

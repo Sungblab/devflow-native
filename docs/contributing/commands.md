@@ -15,6 +15,11 @@ This document defines the intended CLI shape before implementation.
 ```text
 devflow init
 devflow health
+devflow harness inspect
+devflow harness plan
+devflow harness install
+devflow harness health
+devflow harness repair
 devflow gates run
 devflow work create
 devflow work start
@@ -70,6 +75,9 @@ evidence.
 local work item registry.
 `doctor` is included early because plugin/skill-first workflows need a cheap
 way to avoid repeated local-environment mistakes.
+`devflow harness inspect/plan/install/health/repair` is the native adoption
+surface for existing repos using Codex, Claude Code, Superpowers, optional
+CodeGraph-style context providers, and git/finish guards.
 `devflow sessions codex` is included as a read-only adapter probe. It requires
 an explicit `--codex-home <path>` and should not read private agent history by
 default. `devflow sessions attach-plan` is a dry-run proposal command and does
@@ -198,6 +206,47 @@ Health status values:
 - `ok`: scaffold files are present and configured gates are valid
 - `missing`: required scaffold files or gates are missing
 - `invalid`: at least one configured gate is malformed
+
+## `devflow harness`
+
+Inspects, plans, installs, verifies, and repairs the repo-local native harness
+for agent hosts.
+
+Examples:
+
+```powershell
+devflow harness inspect --targets codex,claude,superpowers,codegraph --json
+devflow harness plan --targets codex,claude --json
+devflow harness install --targets codex,claude,git-hooks --confirm --json
+devflow harness health --json
+devflow harness repair --json
+```
+
+Targets:
+
+- `codex`: `.codex-plugin`, skills, hooks, optional `.mcp.json`, repo-local
+  `.codex/config.toml`, and `AGENTS.md` readiness
+- `claude`: `.claude-plugin`, skills, hooks, optional `.mcp.json`, project
+  `.claude/` files, and `CLAUDE.md` compatibility
+- `superpowers`: installed/enabled methodology profile and visible skill usage
+  that can count as workflow evidence
+- `codegraph`: optional graph context provider availability and freshness
+- `git-hooks`: local finish or commit guards when configured
+
+Responsibilities:
+
+- `inspect`: read the current repo and report readiness without writing files
+- `plan`: propose the smallest safe adoption or repair plan
+- `install`: write only confirmed missing harness pieces and avoid overwriting
+  rich project instructions
+- `health`: verify hook paths, MCP launchers, plugin manifests, gates, and the
+  status/review/finish/next-prompt loop
+- `repair`: fix narrow issues such as stale plugin path variables, missing hook
+  files, malformed gates, or stale MCP command paths
+
+The harness command group is adoption-first. Mature repos should keep their
+existing instructions; Devflow should add the minimum bridge needed for native
+Codex and Claude Code workflow continuity.
 
 ## `devflow gates run`
 

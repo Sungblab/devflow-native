@@ -7,6 +7,7 @@ This is the documentation router for Devflow Native.
 | Need | Document |
 | --- | --- |
 | Product thesis and user problem | [product-plan.md](./product-plan.md) |
+| Native harness direction for Codex, Claude Code, Superpowers, and CodeGraph | [harness.md](./harness.md) |
 | System structure and technical boundaries | [architecture.md](./architecture.md) |
 | Agent and platform adapter strategy | [architecture/adapters.md](./architecture/adapters.md) |
 | MCP handler package | [../packages/mcp/README.md](../packages/mcp/README.md) |

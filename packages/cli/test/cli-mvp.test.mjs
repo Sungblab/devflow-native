@@ -668,6 +668,135 @@ test("CLI health reports invalid configured gates", async () => {
   assert.ok(parsed.invalidGates.some((gate) => gate.reason === "missing-command"));
 });
 
+test("CLI harness inspect renders target readiness JSON", async () => {
+  const repoPath = await createTempGitRepo();
+  await mkdir(join(repoPath, "plugins", "devflow", ".codex-plugin"), { recursive: true });
+  await mkdir(join(repoPath, "plugins", "devflow", "hooks"), { recursive: true });
+  await mkdir(join(repoPath, "plugins", "devflow", "skills", "start"), { recursive: true });
+  await mkdir(join(repoPath, "plugins", "devflow", "skills", "finish"), { recursive: true });
+  await writeFile(join(repoPath, "AGENTS.md"), "# Agent Guide\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", ".codex-plugin", "plugin.json"), "{}\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "hooks", "hooks.json"), "{}\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "hooks", "session-start.mjs"), "\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "hooks", "user-prompt-submit.mjs"), "\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "hooks", "stop.mjs"), "\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "skills", "start", "SKILL.md"), "# Start\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "skills", "finish", "SKILL.md"), "# Finish\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", ".mcp.json"), "{}\n", "utf8");
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "inspect",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex,claude,superpowers,codegraph",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "harness_inspect");
+  assert.equal(parsed.targets.codex.status, "ready");
+  assert.equal(parsed.targets.claude.status, "missing");
+  assert.equal(parsed.targets.superpowers.status, "missing");
+  assert.ok(parsed.recommendations.some((item) => item.target === "claude"));
+});
+
+test("CLI harness plan renders a dry-run adoption plan", async () => {
+  const repoPath = await createTempGitRepo();
+  await writeFile(join(repoPath, "AGENTS.md"), "# Agent Guide\n", "utf8");
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "plan",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex,claude,codegraph",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "harness_plan");
+  assert.equal(parsed.dryRun, true);
+  assert.ok(parsed.actions.some((action) => action.target === "codex" && action.action === "create-if-missing"));
+  assert.ok(parsed.actions.some((action) => action.target === "claude" && action.action === "create-if-missing"));
+  assert.ok(parsed.actions.some((action) => action.target === "codegraph" && action.action === "skip-optional"));
+});
+
+test("CLI harness install requires confirmation and writes missing native files", async () => {
+  const repoPath = await createTempGitRepo();
+  await assert.rejects(
+    execFileAsync("node", [
+      "packages/cli/src/index.js",
+      "harness",
+      "install",
+      "--repo",
+      repoPath,
+      "--targets",
+      "codex,claude,codegraph",
+      "--json",
+    ]),
+    /requires --confirm/,
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "install",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex,claude,codegraph",
+    "--confirm",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+  const codexManifest = JSON.parse(
+    await readFile(join(repoPath, "plugins", "devflow", ".codex-plugin", "plugin.json"), "utf8"),
+  );
+
+  assert.equal(parsed.command, "harness_install");
+  assert.equal(parsed.status, "installed");
+  assert.ok(parsed.written.some((file) => file.path === "plugins/devflow/.codex-plugin/plugin.json"));
+  assert.ok(parsed.ignored.some((action) => action.target === "codegraph"));
+  assert.equal(codexManifest.name, "devflow");
+});
+
+test("CLI harness health validates installed native harness", async () => {
+  const repoPath = await createTempGitRepo();
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "install",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex,claude",
+    "--confirm",
+    "--json",
+  ]);
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "health",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex,claude",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "harness_health");
+  assert.equal(parsed.status, "ok");
+  assert.ok(parsed.checks.some((check) => check.kind === "manifest-json" && check.status === "passed"));
+  assert.ok(parsed.checks.some((check) => check.kind === "hook-script" && check.status === "passed"));
+});
+
 test("CLI status reads gate definitions from devflow config", async () => {
   const repoPath = await createTempGitRepo();
   await mkdir(join(repoPath, ".devflow"), { recursive: true });

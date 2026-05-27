@@ -51,6 +51,10 @@ packages/cli/
 - `devflow status`
 - `devflow init`
 - `devflow health`
+- `devflow harness inspect`
+- `devflow harness plan`
+- `devflow harness install`
+- `devflow harness health`
 - `devflow work create`
 - `devflow work start`
 - `devflow work update`
@@ -75,7 +79,23 @@ minimum project contract only when `--confirm` is provided. The first scaffold
 includes `.devflow/config.json`, `AGENTS.md`, a docs router, workflow notes,
 testing strategy, and an architecture map index. Existing files are skipped
 instead of overwritten. `devflow health` checks that the same scaffold files
-and at least one configured gate are present. `devflow work create`,
+and at least one configured gate are present. `devflow harness inspect` reports
+native Codex and Claude Code readiness, MCP config presence, instruction files,
+Superpowers signals, CodeGraph-style provider signals, configured gates, and
+the smallest install or repair recommendations without writing files.
+`devflow harness plan` converts that inspection into a dry-run adoption plan:
+native Codex/Claude gaps become create-if-missing actions, Superpowers remains
+an optional profile adoption action, and CodeGraph-style context remains
+optional unless an existing provider needs freshness checks.
+`devflow harness install --confirm` executes only the native
+`create-if-missing` actions from the plan. It writes missing Codex/Claude plugin
+manifests, hook config, hook scripts, MCP config, and start/finish skills, skips
+existing files, and ignores optional Superpowers/CodeGraph actions.
+`devflow harness health` validates installed native harness files by checking
+plugin manifest JSON, MCP config JSON, executable hook scripts, and configured
+gates. Stop hooks may return Claude decision payloads while context-injection
+hooks must return structured hook context.
+`devflow work create`,
 `devflow work start`, `devflow work update`, `devflow work rename`,
 `devflow work ready`, `devflow work block`, `devflow work unblock`, and
 `devflow work list` provide the first local work item registry over append-only
