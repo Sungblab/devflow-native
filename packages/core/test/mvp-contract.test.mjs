@@ -533,7 +533,7 @@ test("harness inspector reads repo files without writing", async () => {
   await writeFile(join(repoPath, "plugins", "devflow", ".mcp.json"), "{}\n", "utf8");
   await writeFile(
     join(repoPath, ".devflow", "config.json"),
-    `${JSON.stringify({ gates: [{ id: "unit", command: "npm test" }] })}\n`,
+    `${JSON.stringify({ review: { required: true }, gates: [{ id: "unit", command: "npm test" }] })}\n`,
     "utf8",
   );
 
@@ -660,7 +660,7 @@ test("harness health validates manifests, hook scripts, MCP config, and gates", 
   await mkdir(join(repoPath, ".devflow"), { recursive: true });
   await writeFile(
     join(repoPath, ".devflow", "config.json"),
-    `${JSON.stringify({ gates: [{ id: "unit", command: "npm test" }] })}\n`,
+    `${JSON.stringify({ review: { required: true }, gates: [{ id: "unit", command: "npm test" }] })}\n`,
     "utf8",
   );
 
@@ -674,7 +674,32 @@ test("harness health validates manifests, hook scripts, MCP config, and gates", 
   assert.ok(health.checks.some((check) => check.kind === "manifest-json" && check.status === "passed"));
   assert.ok(health.checks.some((check) => check.kind === "hook-script" && check.status === "passed"));
   assert.ok(health.checks.some((check) => check.kind === "mcp-config" && check.status === "passed"));
+  assert.ok(health.checks.some((check) => check.kind === "review-required" && check.status === "passed"));
   assert.equal(health.gates.status, "configured");
+});
+
+test("harness health fails when required review is not configured", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-harness-health-review-"));
+  await writeHarnessInstall(repoPath, {
+    targets: ["codex"],
+    confirmed: true,
+  });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ gates: [{ id: "unit", command: "npm test" }] })}\n`,
+    "utf8",
+  );
+
+  const health = await readHarnessHealth(repoPath, {
+    targets: ["codex"],
+  });
+
+  assert.equal(health.status, "failed");
+  assert.ok(health.checks.some((check) => (
+    check.kind === "review-required" &&
+      check.status === "failed" &&
+      check.path === ".devflow/config.json"
+  )));
 });
 
 test("harness health reports invalid manifest JSON as failed", async () => {

@@ -804,6 +804,7 @@ export async function readHarnessHealth(repoPath, options = {}) {
   const checks = [
     ...(await validateHarnessJsonFiles(repoPath, inspect)),
     ...(await validateHarnessHookScripts(repoPath, inspect)),
+    validateHarnessReviewConfig(config),
   ];
   const gates = createHarnessGateHealth(config.gates);
   const failed = checks.some((check) => check.status === "failed") || gates.status === "invalid";
@@ -816,6 +817,7 @@ export async function readHarnessHealth(repoPath, options = {}) {
     filters: inspect.filters,
     checks,
     gates,
+    review: createHarnessReviewSummary(config),
     warnings: [...(inspect.warnings ?? []), ...(config.warnings ?? [])],
   };
 }
@@ -2239,6 +2241,19 @@ async function validateHarnessHookScripts(repoPath, inspect) {
   }
 
   return checks;
+}
+
+function validateHarnessReviewConfig(config = {}) {
+  const required = config?.review?.required === true;
+
+  return {
+    kind: "review-required",
+    path: ".devflow/config.json",
+    status: required ? "passed" : "failed",
+    message: required
+      ? "Required review evidence is enabled."
+      : "Set review.required to true so finish cannot skip review evidence.",
+  };
 }
 
 async function executeHarnessHook(repoPath, path) {

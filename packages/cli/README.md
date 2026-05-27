@@ -103,9 +103,9 @@ scripts, MCP config, and start/finish skills, skips existing files, enables
 `review.required` in `.devflow/config.json` without dropping existing gates,
 and ignores optional Superpowers/CodeGraph actions.
 `devflow harness health` validates installed native harness files by checking
-plugin manifest JSON, MCP config JSON, executable hook scripts, and configured
-gates. Stop hooks may return Claude decision payloads while context-injection
-hooks must return structured hook context.
+plugin manifest JSON, MCP config JSON, executable hook scripts, configured
+gates, and `review.required`. Stop hooks may return Claude decision payloads
+while context-injection hooks must return structured hook context.
 `devflow harness repair --confirm` restores only broken installed files that
 have built-in canonical content, such as malformed plugin manifests, malformed
 MCP config, or hook scripts that fail the health contract. It does not rewrite

@@ -252,7 +252,8 @@ Responsibilities:
   rich project instructions; it also enables `review.required` in
   `.devflow/config.json` while preserving existing gate definitions
 - `health`: verify hook paths, MCP launchers, plugin manifests, gates, and the
-  status/review/finish/next-prompt loop
+  status/review/finish/next-prompt loop. It fails when `review.required` is not
+  enabled because finish-time review is part of the native harness contract.
 - `repair`: restore confirmed broken installed files that have built-in
   canonical content, such as malformed plugin manifests, malformed MCP config,
   or hook scripts that fail the health contract

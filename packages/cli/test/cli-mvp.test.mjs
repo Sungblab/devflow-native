@@ -875,6 +875,43 @@ test("CLI harness health validates installed native harness", async () => {
   assert.equal(parsed.status, "ok");
   assert.ok(parsed.checks.some((check) => check.kind === "manifest-json" && check.status === "passed"));
   assert.ok(parsed.checks.some((check) => check.kind === "hook-script" && check.status === "passed"));
+  assert.ok(parsed.checks.some((check) => check.kind === "review-required" && check.status === "passed"));
+});
+
+test("CLI harness health fails when required review is not configured", async () => {
+  const repoPath = await createTempGitRepo();
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "install",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex",
+    "--confirm",
+    "--json",
+  ]);
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ gates: [{ id: "unit", command: "npm test" }] })}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "health",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "harness_health");
+  assert.equal(parsed.status, "failed");
+  assert.ok(parsed.checks.some((check) => check.kind === "review-required" && check.status === "failed"));
 });
 
 test("CLI harness repair restores broken installed harness files", async () => {
