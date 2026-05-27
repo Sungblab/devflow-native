@@ -28,6 +28,7 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.work_block`
 - `devflow.work_unblock`
 - `devflow.work_list`
+- `devflow.review_record`
 - `devflow.finish`
 - `devflow.record_gate`
 - `devflow.gates_run`
@@ -95,10 +96,17 @@ duplicate lines. `devflow.work_rename` is a title-only alias over
 `devflow.work_list` and `devflow.status` without re-entering work item details.
 Repeated split registration reuses existing work events by id.
 
+`devflow.review_record` writes local `review.completed` evidence for a work
+item. Use it after a separate reviewer agent or reviewer persona has inspected
+the work. It records reviewer, status, summary, and source; it does not perform
+the review itself.
+
 `devflow.finish` returns the same false-completion guard contract as the CLI.
-It reads configured gates and recorded `gate.finished` events before returning
-`canClaimDone`, `doneBlockers`, gate classifications, `structuredHandoff`, and
-`nextPrompt`.
+It reads configured gates, recorded `gate.finished` events, and configured
+review requirements before returning `canClaimDone`, `doneBlockers`, gate
+classifications, review evidence, `structuredHandoff`, and `nextPrompt`. If
+`.devflow/config.json` sets `review.required` to `true`, finish requires a
+passing `review.completed` record for the work item.
 
 `devflow.gates_run` reads `.devflow/config.json`, finds a configured gate by
 `id`, executes its command without a shell, and appends a `gate.finished` event

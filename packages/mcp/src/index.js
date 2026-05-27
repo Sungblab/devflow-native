@@ -29,6 +29,7 @@ import {
   recordFinishEvent,
   recordGateEvent,
   recordManualSessionNoteEvent,
+  recordReviewEvent,
   recordSessionAttachedEvent,
   recordSplitWorkEvents,
   recordWorkBlockedEvent,
@@ -125,6 +126,10 @@ const tools = [
   {
     name: "devflow.work_list",
     description: "List local Devflow work items.",
+  },
+  {
+    name: "devflow.review_record",
+    description: "Record local code review evidence for a work item.",
   },
   {
     name: "devflow.doctor",
@@ -235,6 +240,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.work_list") {
     return callWorkList(args);
+  }
+
+  if (name === "devflow.review_record") {
+    return callReviewRecord(args);
   }
 
   if (name === "devflow.doctor") {
@@ -628,6 +637,27 @@ async function callWorkList(args) {
   return toolResult(summary, `devflow work_list: ${summary.count} items`);
 }
 
+async function callReviewRecord(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const event = await recordReviewEvent(repoPath, {
+    workItemId: args.workItemId ?? args.work,
+    reviewer: args.reviewer,
+    status: args.status ?? "passed",
+    summary: args.summary,
+    source: args.source ?? "mcp",
+  });
+
+  return toolResult(
+    {
+      schemaVersion: "0.1",
+      command: "review_record",
+      review: event.payload,
+      event,
+    },
+    `devflow review_record: ${event.payload.workItemId}`,
+  );
+}
+
 async function callDoctor(args) {
   const repoPath = args.repo ?? process.cwd();
   const memory = await readMistakeMemory(repoPath);
@@ -663,6 +693,8 @@ async function callFinish(args) {
     changedFiles: args.changedFiles ?? [],
     gates: gateEvidence,
     requiredGates: args.requiredGates ?? config.gates ?? [],
+    reviewRequired: Boolean(config.review?.required),
+    reviewEvidence: state.reviews.latestByWorkItemId[args.work ?? "local-work"] ?? null,
     skipped: args.skipped ?? [],
     risks,
     nextTask: args.nextTask,

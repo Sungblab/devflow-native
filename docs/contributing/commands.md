@@ -33,6 +33,7 @@ devflow status
 devflow split
 devflow explain
 devflow finish
+devflow review record
 devflow prompt next
 devflow prompt rewrite
 devflow sessions codex
@@ -96,8 +97,11 @@ The MVP loop stores local evidence in an append-only JSONL event log:
 
 `devflow finish` appends one `work.completed` event containing the finish JSON
 contract. `devflow gates run` and agent hosts may also record standalone
-`gate.finished` evidence before a work item is closed. `devflow status` reads
-the same log and derives the latest handoff and latest gate evidence from it.
+`gate.finished` evidence before a work item is closed. `devflow review record`
+can append `review.completed` evidence; when `.devflow/config.json` sets
+`review.required` to `true`, finish is blocked until the selected work item has
+a recorded review with a passing status. `devflow status` reads the same log
+and derives the latest handoff and latest gate evidence from it.
 The event log is local-first project state and is ignored by git by default in
 this repository.
 `devflow work create` appends `work.created`, `devflow work start` appends
@@ -1116,6 +1120,32 @@ JSON output:
   }
 }
 ```
+
+If `.devflow/config.json` contains `"review": { "required": true }`, finish
+also requires review evidence for the work item. The latest
+`review.completed` event for that work item must have a passing status;
+`changes-requested` keeps `canClaimDone` false.
+
+## `devflow review record`
+
+Records local review evidence for a work item.
+
+Example:
+
+```powershell
+devflow review record --work worker-static-quality --reviewer "Claude Code" --status passed --summary "No blocking findings." --json
+```
+
+Outputs:
+
+- `review_record` JSON wrapper
+- appended `.devflow/state/events.jsonl` `review.completed` event
+- finish-visible review status, reviewer, summary, and observed time
+
+The review record command is intentionally evidence capture, not an automated
+reviewer. The agent host still owns the review prompt, reviewer persona, and
+review quality; Devflow records whether the required review gate has been
+satisfied before finish.
 
 ## Platform Command Generation
 

@@ -1332,6 +1332,65 @@ test("CLI finish blocks done claim when configured gate has no recorded evidence
   assert.equal(parsed.doneBlockers[0].kind, "unknown_gate");
 });
 
+test("CLI finish requires recorded review when configured", async () => {
+  const repoPath = await createTempGitRepo();
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ review: { required: true } })}\n`,
+  );
+
+  const blocked = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "reviewed-work",
+    "--title",
+    "Reviewed work",
+    "--json",
+  ]);
+  const blockedJson = JSON.parse(blocked.stdout);
+  assert.equal(blockedJson.canClaimDone, false);
+  assert.ok(blockedJson.doneBlockers.some((blocker) => blocker.kind === "missing_review"));
+
+  const review = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "review",
+    "record",
+    "--repo",
+    repoPath,
+    "--work",
+    "reviewed-work",
+    "--reviewer",
+    "Claude Code",
+    "--status",
+    "passed",
+    "--summary",
+    "No blocking findings.",
+    "--json",
+  ]);
+  assert.equal(JSON.parse(review.stdout).command, "review_record");
+
+  const finished = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "reviewed-work",
+    "--title",
+    "Reviewed work",
+    "--json",
+  ]);
+  const finishedJson = JSON.parse(finished.stdout);
+
+  assert.equal(finishedJson.canClaimDone, true);
+  assert.equal(finishedJson.review.status, "passed");
+  assert.equal(finishedJson.review.reviewer, "Claude Code");
+});
+
 test("CLI finish allows done claim when configured gate evidence was recorded", async () => {
   const repoPath = await createTempGitRepo();
   await mkdir(join(repoPath, ".devflow"), { recursive: true });

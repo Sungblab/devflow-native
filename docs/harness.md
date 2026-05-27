@@ -206,6 +206,12 @@ Review is evidence, not truth. Review findings must be evaluated technically,
 accepted findings should be verified with focused tests or inspection, and weak
 findings should be recorded as dismissed with a reason.
 
+Repos can set `"review": { "required": true }` in `.devflow/config.json`.
+When enabled, `devflow finish` requires a passing `review.completed` record for
+the work item before `canClaimDone` becomes true. `devflow review record` and
+MCP `devflow.review_record` capture that evidence after a separate reviewer
+agent or reviewer persona has inspected the work.
+
 Reviewer profiles can help break self-review bias:
 
 - skeptical maintainer

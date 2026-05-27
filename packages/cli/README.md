@@ -66,6 +66,7 @@ packages/cli/
 - `devflow work list`
 - `devflow split`
 - `devflow finish`
+- `devflow review record`
 - `devflow doctor`
 - `devflow prompt next`
 - `devflow prompt rewrite`
@@ -133,5 +134,9 @@ to the original evidence summary. It reads configured gates from
 `.devflow/config.json` and recorded `gate.finished` events from
 `.devflow/state/events.jsonl`, then returns `canClaimDone`, `doneBlockers`,
 `skippedGates`, `failedGates`, `unknownGates`, `remainingRisks`,
-`structuredHandoff`, and `nextPrompt`. Missing, failed, skipped, or unknown
-required gates block `canClaimDone`.
+`structuredHandoff`, `review`, and `nextPrompt`. Missing, failed, skipped, or
+unknown required gates block `canClaimDone`. When `.devflow/config.json` sets
+`review.required` to `true`, `devflow finish` also requires a matching
+`review.completed` event for the work item. `devflow review record --work <id>
+--reviewer <name> --status passed --summary <text>` records that local review
+evidence.

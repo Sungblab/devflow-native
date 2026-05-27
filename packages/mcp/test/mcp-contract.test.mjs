@@ -37,6 +37,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.work_block"));
   assert.ok(names.includes("devflow.work_unblock"));
   assert.ok(names.includes("devflow.work_list"));
+  assert.ok(names.includes("devflow.review_record"));
 });
 
 test("MCP harness tools inspect, plan, and health-check native setup", async () => {
@@ -268,6 +269,41 @@ test("MCP finish blocks done claim when configured gate has no recorded evidence
   assert.equal(result.structuredContent.canClaimDone, false);
   assert.equal(result.structuredContent.unknownGates[0].id, "unit");
   assert.equal(result.structuredContent.doneBlockers[0].kind, "unknown_gate");
+});
+
+test("MCP finish requires recorded review when configured", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-review-required-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ review: { required: true } })}\n`,
+  );
+
+  const blocked = await callTool("devflow.finish", {
+    repo: repoPath,
+    work: "reviewed-work",
+    title: "Reviewed work",
+  });
+  assert.equal(blocked.structuredContent.canClaimDone, false);
+  assert.ok(blocked.structuredContent.doneBlockers.some((blocker) => blocker.kind === "missing_review"));
+
+  const review = await callTool("devflow.review_record", {
+    repo: repoPath,
+    work: "reviewed-work",
+    reviewer: "Claude Code",
+    status: "passed",
+    summary: "No blocking findings.",
+  });
+  assert.equal(review.structuredContent.command, "review_record");
+
+  const finished = await callTool("devflow.finish", {
+    repo: repoPath,
+    work: "reviewed-work",
+    title: "Reviewed work",
+  });
+
+  assert.equal(finished.structuredContent.canClaimDone, true);
+  assert.equal(finished.structuredContent.review.status, "passed");
 });
 
 test("MCP finish allows done claim when configured gate evidence was recorded", async () => {

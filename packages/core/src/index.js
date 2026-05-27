@@ -66,11 +66,14 @@ export function createFinishSummary(input) {
   const skippedGates = input.skipped ?? [];
   const risks = input.risks ?? [];
   const requiredGates = input.requiredGates ?? [];
+  const reviewEvidence = input.reviewEvidence ?? null;
   const guard = evaluateFinishGuard({
     requiredGates,
     gateEvidence,
     skippedGates,
     risks,
+    reviewRequired: Boolean(input.reviewRequired),
+    reviewEvidence,
   });
   const nextTask = input.nextTask ?? "Continue from the recorded handoff.";
   const nextPrompt =
@@ -110,6 +113,7 @@ export function createFinishSummary(input) {
     evidence: {
       gates: gateEvidence,
       skipped: skippedGates,
+      review: reviewEvidence,
     },
     changedFiles,
     gateEvidence,
@@ -123,9 +127,14 @@ export function createFinishSummary(input) {
     structuredHandoff,
     nextPrompt,
     review: {
-      recommendation: input.review?.recommendation ?? "local-record",
-      reason: input.review?.reason ?? "MVP local evidence capture only.",
+      recommendation: input.review?.recommendation ?? (input.reviewRequired ? "required-local-review" : "local-record"),
+      reason: input.review?.reason ?? (input.reviewRequired ? "Configured review gate is required before finish." : "MVP local evidence capture only."),
       prUrl: input.review?.prUrl ?? null,
+      required: Boolean(input.reviewRequired),
+      status: reviewEvidence?.status ?? null,
+      reviewer: reviewEvidence?.reviewer ?? null,
+      summary: reviewEvidence?.summary ?? null,
+      observedAt: reviewEvidence?.observedAt ?? null,
     },
     risks,
     nextSession: {
@@ -184,6 +193,8 @@ function evaluateFinishGuard(input) {
   const gateEvidence = input.gateEvidence ?? [];
   const skippedGates = input.skippedGates ?? [];
   const risks = input.risks ?? [];
+  const reviewRequired = Boolean(input.reviewRequired);
+  const reviewEvidence = input.reviewEvidence ?? null;
   const evidenceById = new Map(gateEvidence.map((gate) => [gate.id, gate]));
   const skippedById = new Map(skippedGates.map((gate) => [gate.id, gate]));
   const failedGates = [];
@@ -249,6 +260,20 @@ function evaluateFinishGuard(input) {
     doneBlockers.push({
       kind: "remaining_risk",
       message: risk.message ?? String(risk),
+    });
+  }
+
+  if (reviewRequired && !reviewEvidence) {
+    doneBlockers.push({
+      kind: "missing_review",
+      message: "Required review has no recorded review.completed evidence.",
+    });
+  }
+
+  if (reviewRequired && reviewEvidence?.status === "changes-requested") {
+    doneBlockers.push({
+      kind: "review_changes_requested",
+      message: `Required review by ${reviewEvidence.reviewer ?? "reviewer"} still requests changes.`,
     });
   }
 
@@ -1301,6 +1326,31 @@ export async function recordGateEvent(repoPath, gateEvidence, options = {}) {
   return event;
 }
 
+export async function recordReviewEvent(repoPath, reviewEvidence, options = {}) {
+  const observedAt = options.observedAt ?? reviewEvidence.observedAt ?? new Date().toISOString();
+  const event = {
+    schemaVersion: "0.1",
+    type: "review.completed",
+    observedAt,
+    payload: {
+      workItemId: reviewEvidence.workItemId,
+      reviewer: reviewEvidence.reviewer ?? "reviewer",
+      status: reviewEvidence.status ?? "passed",
+      summary: reviewEvidence.summary ?? null,
+      observedAt,
+      source: reviewEvidence.source ?? "local",
+    },
+  };
+
+  if (!event.payload.workItemId) {
+    throw new Error("review record requires work item id.");
+  }
+
+  await appendDevflowEvent(repoPath, event);
+
+  return event;
+}
+
 export function createWorkListSummary(input = {}) {
   const state = input.state ?? emptyDevflowState();
   const status = input.status ?? null;
@@ -2197,6 +2247,9 @@ function deriveStateFromEvents(events, warnings = []) {
       latestById: createLatestGateEvidence(events),
     },
     work: createWorkState(events),
+    reviews: {
+      latestByWorkItemId: createLatestReviewEvidence(events),
+    },
     sessions: {
       discovered: [],
       attached: createAttachedSessionEvidence(events),
@@ -2211,6 +2264,27 @@ function createHandoffEvidence(event) {
     observedAt: event.observedAt,
     prompt: event.payload.nextSession.prompt,
   };
+}
+
+function createLatestReviewEvidence(events) {
+  const latestByWorkItemId = {};
+
+  for (const event of events) {
+    if (event.type !== "review.completed") {
+      continue;
+    }
+
+    latestByWorkItemId[event.payload.workItemId] = {
+      workItemId: event.payload.workItemId,
+      reviewer: event.payload.reviewer,
+      status: event.payload.status,
+      summary: event.payload.summary ?? null,
+      observedAt: event.payload.observedAt ?? event.observedAt,
+      source: event.payload.source ?? "local",
+    };
+  }
+
+  return latestByWorkItemId;
 }
 
 function createLatestGateEvidence(events) {
@@ -2667,6 +2741,9 @@ function emptyDevflowState() {
       active: [],
       blocked: [],
       readyToFinish: [],
+    },
+    reviews: {
+      latestByWorkItemId: {},
     },
     sessions: {
       discovered: [],

@@ -36,6 +36,7 @@ import {
   recordFinishEvent,
   writeInitPlan,
   recordManualSessionNoteEvent,
+  recordReviewEvent,
   recordSessionAttachedEvent,
   recordSplitWorkEvents,
   recordWorkBlockedEvent,
@@ -159,6 +160,55 @@ test("finish summary allows done claim with passed required gate and no remainin
   assert.deepEqual(summary.unknownGates, []);
   assert.equal(summary.structuredHandoff.currentStatus, "completed");
   assert.match(summary.nextPrompt, /Continue the next implementation slice/);
+});
+
+test("finish summary requires review evidence when review gate is required", () => {
+  const blocked = createFinishSummary({
+    workItem: { id: "review-required", title: "Review required" },
+    intent: "Require code review before finish.",
+    changedFiles: [{ path: "packages/core/src/index.js", status: "modified" }],
+    requiredGates: [],
+    reviewRequired: true,
+  });
+
+  assert.equal(blocked.canClaimDone, false);
+  assert.ok(blocked.doneBlockers.some((blocker) => blocker.kind === "missing_review"));
+
+  const reviewed = createFinishSummary({
+    workItem: { id: "review-required", title: "Review required" },
+    intent: "Require code review before finish.",
+    changedFiles: [{ path: "packages/core/src/index.js", status: "modified" }],
+    requiredGates: [],
+    reviewRequired: true,
+    reviewEvidence: {
+      workItemId: "review-required",
+      reviewer: "Claude Code",
+      status: "passed",
+      summary: "No blocking findings.",
+    },
+  });
+
+  assert.equal(reviewed.canClaimDone, true);
+  assert.deepEqual(reviewed.doneBlockers, []);
+  assert.equal(reviewed.review.status, "passed");
+  assert.equal(reviewed.review.reviewer, "Claude Code");
+});
+
+test("finish summary blocks review evidence that still requests changes", () => {
+  const summary = createFinishSummary({
+    workItem: { id: "review-changes", title: "Review changes" },
+    intent: "Block unresolved review findings.",
+    reviewRequired: true,
+    reviewEvidence: {
+      workItemId: "review-changes",
+      reviewer: "Codex reviewer",
+      status: "changes-requested",
+      summary: "Fix the failing edge case.",
+    },
+  });
+
+  assert.equal(summary.canClaimDone, false);
+  assert.ok(summary.doneBlockers.some((blocker) => blocker.kind === "review_changes_requested"));
 });
 
 test("next prompt includes objective, changed files, evidence, risks, and next task", () => {
@@ -751,6 +801,32 @@ test("work lifecycle events can unblock blocked items", async () => {
   assert.equal(state.work.blocked.length, 0);
   assert.equal(status.work.active[0].id, "blocked-work");
   assert.equal(status.work.blocked.length, 0);
+});
+
+test("review events are visible in state and can satisfy finish review requirements", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-review-event-"));
+
+  const event = await recordReviewEvent(
+    repoPath,
+    {
+      workItemId: "reviewed-work",
+      reviewer: "Claude Code",
+      status: "passed",
+      summary: "No blocking findings.",
+    },
+    { observedAt: "2026-05-17T10:00:00.000Z" },
+  );
+  const state = await readDevflowState(repoPath);
+  const summary = createFinishSummary({
+    workItem: { id: "reviewed-work", title: "Reviewed work" },
+    intent: "Finish after review evidence.",
+    reviewRequired: true,
+    reviewEvidence: state.reviews.latestByWorkItemId["reviewed-work"],
+  });
+
+  assert.equal(event.type, "review.completed");
+  assert.equal(state.reviews.latestByWorkItemId["reviewed-work"].status, "passed");
+  assert.equal(summary.canClaimDone, true);
 });
 
 test("project health scanner surfaces invalid gates from config", async () => {

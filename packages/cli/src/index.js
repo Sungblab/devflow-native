@@ -34,6 +34,7 @@ import {
   readMistakeMemory,
   recordFinishEvent,
   recordManualSessionNoteEvent,
+  recordReviewEvent,
   recordSessionAttachedEvent,
   recordSplitWorkEvents,
   recordWorkBlockedEvent,
@@ -79,6 +80,8 @@ try {
     await renderDoctor(args.slice(1));
   } else if (command === "gates" && args[1] === "run") {
     await renderGatesRun(args.slice(2));
+  } else if (command === "review" && args[1] === "record") {
+    await renderReviewRecord(args.slice(2));
   } else if (command === "prompt" && args[1] === "next") {
     renderNextPrompt(args.slice(2));
   } else if (command === "prompt" && args[1] === "rewrite") {
@@ -275,6 +278,8 @@ async function renderFinish(argsForCommand) {
     changedFiles: readChangedFiles(repoPath),
     gates: gateEvidence,
     requiredGates: config.gates ?? [],
+    reviewRequired: Boolean(config.review?.required),
+    reviewEvidence: state.reviews.latestByWorkItemId[options.work ?? "local-work"] ?? null,
     skipped: collectRepeated(options.skipped).map((reason, index) => ({
       id: `skipped-${index + 1}`,
       reason,
@@ -290,6 +295,28 @@ async function renderFinish(argsForCommand) {
   }
 
   render(summary, options.json);
+}
+
+async function renderReviewRecord(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const event = await recordReviewEvent(repoPath, {
+    workItemId: options.work ?? options.id,
+    reviewer: options.reviewer,
+    status: options.status ?? "passed",
+    summary: options.summary,
+    source: options.source ?? "local",
+  });
+
+  render(
+    {
+      schemaVersion: "0.1",
+      command: "review_record",
+      review: event.payload,
+      event,
+    },
+    options.json,
+  );
 }
 
 async function renderDoctor(argsForCommand) {
