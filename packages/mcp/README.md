@@ -105,7 +105,9 @@ Repeated split registration reuses existing work events by id.
 `devflow.review_request` creates the copy-paste prompt for a separate reviewer
 agent or reviewer persona. It returns the work item, changed files supplied by
 the host, recorded gate evidence, a strict blocker-first checklist, and the
-follow-up `devflow review record` command.
+follow-up `devflow review record` command. The tool's text content also prints
+that follow-up as `Record command` so agent hosts can continue without parsing
+structured JSON.
 
 `devflow.review_record` writes local `review.completed` evidence for a work
 item. Use it after a separate reviewer agent or reviewer persona has inspected

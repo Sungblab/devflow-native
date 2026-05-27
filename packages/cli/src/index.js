@@ -345,7 +345,11 @@ async function renderReviewRequest(argsForCommand) {
     reviewRecordCommand: `devflow review record --work ${workItemId} --reviewer <reviewer> --status <passed|changes-requested> --summary <summary>`,
   });
 
-  render(request, options.json);
+  if (options.json) {
+    render(request, true);
+  } else {
+    renderReviewRequestText(request);
+  }
 }
 
 async function renderDoctor(argsForCommand) {
@@ -748,6 +752,22 @@ function render(summary, asJson) {
   }
 
   process.stdout.write(`${summary.command}: ${summary.schemaVersion}\n`);
+}
+
+function renderReviewRequestText(request) {
+  const lines = [
+    "Review request",
+    `Work: ${request.workItemId}`,
+    `Target: ${request.target}`,
+    `Persona: ${request.persona}`,
+    `Changed files: ${request.changedFiles.length}`,
+    `Gate evidence: ${request.gates.length}`,
+    `Record command: ${request.reviewRecordCommand}`,
+    "",
+    request.prompt.trimEnd(),
+  ];
+
+  process.stdout.write(`${lines.join("\n")}\n`);
 }
 
 function renderSimpleStatus(summary) {

@@ -1158,6 +1158,11 @@ Outputs:
 - `prompt` text suitable for Claude Code, Codex, or another reviewer host
 - `reviewRecordCommand` to capture the reviewer outcome locally
 
+Without `--json`, the CLI prints a short review request summary, the exact
+`Record command`, and then the full reviewer prompt. MCP `devflow.review_request`
+also includes the same `Record command` in its text content so agent hosts do
+not need to inspect structured JSON to know the follow-up command.
+
 The generated prompt intentionally tells the reviewer to assume another coding
 agent wrote the change. That keeps the review stance independent from the
 implementation session and avoids treating the current agent's own code as

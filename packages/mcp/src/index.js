@@ -688,7 +688,13 @@ async function callReviewRequest(args) {
     reviewRecordCommand: `devflow review record --work ${workItemId} --reviewer <reviewer> --status <passed|changes-requested> --summary <summary>`,
   });
 
-  return toolResult(request, `devflow review_request: ${request.workItemId}`);
+  return toolResult(
+    request,
+    [
+      `devflow review_request: ${request.workItemId}`,
+      `Record command: ${request.reviewRecordCommand}`,
+    ].join("\n"),
+  );
 }
 
 async function callDoctor(args) {

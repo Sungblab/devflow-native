@@ -1522,6 +1522,20 @@ test("CLI review request emits a strict reviewer prompt", async () => {
   assert.match(parsed.prompt, /Assume another coding agent wrote this change/);
   assert.match(parsed.prompt, /src\.js/);
   assert.match(parsed.prompt, /devflow review record --work review-request/);
+
+  const text = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "review",
+    "request",
+    "--repo",
+    repoPath,
+    "--work",
+    "review-request",
+    "--title",
+    "Review request",
+  ]);
+  assert.match(text.stdout, /Review request/);
+  assert.match(text.stdout, /Record command: devflow review record --work review-request/);
 });
 
 test("CLI finish allows done claim when configured gate evidence was recorded", async () => {

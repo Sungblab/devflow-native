@@ -381,6 +381,8 @@ test("MCP review_request emits a strict reviewer prompt", async () => {
   assert.match(result.structuredContent.prompt, /Assume another coding agent wrote this change/);
   assert.match(result.structuredContent.prompt, /packages\/mcp\/src\/index\.js/);
   assert.match(result.structuredContent.prompt, /devflow review record --work review-request/);
+  assert.match(result.content[0].text, /devflow review_request: review-request/);
+  assert.match(result.content[0].text, /Record command: devflow review record --work review-request/);
 });
 
 test("MCP review_request keeps recorded gate evidence scoped to the work item", async () => {
