@@ -781,6 +781,39 @@ test("harness repair restores broken installed harness files only after confirma
   assert.equal(health.status, "ok");
 });
 
+test("harness repair enables required review without dropping existing gates", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-harness-repair-review-"));
+  await writeHarnessInstall(repoPath, {
+    targets: ["codex"],
+    confirmed: true,
+  });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ gates: [{ id: "unit", command: "npm test" }] }, null, 2)}\n`,
+    "utf8",
+  );
+
+  const failed = await readHarnessHealth(repoPath, {
+    targets: ["codex"],
+  });
+  assert.equal(failed.status, "failed");
+
+  const repaired = await writeHarnessRepair(repoPath, {
+    targets: ["codex"],
+    confirmed: true,
+  });
+  const config = JSON.parse(await readFile(join(repoPath, ".devflow", "config.json"), "utf8"));
+  const health = await readHarnessHealth(repoPath, {
+    targets: ["codex"],
+  });
+
+  assert.equal(repaired.status, "repaired");
+  assert.ok(repaired.repaired.some((file) => file.path === ".devflow/config.json" && file.kind === "review-required"));
+  assert.equal(config.review.required, true);
+  assert.deepEqual(config.gates, [{ id: "unit", command: "npm test" }]);
+  assert.equal(health.status, "ok");
+});
+
 test("work item events can create, start, list, and feed status", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-work-"));
 

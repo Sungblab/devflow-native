@@ -108,8 +108,9 @@ gates, and `review.required`. Stop hooks may return Claude decision payloads
 while context-injection hooks must return structured hook context.
 `devflow harness repair --confirm` restores only broken installed files that
 have built-in canonical content, such as malformed plugin manifests, malformed
-MCP config, or hook scripts that fail the health contract. It does not rewrite
-project instructions or auto-edit gate definitions.
+MCP config, hook scripts that fail the health contract, or missing
+`review.required` config that can be merged without dropping existing gates. It
+does not rewrite project instructions or auto-edit gate definitions.
 `devflow work create`,
 `devflow work start`, `devflow work update`, `devflow work rename`,
 `devflow work ready`, `devflow work block`, `devflow work unblock`, and

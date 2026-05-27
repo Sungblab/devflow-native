@@ -972,6 +972,46 @@ test("CLI harness repair restores broken installed harness files", async () => {
   assert.equal(JSON.parse(health.stdout).status, "ok");
 });
 
+test("CLI harness repair enables required review without dropping existing gates", async () => {
+  const repoPath = await createTempGitRepo();
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "install",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex",
+    "--confirm",
+    "--json",
+  ]);
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ gates: [{ id: "unit", command: "npm test" }] }, null, 2)}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "repair",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex",
+    "--confirm",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+  const config = JSON.parse(await readFile(join(repoPath, ".devflow", "config.json"), "utf8"));
+
+  assert.equal(parsed.command, "harness_repair");
+  assert.equal(parsed.status, "repaired");
+  assert.ok(parsed.repaired.some((file) => file.path === ".devflow/config.json" && file.kind === "review-required"));
+  assert.equal(config.review.required, true);
+  assert.deepEqual(config.gates, [{ id: "unit", command: "npm test" }]);
+});
+
 test("CLI status reads gate definitions from devflow config", async () => {
   const repoPath = await createTempGitRepo();
   await mkdir(join(repoPath, ".devflow"), { recursive: true });

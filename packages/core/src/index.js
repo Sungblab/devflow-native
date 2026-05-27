@@ -767,6 +767,24 @@ export async function writeHarnessRepair(repoPath, options = {}) {
       continue;
     }
 
+    if (check.kind === "review-required") {
+      const result = await ensureReviewRequiredConfig(repoPath);
+      if (result.status === "written") {
+        repaired.push({
+          path: ".devflow/config.json",
+          kind: check.kind,
+          reason: check.message,
+        });
+      } else {
+        skipped.push({
+          path: ".devflow/config.json",
+          reason: result.reason,
+          message: check.message,
+        });
+      }
+      continue;
+    }
+
     const content = harnessFileContent(check.path);
     if (content === null) {
       skipped.push({

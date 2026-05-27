@@ -256,7 +256,8 @@ Responsibilities:
   enabled because finish-time review is part of the native harness contract.
 - `repair`: restore confirmed broken installed files that have built-in
   canonical content, such as malformed plugin manifests, malformed MCP config,
-  or hook scripts that fail the health contract
+  hook scripts that fail the health contract, or missing `review.required`
+  config that can be repaired without dropping existing gates
 
 The harness command group is adoption-first. Mature repos should keep their
 existing instructions; Devflow should add the minimum bridge needed for native

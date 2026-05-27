@@ -135,8 +135,9 @@ is reachable.
 `devflow harness repair` should handle narrow confirmed fixes. The current
 implemented repair scope is intentionally conservative: it restores broken
 installed files that have canonical Devflow content, such as malformed plugin
-manifests, malformed MCP config, or hook scripts that fail `harness health`.
-Project instructions and gate definitions are reported but not rewritten
+manifests, malformed MCP config, hook scripts that fail `harness health`, or
+missing `review.required` config that can be merged without dropping existing
+gates. Project instructions and gate definitions are reported but not rewritten
 automatically.
 
 ## Install UX
