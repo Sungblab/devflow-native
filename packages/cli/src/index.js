@@ -790,6 +790,7 @@ function renderGuidedFinish(summary) {
     `Done blockers: ${summary.doneBlockers.length}`,
     `Review recommendation: ${summary.review.recommendation}`,
     `Review next: ${summary.review.nextAction?.command ?? "none"}`,
+    `Review record: ${summary.review.nextAction?.recordCommand ?? "none"}`,
     `Next task: ${extractNextTask(summary.nextSession.prompt)}`,
   ];
 

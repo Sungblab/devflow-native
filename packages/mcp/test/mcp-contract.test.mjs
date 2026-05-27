@@ -336,6 +336,14 @@ test("MCP finish requires recorded review when configured", async () => {
   });
   assert.equal(blocked.structuredContent.canClaimDone, false);
   assert.ok(blocked.structuredContent.doneBlockers.some((blocker) => blocker.kind === "missing_review"));
+  assert.equal(
+    blocked.structuredContent.review.nextAction.command,
+    "devflow review request --work reviewed-work --target reviewer --persona strict-reviewer",
+  );
+  assert.equal(
+    blocked.structuredContent.review.nextAction.recordCommand,
+    "devflow review record --work reviewed-work --reviewer <reviewer> --status <passed|changes-requested> --summary <summary>",
+  );
 
   const review = await callTool("devflow.review_record", {
     repo: repoPath,

@@ -215,6 +215,7 @@ function createReviewNextAction(input) {
     return {
       kind: "review_request",
       command: `devflow review request --work ${input.workItemId} --target reviewer --persona strict-reviewer`,
+      recordCommand: `devflow review record --work ${input.workItemId} --reviewer <reviewer> --status <passed|changes-requested> --summary <summary>`,
       reason: input.reviewEvidence?.status === "changes-requested"
         ? "Required review still requests changes; request another review after fixes."
         : "Required review has not been recorded yet.",

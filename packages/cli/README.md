@@ -149,4 +149,5 @@ strict-reviewer` creates the copy-paste prompt for that separate review. It
 includes the work item, dirty files, recorded gate evidence, a blocker-first
 checklist, and the follow-up `devflow review record` command. When the review
 gate blocks finish, `finish --guided` prints the next review request command so
-the required review is harder to skip.
+the required review is harder to skip, plus the follow-up review record command
+needed to unblock finish after the separate review.

@@ -1136,7 +1136,8 @@ also requires review evidence for the work item. The latest
 `changes-requested` keeps `canClaimDone` false. Use `devflow review request`
 to generate the reviewer prompt before recording that evidence. When review is
 required but not recorded, `finish` includes `review.nextAction.command` and
-`finish --guided` prints the same command as `Review next`.
+`review.nextAction.recordCommand`; `finish --guided` prints them as
+`Review next` and `Review record`.
 
 ## `devflow review request`
 

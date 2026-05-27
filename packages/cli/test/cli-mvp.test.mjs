@@ -1434,6 +1434,10 @@ test("CLI finish requires recorded review when configured", async () => {
     blockedJson.review.nextAction.command,
     "devflow review request --work reviewed-work --target reviewer --persona strict-reviewer",
   );
+  assert.equal(
+    blockedJson.review.nextAction.recordCommand,
+    "devflow review record --work reviewed-work --reviewer <reviewer> --status <passed|changes-requested> --summary <summary>",
+  );
 
   const guided = await execFileAsync("node", [
     "packages/cli/src/index.js",
@@ -1447,6 +1451,7 @@ test("CLI finish requires recorded review when configured", async () => {
     "--guided",
   ]);
   assert.match(guided.stdout, /Review next: devflow review request --work reviewed-work/);
+  assert.match(guided.stdout, /Review record: devflow review record --work reviewed-work/);
 
   const review = await execFileAsync("node", [
     "packages/cli/src/index.js",

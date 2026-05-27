@@ -271,6 +271,10 @@ test("finish summary requires review evidence when review gate is required", () 
   assert.equal(blocked.canClaimDone, false);
   assert.ok(blocked.doneBlockers.some((blocker) => blocker.kind === "missing_review"));
   assert.equal(blocked.review.nextAction.command, "devflow review request --work review-required --target reviewer --persona strict-reviewer");
+  assert.equal(
+    blocked.review.nextAction.recordCommand,
+    "devflow review record --work review-required --reviewer <reviewer> --status <passed|changes-requested> --summary <summary>",
+  );
   assert.match(blocked.review.nextAction.reason, /required review/i);
 
   const reviewed = createFinishSummary({
@@ -308,6 +312,10 @@ test("finish summary blocks review evidence that still requests changes", () => 
 
   assert.equal(summary.canClaimDone, false);
   assert.ok(summary.doneBlockers.some((blocker) => blocker.kind === "review_changes_requested"));
+  assert.equal(
+    summary.review.nextAction.recordCommand,
+    "devflow review record --work review-changes --reviewer <reviewer> --status <passed|changes-requested> --summary <summary>",
+  );
 });
 
 test("review request creates an agent-ready strict review prompt", () => {
