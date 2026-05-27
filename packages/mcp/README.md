@@ -12,6 +12,7 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.harness_inspect`
 - `devflow.harness_plan`
 - `devflow.harness_health`
+- `devflow.harness_repair`
 - `devflow.split`
 - `devflow.explain_term`
 - `devflow.rewrite_prompt`
@@ -61,7 +62,9 @@ plugin manifests, MCP config, hook scripts, `review.required`, and configured
 gates without running install or repair writes. When health finds a repairable
 failure such as a missing required-review setting, the structured result and
 text include a `nextAction.command` such as `devflow harness repair --confirm`;
-the health tool still does not perform the write itself.
+the health tool still does not perform the write itself. `devflow.harness_repair`
+is the confirmed write step for MCP hosts; it requires `confirm: true` before
+repairing built-in harness files or mergeable required-review config.
 
 `devflow.sessions_codex` is read-only and requires an explicit `codexHome`
 argument before it reads local Codex session candidates.

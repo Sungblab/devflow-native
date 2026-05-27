@@ -109,11 +109,12 @@ checks. `devflow harness install --confirm` executes only native
 Superpowers/CodeGraph actions. `devflow harness health` validates installed
 native harness files by parsing plugin manifests and MCP config, executing hook
 scripts with a synthetic payload, accepting Claude Stop decision payloads, and
-checking configured gates. `devflow harness repair --confirm` now restores
-broken installed harness files with built-in canonical content, limited to
-malformed plugin manifests, malformed MCP config, and hook scripts that fail
-the health contract. Gate config repair remains a reported issue rather than an
-automatic rewrite.
+checking configured gates and required review config. `devflow harness repair
+--confirm` now restores broken installed harness files with built-in canonical
+content and mergeable required-review config, limited to malformed plugin
+manifests, malformed MCP config, hook scripts that fail the health contract,
+and missing `review.required`. Gate command repair remains a reported issue
+rather than an automatic rewrite.
 
 ## Phase 3: Split Planning
 
@@ -178,6 +179,7 @@ Build:
 - `devflow.harness_inspect` MCP tool
 - `devflow.harness_plan` MCP tool
 - `devflow.harness_health` MCP tool
+- `devflow.harness_repair` MCP tool
 - `devflow.split` MCP tool
 - `devflow.finish` MCP tool
 - `devflow.record_gate` MCP tool
@@ -215,7 +217,8 @@ Exit criteria:
 
 Current implementation note: `packages/mcp` has testable handler functions for
 `devflow.status`, `devflow.harness_inspect`, `devflow.harness_plan`,
-`devflow.harness_health`, `devflow.split`, `devflow.explain_term`,
+`devflow.harness_health`, confirmed-write `devflow.harness_repair`,
+`devflow.split`, `devflow.explain_term`,
 `devflow.doctor`, `devflow.finish`, `devflow.record_gate`, `devflow.gates_run`,
 `devflow.next_prompt`, and `devflow.rewrite_prompt`, plus adapter-backed
 `devflow.sessions_codex` and

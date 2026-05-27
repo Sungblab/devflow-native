@@ -41,6 +41,7 @@ import {
   recordWorkUpdatedEvent,
   recordWorkUnblockedEvent,
   runConfiguredGate,
+  writeHarnessRepair,
 } from "../../core/src/index.js";
 
 const tools = [
@@ -63,6 +64,10 @@ const tools = [
   {
     name: "devflow.harness_health",
     description: "Validate installed native harness manifests, MCP config, hook scripts, and gates.",
+  },
+  {
+    name: "devflow.harness_repair",
+    description: "Repair confirmed native harness failures such as required review config or broken installed manifests.",
   },
   {
     name: "devflow.split",
@@ -181,6 +186,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.harness_health") {
     return callHarnessHealth(args);
+  }
+
+  if (name === "devflow.harness_repair") {
+    return callHarnessRepair(args);
   }
 
   if (name === "devflow.split") {
@@ -346,6 +355,17 @@ async function callHarnessHealth(args) {
     ? `devflow harness_health: ${summary.status}\nNext action: ${summary.nextAction.command}\nReason: ${summary.nextAction.reason}`
     : `devflow harness_health: ${summary.status}`;
 
+  return toolResult(summary, text);
+}
+
+async function callHarnessRepair(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const summary = await writeHarnessRepair(repoPath, {
+    targets: parseHarnessTargets(args.targets),
+    confirmed: Boolean(args.confirm),
+  });
+
+  const text = `devflow harness_repair: ${summary.status}`;
   return toolResult(summary, text);
 }
 

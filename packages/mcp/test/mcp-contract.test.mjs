@@ -17,6 +17,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.harness_inspect"));
   assert.ok(names.includes("devflow.harness_plan"));
   assert.ok(names.includes("devflow.harness_health"));
+  assert.ok(names.includes("devflow.harness_repair"));
   assert.ok(names.includes("devflow.finish"));
   assert.ok(names.includes("devflow.next_prompt"));
   assert.ok(names.includes("devflow.record_gate"));
@@ -97,6 +98,39 @@ test("MCP harness health surfaces repair command for missing required review", a
   assert.equal(health.structuredContent.nextAction.command, "devflow harness repair --confirm");
   assert.ok(health.structuredContent.checks.some((check) => check.kind === "review-required" && check.status === "failed"));
   assert.match(health.content[0].text, /devflow harness repair --confirm/);
+});
+
+test("MCP harness repair requires confirmation and repairs required review config", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-harness-repair-"));
+  await writeHarnessInstall(repoPath, {
+    targets: ["codex"],
+    confirmed: true,
+  });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ gates: [{ id: "unit", command: "npm test" }] })}\n`,
+  );
+
+  await assert.rejects(
+    callTool("devflow.harness_repair", {
+      repo: repoPath,
+      targets: ["codex"],
+    }),
+    /requires --confirm/,
+  );
+
+  const repaired = await callTool("devflow.harness_repair", {
+    repo: repoPath,
+    targets: ["codex"],
+    confirm: true,
+  });
+  const config = JSON.parse(await readFile(join(repoPath, ".devflow", "config.json"), "utf8"));
+
+  assert.equal(repaired.structuredContent.command, "harness_repair");
+  assert.equal(repaired.structuredContent.status, "repaired");
+  assert.ok(repaired.structuredContent.repaired.some((item) => item.kind === "review-required"));
+  assert.equal(config.review.required, true);
+  assert.match(repaired.content[0].text, /harness_repair: repaired/);
 });
 
 test("MCP health reports missing scaffold files", async () => {
