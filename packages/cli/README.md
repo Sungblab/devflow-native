@@ -8,7 +8,9 @@ observed time, agent, kind, summary, changed-file count, latest handoff, next
 check, and next step. Pass `--work <id>` or `--agent <name>` to focus status
 session evidence. When `.devflow/config.json` requires review, `devflow status
 --work <id>` recommends the matching `devflow review request` command until a
-passing `review.completed` record exists for that work item.
+passing `review.completed` record exists for that work item. Without `--work`,
+status uses the first ready-to-finish work item, then the first active work
+item, so a plain status check still surfaces the required review command.
 
 ## Initial File Boundary
 

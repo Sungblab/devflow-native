@@ -12,6 +12,9 @@ export function createStatusSummary(input = {}) {
   const repo = input.repo ?? {};
   const workItemId = input.workItemId ?? input.filters?.workItemId ?? null;
   const agent = input.agent ?? input.filters?.agent ?? null;
+  const work = input.work ?? state.work;
+  const reviewWorkItemId =
+    workItemId ?? work?.readyToFinish?.[0]?.id ?? work?.active?.[0]?.id ?? null;
   const attachedSessions = filterStatusSessions(
     input.sessions?.attached ?? state.sessions?.attached ?? [],
     { workItemId, agent },
@@ -45,7 +48,7 @@ export function createStatusSummary(input = {}) {
       changedFiles,
       worktrees: input.worktrees ?? [],
     },
-    work: input.work ?? state.work,
+    work,
     sessions: {
       discovered: input.sessions?.discovered ?? state.sessions?.discovered ?? [],
       attached: attachedSessions,
@@ -59,8 +62,11 @@ export function createStatusSummary(input = {}) {
       gates,
       changedFiles,
       workItemId,
+      reviewWorkItemId,
       reviewRequired: Boolean(input.reviewRequired),
-      reviewEvidence: state.reviews?.latestByWorkItemId?.[workItemId] ?? null,
+      reviewEvidence: reviewWorkItemId
+        ? (state.reviews?.latestByWorkItemId?.[reviewWorkItemId] ?? null)
+        : null,
     }),
     warnings: [...(input.warnings ?? []), ...state.warnings],
   };
@@ -2848,17 +2854,18 @@ function emptyDevflowState() {
 function createStatusRecommendations(input) {
   const gates = input.gates ?? [];
   const changedFiles = input.changedFiles ?? [];
+  const reviewWorkItemId = input.reviewWorkItemId ?? input.workItemId ?? null;
   if (
     input.reviewRequired &&
-    input.workItemId &&
+    reviewWorkItemId &&
     (!input.reviewEvidence || input.reviewEvidence.status === "changes-requested")
   ) {
-    const command = `devflow review request --work ${input.workItemId} --target reviewer --persona strict-reviewer`;
+    const command = `devflow review request --work ${reviewWorkItemId} --target reviewer --persona strict-reviewer`;
     return [
       {
         kind: "review",
         command,
-        message: `Run ${command} before finishing ${input.workItemId}.`,
+        message: `Run ${command} before finishing ${reviewWorkItemId}.`,
       },
     ];
   }

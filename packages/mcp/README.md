@@ -44,6 +44,9 @@ work item, and `agent` to focus sessions from one recorded agent/manual source,
 while preserving the same core JSON contract used by the CLI. When configured
 review is required, focused status returns a `review` recommendation with the
 matching `devflow review request` command until passing review evidence exists.
+Without a work filter, status uses the first ready-to-finish work item, then
+the first active work item, so native hosts still get the required review
+command from a plain status call.
 
 `devflow.health` checks the local project scaffold. It reports required files,
 missing files, configured gates, invalid gate definitions, and recommendations

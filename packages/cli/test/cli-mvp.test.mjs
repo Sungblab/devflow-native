@@ -385,6 +385,49 @@ test("CLI status recommends review request for focused work when review is requi
   assert.match(simple.stdout, /Next step: Run devflow review request --work review-focused-work/);
 });
 
+test("CLI status recommends review request for ready work without a work filter", async () => {
+  const repoPath = await createTempGitRepo();
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ review: { required: true } })}\n`,
+  );
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "create",
+    "--repo",
+    repoPath,
+    "--id",
+    "ready-review-work",
+    "--title",
+    "Ready review work",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "work",
+    "ready",
+    "--repo",
+    repoPath,
+    "--id",
+    "ready-review-work",
+    "--json",
+  ]);
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--simple",
+  ]);
+
+  assert.match(stdout, /Work filter: all/);
+  assert.match(stdout, /Next step: Run devflow review request --work ready-review-work/);
+});
+
 test("CLI prompt next renders a copy-paste prompt", async () => {
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",

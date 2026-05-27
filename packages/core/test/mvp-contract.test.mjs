@@ -104,6 +104,66 @@ test("status summary recommends review request when required review is missing f
   assert.match(summary.recommendations[0].message, /review-focused-work/);
 });
 
+test("status summary recommends review request for ready work when no work filter is provided", () => {
+  const summary = createStatusSummary({
+    repo: {
+      absolutePath: "C:\\repo",
+      branch: "main",
+    },
+    changedFiles: [],
+    reviewRequired: true,
+    state: {
+      ...emptyTestState(),
+      work: {
+        items: [{ id: "ready-review-work", title: "Ready review work", status: "ready-to-finish" }],
+        active: [],
+        blocked: [],
+        readyToFinish: [{ id: "ready-review-work", title: "Ready review work", status: "ready-to-finish" }],
+      },
+      reviews: {
+        latestByWorkItemId: {},
+      },
+    },
+  });
+
+  assert.equal(summary.filters.workItemId, null);
+  assert.equal(summary.recommendations[0].kind, "review");
+  assert.equal(
+    summary.recommendations[0].command,
+    "devflow review request --work ready-review-work --target reviewer --persona strict-reviewer",
+  );
+});
+
+test("status summary falls back to active work for review recommendation", () => {
+  const summary = createStatusSummary({
+    repo: {
+      absolutePath: "C:\\repo",
+      branch: "main",
+    },
+    changedFiles: [],
+    reviewRequired: true,
+    state: {
+      ...emptyTestState(),
+      work: {
+        items: [{ id: "active-review-work", title: "Active review work", status: "active" }],
+        active: [{ id: "active-review-work", title: "Active review work", status: "active" }],
+        blocked: [],
+        readyToFinish: [],
+      },
+      reviews: {
+        latestByWorkItemId: {},
+      },
+    },
+  });
+
+  assert.equal(summary.filters.workItemId, null);
+  assert.equal(summary.recommendations[0].kind, "review");
+  assert.equal(
+    summary.recommendations[0].command,
+    "devflow review request --work active-review-work --target reviewer --persona strict-reviewer",
+  );
+});
+
 test("finish summary records evidence, skipped checks, risks, and next-session prompt", () => {
   const summary = createFinishSummary({
     workItem: {

@@ -359,6 +359,9 @@ When `.devflow/config.json` contains `"review": { "required": true }`,
 focused status (`devflow status --work <id>`) recommends
 `devflow review request --work <id> --target reviewer --persona
 strict-reviewer` until that work item has a passing `review.completed` record.
+Without a work filter, status uses the first ready-to-finish work item, then
+the first active work item, so a plain `devflow status` still surfaces the
+required review command before gate or finish recommendations.
 
 JSON output:
 

@@ -233,6 +233,35 @@ test("MCP status recommends review request for focused work when review is requi
   );
 });
 
+test("MCP status recommends review request for ready work without a work filter", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-status-review-ready-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ review: { required: true } })}\n`,
+  );
+  await callTool("devflow.work_create", {
+    repo: repoPath,
+    id: "ready-review-work",
+    title: "Ready review work",
+  });
+  await callTool("devflow.work_ready", {
+    repo: repoPath,
+    id: "ready-review-work",
+  });
+
+  const result = await callTool("devflow.status", {
+    repo: repoPath,
+  });
+
+  assert.equal(result.structuredContent.filters.workItemId, null);
+  assert.equal(result.structuredContent.recommendations[0].kind, "review");
+  assert.match(
+    result.structuredContent.recommendations[0].command,
+    /devflow review request --work ready-review-work/,
+  );
+});
+
 test("MCP doctor returns the same structured execution contract", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-doctor-"));
   const result = await callTool("devflow.doctor", {
