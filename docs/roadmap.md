@@ -171,6 +171,9 @@ Build:
 - local Devflow MCP server
 - `devflow.doctor` MCP tool
 - `devflow.status` MCP tool
+- `devflow.harness_inspect` MCP tool
+- `devflow.harness_plan` MCP tool
+- `devflow.harness_health` MCP tool
 - `devflow.split` MCP tool
 - `devflow.finish` MCP tool
 - `devflow.record_gate` MCP tool
@@ -205,8 +208,9 @@ Exit criteria:
 - plugin/slash-command UX calls the same core contracts as the CLI
 
 Current implementation note: `packages/mcp` has testable handler functions for
-`devflow.status`, `devflow.split`, `devflow.explain_term`, `devflow.doctor`,
-`devflow.finish`, `devflow.record_gate`, `devflow.gates_run`,
+`devflow.status`, `devflow.harness_inspect`, `devflow.harness_plan`,
+`devflow.harness_health`, `devflow.split`, `devflow.explain_term`,
+`devflow.doctor`, `devflow.finish`, `devflow.record_gate`, `devflow.gates_run`,
 `devflow.next_prompt`, and `devflow.rewrite_prompt`, plus adapter-backed
 `devflow.sessions_codex` and
 dry-run `devflow.sessions_attach_plan`, confirmed-write

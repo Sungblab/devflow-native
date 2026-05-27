@@ -19,6 +19,9 @@ import {
   parseSessionListLimit,
   parseSessionListSince,
   parseSessionListSort,
+  readHarnessHealth,
+  readHarnessInspect,
+  readHarnessPlan,
   readProjectHealth,
   readDevflowConfig,
   readDevflowState,
@@ -46,6 +49,18 @@ const tools = [
   {
     name: "devflow.health",
     description: "Inspect required scaffold files and configured verification gates.",
+  },
+  {
+    name: "devflow.harness_inspect",
+    description: "Inspect Codex, Claude Code, Superpowers, and optional CodeGraph-style harness readiness without writing files.",
+  },
+  {
+    name: "devflow.harness_plan",
+    description: "Plan native harness adoption or repair actions as a dry run without writing files.",
+  },
+  {
+    name: "devflow.harness_health",
+    description: "Validate installed native harness manifests, MCP config, hook scripts, and gates.",
   },
   {
     name: "devflow.split",
@@ -144,6 +159,18 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.health") {
     return callHealth(args);
+  }
+
+  if (name === "devflow.harness_inspect") {
+    return callHarnessInspect(args);
+  }
+
+  if (name === "devflow.harness_plan") {
+    return callHarnessPlan(args);
+  }
+
+  if (name === "devflow.harness_health") {
+    return callHarnessHealth(args);
   }
 
   if (name === "devflow.split") {
@@ -270,6 +297,33 @@ async function callHealth(args) {
   const summary = await readProjectHealth(repoPath, config);
 
   return toolResult(summary, `devflow health: ${summary.status}`);
+}
+
+async function callHarnessInspect(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const summary = await readHarnessInspect(repoPath, {
+    targets: parseHarnessTargets(args.targets),
+  });
+
+  return toolResult(summary, `devflow harness_inspect: ${summary.status}`);
+}
+
+async function callHarnessPlan(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const summary = await readHarnessPlan(repoPath, {
+    targets: parseHarnessTargets(args.targets),
+  });
+
+  return toolResult(summary, `devflow harness_plan: ${summary.status}`);
+}
+
+async function callHarnessHealth(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const summary = await readHarnessHealth(repoPath, {
+    targets: parseHarnessTargets(args.targets),
+  });
+
+  return toolResult(summary, `devflow harness_health: ${summary.status}`);
 }
 
 async function callSplit(args) {
@@ -681,4 +735,16 @@ function toolResult(structuredContent, text) {
     content: [{ type: "text", text }],
     structuredContent,
   };
+}
+
+function parseHarnessTargets(targets) {
+  if (targets === undefined) {
+    return undefined;
+  }
+
+  const values = Array.isArray(targets) ? targets : [targets];
+  return values
+    .flatMap((target) => String(target).split(","))
+    .map((target) => target.trim())
+    .filter(Boolean);
 }

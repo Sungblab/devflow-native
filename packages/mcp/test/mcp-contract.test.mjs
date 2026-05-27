@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
+import { writeHarnessInstall } from "../../core/src/index.js";
 import { callTool, listTools } from "../src/index.js";
 
 test("MCP lists initial devflow tools", () => {
@@ -13,6 +14,9 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.doctor"));
   assert.ok(names.includes("devflow.status"));
   assert.ok(names.includes("devflow.health"));
+  assert.ok(names.includes("devflow.harness_inspect"));
+  assert.ok(names.includes("devflow.harness_plan"));
+  assert.ok(names.includes("devflow.harness_health"));
   assert.ok(names.includes("devflow.finish"));
   assert.ok(names.includes("devflow.next_prompt"));
   assert.ok(names.includes("devflow.record_gate"));
@@ -33,6 +37,41 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.work_block"));
   assert.ok(names.includes("devflow.work_unblock"));
   assert.ok(names.includes("devflow.work_list"));
+});
+
+test("MCP harness tools inspect, plan, and health-check native setup", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-harness-"));
+  await writeFile(join(repoPath, "AGENTS.md"), "# Agent Guide\n");
+
+  const inspect = await callTool("devflow.harness_inspect", {
+    repo: repoPath,
+    targets: ["codex", "claude", "superpowers", "codegraph"],
+  });
+  const plan = await callTool("devflow.harness_plan", {
+    repo: repoPath,
+    targets: "codex,claude,codegraph",
+  });
+
+  assert.equal(inspect.structuredContent.command, "harness_inspect");
+  assert.equal(inspect.structuredContent.targets.codex.status, "missing");
+  assert.match(inspect.content[0].text, /harness_inspect/);
+  assert.equal(plan.structuredContent.command, "harness_plan");
+  assert.equal(plan.structuredContent.dryRun, true);
+  assert.ok(plan.structuredContent.actions.some((action) => action.target === "codex"));
+
+  await writeHarnessInstall(repoPath, {
+    targets: ["codex", "claude"],
+    confirmed: true,
+  });
+  const health = await callTool("devflow.harness_health", {
+    repo: repoPath,
+    targets: ["codex", "claude"],
+  });
+
+  assert.equal(health.structuredContent.command, "harness_health");
+  assert.equal(health.structuredContent.status, "ok");
+  assert.ok(health.structuredContent.checks.some((check) => check.kind === "hook-script" && check.status === "passed"));
+  assert.match(health.content[0].text, /harness_health: ok/);
 });
 
 test("MCP health reports missing scaffold files", async () => {

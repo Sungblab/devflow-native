@@ -9,6 +9,9 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.doctor`
 - `devflow.status`
 - `devflow.health`
+- `devflow.harness_inspect`
+- `devflow.harness_plan`
+- `devflow.harness_health`
 - `devflow.split`
 - `devflow.explain_term`
 - `devflow.rewrite_prompt`
@@ -42,6 +45,13 @@ while preserving the same core JSON contract used by the CLI.
 missing files, configured gates, invalid gate definitions, and recommendations
 without reading private agent history. A gate is invalid when its id is missing,
 its command is missing, or its id duplicates another configured gate.
+
+`devflow.harness_inspect`, `devflow.harness_plan`, and
+`devflow.harness_health` expose the native harness read path to MCP-capable
+hosts. They accept `repo` plus optional `targets` as an array or comma-separated
+string. The inspect and plan tools are read-only, and health validates installed
+plugin manifests, MCP config, hook scripts, and configured gates without
+running install or repair writes.
 
 `devflow.sessions_codex` is read-only and requires an explicit `codexHome`
 argument before it reads local Codex session candidates.
