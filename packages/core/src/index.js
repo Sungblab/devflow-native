@@ -2079,7 +2079,7 @@ function harnessFileContent(path) {
       "",
       "Run or record relevant gates, evaluate review findings as evidence, and call `devflow finish`.",
       "If review is required, run `devflow review request --work <id> --target <codex|claude-code|reviewer> --persona strict-reviewer`, hand the prompt to the reviewer, then record the outcome with `devflow review record --work <id> --reviewer <name> --status <passed|changes-requested> --summary <text>`.",
-      "If `devflow finish` returns `review.nextAction.command`, run that review request before claiming completion.",
+      "If `devflow finish` returns `review.nextAction.command` or `review.nextAction.recordCommand`, follow both commands before claiming completion.",
       "",
     ].join("\n"),
   };
@@ -2237,7 +2237,8 @@ function createHarnessHookScript(defaultEventName) {
     "  '- Run devflow harness inspect before changing harness files.',",
     "  '- Run devflow status before command-heavy work.',",
     "  '- Finish with review, gate evidence, risks, and a next-session prompt.',",
-    "  '- If review is required, run devflow review request, then devflow review record before devflow finish.',",
+    "  '- If review is required, run devflow review request --work <id>, then devflow review record --work <id> before devflow finish.',",
+    "  '- If finish returns review.nextAction.command or review.nextAction.recordCommand, follow both before claiming completion.',",
     "].join('\\n');",
     "",
     "process.stdout.write(`${JSON.stringify({",

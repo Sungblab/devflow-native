@@ -37,9 +37,9 @@ repository.
    `--title`, `--intent`, `--gate`, `--risk`, and `--next-task` values.
    Use `--guided` when the maintainer wants a plain checklist in addition to
    the local evidence record.
-9. If `devflow finish` returns `review.nextAction.command` or `finish --guided`
-   prints `Review next`, run that `devflow review request` command before
-   claiming the task is done.
+9. If `devflow finish` returns `review.nextAction.command`,
+   `review.nextAction.recordCommand`, or `finish --guided` prints `Review next`
+   / `Review record`, follow both commands before claiming the task is done.
 10. Final output must include changed files, verification evidence, known gaps,
    and the next recommended implementation slice.
 11. End with a closing question asking whether to commit, PR, continue, or

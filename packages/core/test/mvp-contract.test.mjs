@@ -603,6 +603,7 @@ test("harness install writes missing native files only after confirmation", asyn
     await readFile(join(repoPath, "plugins", "devflow", ".claude-plugin", "plugin.json"), "utf8"),
   );
   const finishSkill = await readFile(join(repoPath, "plugins", "devflow", "skills", "finish", "SKILL.md"), "utf8");
+  const stopHook = await readFile(join(repoPath, "plugins", "devflow", "hooks", "stop.mjs"), "utf8");
 
   assert.equal(result.command, "harness_install");
   assert.equal(result.status, "installed");
@@ -613,6 +614,9 @@ test("harness install writes missing native files only after confirmation", asyn
   assert.equal(claudeManifest.name, "devflow");
   assert.match(finishSkill, /devflow review request/);
   assert.match(finishSkill, /devflow review record/);
+  assert.match(finishSkill, /review\.nextAction\.recordCommand/);
+  assert.match(stopHook, /devflow review request --work <id>/);
+  assert.match(stopHook, /review\.nextAction\.recordCommand/);
   await assert.rejects(() => readFile(join(repoPath, ".codegraph"), "utf8"), {
     code: "ENOENT",
   });

@@ -25,6 +25,7 @@ test("agent guide and finish skill encode end-of-answer operating rules", async 
   assert.match(finishSkill, /prompt intent analysis/);
   assert.match(finishSkill, /devflow review request/);
   assert.match(finishSkill, /devflow review record/);
+  assert.match(finishSkill, /review\.nextAction\.recordCommand/);
 
   assert.match(mistakesExample, /github-pr-transport-preference/);
   assert.match(mistakesExample, /framework-major-version-drift/);

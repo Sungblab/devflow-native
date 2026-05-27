@@ -212,8 +212,10 @@ the work item before `canClaimDone` becomes true. `devflow review request` and
 MCP `devflow.review_request` generate the strict copy-paste prompt for that
 separate reviewer; `devflow review record` and MCP `devflow.review_record`
 capture the resulting evidence. The native finish skill and prompt hooks also
-mention `devflow review request` so required review is visible inside Codex or
-Claude Code before a session closes.
+mention `devflow review request` and `devflow review record` so required review
+is visible inside Codex or Claude Code before a session closes. The repo-local
+Stop hook returns compact status plus the same review loop reminder instead of
+silently returning `{}` on ordinary session stops.
 
 Reviewer profiles can help break self-review bias:
 

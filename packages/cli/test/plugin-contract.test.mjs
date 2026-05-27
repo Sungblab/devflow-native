@@ -93,6 +93,7 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.match(finishSkill, /devflow finish/);
   assert.match(finishSkill, /devflow review request/);
   assert.match(finishSkill, /devflow review record/);
+  assert.match(finishSkill, /review\.nextAction\.recordCommand/);
   assert.match(finishSkill, /documentation needs an update/);
   assert.match(finishSkill, /Codex goal/);
   assert.match(finishSkill, /gh CLI/);
@@ -110,6 +111,11 @@ test("repo-local plugin hooks emit compact context for agent sessions", async ()
     cwd: process.cwd(),
     prompt: "ㄱㄱ",
   });
+  const stop = await runHook("plugins/devflow/hooks/stop.mjs", {
+    hook_event_name: "Stop",
+    cwd: process.cwd(),
+    last_assistant_message: "Continuing the current slice.",
+  });
 
   assert.equal(sessionStart.hookSpecificOutput.hookEventName, "SessionStart");
   assert.match(sessionStart.hookSpecificOutput.additionalContext, /Devflow start context/);
@@ -118,6 +124,11 @@ test("repo-local plugin hooks emit compact context for agent sessions", async ()
   assert.match(userPrompt.hookSpecificOutput.additionalContext, /continue_or_start/);
   assert.match(userPrompt.hookSpecificOutput.additionalContext, /Do not generate HTML unless requested/);
   assert.match(userPrompt.hookSpecificOutput.additionalContext, /devflow review request/);
+  assert.equal(stop.hookSpecificOutput.hookEventName, "Stop");
+  assert.match(stop.hookSpecificOutput.additionalContext, /Devflow stop context/);
+  assert.match(stop.hookSpecificOutput.additionalContext, /devflow review request/);
+  assert.match(stop.hookSpecificOutput.additionalContext, /devflow review record/);
+  assert.match(stop.hookSpecificOutput.additionalContext, /Current compact status/);
 });
 
 async function runHook(path, payload) {

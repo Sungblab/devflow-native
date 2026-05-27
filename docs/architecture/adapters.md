@@ -158,7 +158,9 @@ The repo-local plugin currently ships shared `start`, `split`, `next`,
 `plugins/devflow/skills/`. The `sessions` skill covers both read-only Codex
 discovery and confirmation-gated dry-run attach planning through the CLI or MCP
 contracts. Claude Code exposes plugin skills under the plugin namespace, so
-these are the first slash-like daily workflow surface.
+these are the first slash-like daily workflow surface. The shared Stop hook now
+returns compact status and review request/record reminders at session end, so
+the required review loop remains visible even when the agent is about to leave.
 
 ### Gemini CLI
 

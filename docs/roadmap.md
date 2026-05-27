@@ -234,7 +234,8 @@ Gemini MCP config templates are present. Project-specific split discovery can no
 later work. `devflow finish` now honors `.devflow/config.json`
 `review.required` by requiring a passing `review.completed` record before
 `canClaimDone` becomes true, and `devflow review request` generates the strict
-reviewer prompt that should precede `devflow review record`. The repo-local plugin ships shared `start`, `split`, `next`,
+reviewer prompt that should precede `devflow review record`. Finish and Stop
+surfaces now show both the request and record follow-up commands. The repo-local plugin ships shared `start`, `split`, `next`,
 `explain`, `rewrite`, `sessions`, and `finish` skills for Codex and Claude Code style plugin
 workflows.
 
