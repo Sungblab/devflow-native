@@ -49,6 +49,17 @@ import {
   recordWorkUnblockedEvent,
 } from "../src/index.js";
 
+function emptyTestState() {
+  return {
+    warnings: [],
+    gates: { latestById: {} },
+    handoffs: { latest: null, stale: true },
+    work: { items: [], active: [], blocked: [], readyToFinish: [] },
+    reviews: { latestByWorkItemId: {} },
+    sessions: { discovered: [], attached: [] },
+  };
+}
+
 test("status summary captures repo, dirty files, gates, and prompt recommendation", () => {
   const summary = createStatusSummary({
     repo: {
@@ -66,6 +77,31 @@ test("status summary captures repo, dirty files, gates, and prompt recommendatio
   assert.equal(summary.git.changedFiles[0].path, "docs/roadmap.md");
   assert.equal(summary.gates[0].recommended, true);
   assert.equal(summary.recommendations[0].kind, "gate");
+});
+
+test("status summary recommends review request when required review is missing for focused work", () => {
+  const summary = createStatusSummary({
+    repo: {
+      absolutePath: "C:\\repo",
+      branch: "main",
+    },
+    changedFiles: [],
+    workItemId: "review-focused-work",
+    reviewRequired: true,
+    state: {
+      ...emptyTestState(),
+      reviews: {
+        latestByWorkItemId: {},
+      },
+    },
+  });
+
+  assert.equal(summary.recommendations[0].kind, "review");
+  assert.equal(
+    summary.recommendations[0].command,
+    "devflow review request --work review-focused-work --target reviewer --persona strict-reviewer",
+  );
+  assert.match(summary.recommendations[0].message, /review-focused-work/);
 });
 
 test("finish summary records evidence, skipped checks, risks, and next-session prompt", () => {

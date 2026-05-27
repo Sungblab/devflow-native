@@ -355,6 +355,11 @@ Outputs:
 - latest gate evidence from `.devflow/state/events.jsonl`
 - recommended next checks
 
+When `.devflow/config.json` contains `"review": { "required": true }`,
+focused status (`devflow status --work <id>`) recommends
+`devflow review request --work <id> --target reviewer --persona
+strict-reviewer` until that work item has a passing `review.completed` record.
+
 JSON output:
 
 ```json

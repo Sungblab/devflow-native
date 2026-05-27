@@ -6,7 +6,9 @@ codes. `devflow status --simple` includes branch, work filter, agent filter,
 dirty-file count, recorded session count, latest session work item, session id,
 observed time, agent, kind, summary, changed-file count, latest handoff, next
 check, and next step. Pass `--work <id>` or `--agent <name>` to focus status
-session evidence.
+session evidence. When `.devflow/config.json` requires review, `devflow status
+--work <id>` recommends the matching `devflow review request` command until a
+passing `review.completed` record exists for that work item.
 
 ## Initial File Boundary
 

@@ -55,7 +55,13 @@ export function createStatusSummary(input = {}) {
       latest: input.handoffs?.latest ?? state.handoffs.latest,
       stale: input.handoffs?.stale ?? state.handoffs.stale,
     },
-    recommendations: createStatusRecommendations(gates, changedFiles),
+    recommendations: createStatusRecommendations({
+      gates,
+      changedFiles,
+      workItemId,
+      reviewRequired: Boolean(input.reviewRequired),
+      reviewEvidence: state.reviews?.latestByWorkItemId?.[workItemId] ?? null,
+    }),
     warnings: [...(input.warnings ?? []), ...state.warnings],
   };
 }
@@ -2839,7 +2845,24 @@ function emptyDevflowState() {
   };
 }
 
-function createStatusRecommendations(gates, changedFiles) {
+function createStatusRecommendations(input) {
+  const gates = input.gates ?? [];
+  const changedFiles = input.changedFiles ?? [];
+  if (
+    input.reviewRequired &&
+    input.workItemId &&
+    (!input.reviewEvidence || input.reviewEvidence.status === "changes-requested")
+  ) {
+    const command = `devflow review request --work ${input.workItemId} --target reviewer --persona strict-reviewer`;
+    return [
+      {
+        kind: "review",
+        command,
+        message: `Run ${command} before finishing ${input.workItemId}.`,
+      },
+    ];
+  }
+
   const gateRecommendations = gates
     .filter((gate) => gate.recommended)
     .map((gate) => ({

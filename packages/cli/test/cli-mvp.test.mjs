@@ -352,6 +352,39 @@ test("CLI status simple summary can focus sessions by agent", async () => {
   assert.doesNotMatch(stdout, /Manual import note/);
 });
 
+test("CLI status recommends review request for focused work when review is required", async () => {
+  const repoPath = await createTempGitRepo();
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ review: { required: true } })}\n`,
+  );
+
+  const json = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--work",
+    "review-focused-work",
+    "--json",
+  ]);
+  const parsed = JSON.parse(json.stdout);
+  assert.equal(parsed.recommendations[0].kind, "review");
+  assert.match(parsed.recommendations[0].command, /devflow review request --work review-focused-work/);
+
+  const simple = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--work",
+    "review-focused-work",
+    "--simple",
+  ]);
+  assert.match(simple.stdout, /Next step: Run devflow review request --work review-focused-work/);
+});
+
 test("CLI prompt next renders a copy-paste prompt", async () => {
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",

@@ -213,6 +213,26 @@ test("MCP status can focus attached sessions by agent", async () => {
   assert.match(result.structuredContent.sessions.attached[0].summary, /Codex import note/);
 });
 
+test("MCP status recommends review request for focused work when review is required", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-status-review-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ review: { required: true } })}\n`,
+  );
+
+  const result = await callTool("devflow.status", {
+    repo: repoPath,
+    work: "review-focused-work",
+  });
+
+  assert.equal(result.structuredContent.recommendations[0].kind, "review");
+  assert.match(
+    result.structuredContent.recommendations[0].command,
+    /devflow review request --work review-focused-work/,
+  );
+});
+
 test("MCP doctor returns the same structured execution contract", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-doctor-"));
   const result = await callTool("devflow.doctor", {

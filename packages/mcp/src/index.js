@@ -294,6 +294,7 @@ async function callStatus(args) {
     workItemId: args.work ?? args.workItemId,
     agent: args.agent,
     gates: args.gates ?? config.gates ?? [{ id: "docs-check", command: "npm run docs:check", recommended: true }],
+    reviewRequired: Boolean(config.review?.required),
     warnings: config.warnings,
     profile: {
       name: args.profile ?? "standard",

@@ -214,6 +214,7 @@ async function renderStatus(argsForCommand) {
     workItemId: options.work,
     agent: options.agent,
     gates: config.gates ?? [{ id: "docs-check", command: "npm run docs:check", recommended: true }],
+    reviewRequired: Boolean(config.review?.required),
     warnings: config.warnings,
   });
 

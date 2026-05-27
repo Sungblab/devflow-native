@@ -41,7 +41,9 @@ content plus a short text summary for agent hosts.
 `devflow.status` reads repo state, gate evidence, handoffs, and attached
 session evidence. Pass `work` or `workItemId` to focus attached sessions on one
 work item, and `agent` to focus sessions from one recorded agent/manual source,
-while preserving the same core JSON contract used by the CLI.
+while preserving the same core JSON contract used by the CLI. When configured
+review is required, focused status returns a `review` recommendation with the
+matching `devflow review request` command until passing review evidence exists.
 
 `devflow.health` checks the local project scaffold. It reports required files,
 missing files, configured gates, invalid gate definitions, and recommendations
