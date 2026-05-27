@@ -665,6 +665,7 @@ test("CLI init --confirm writes the minimum project scaffold", async () => {
   assert.equal(parsed.result.written.length, parsed.files.length);
   assert.equal(config.defaultProfile, "standard");
   assert.equal(config.defaultPlatform, "windows-powershell");
+  assert.equal(config.review.required, true);
 });
 
 test("CLI health reports missing scaffold files", async () => {

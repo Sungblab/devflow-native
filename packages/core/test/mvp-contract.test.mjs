@@ -411,11 +411,15 @@ test("init plan writes scaffold files only after confirmation", async () => {
   const result = await writeInitPlan(repoPath, plan, { confirmed: true });
   const config = JSON.parse(await readFile(join(repoPath, ".devflow", "config.json"), "utf8"));
   const docsRouter = await readFile(join(repoPath, "docs", "README.md"), "utf8");
+  const workflow = await readFile(join(repoPath, "docs", "contributing", "workflow.md"), "utf8");
 
   assert.equal(result.written.length, plan.files.length);
   assert.equal(config.defaultProfile, "standard");
   assert.equal(config.defaultPlatform, "windows-powershell");
+  assert.equal(config.review.required, true);
   assert.match(docsRouter, /Project Contract/);
+  assert.match(workflow, /devflow review request/);
+  assert.match(workflow, /devflow review record/);
 });
 
 test("health summary reports missing scaffold files and gates", () => {

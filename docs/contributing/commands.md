@@ -69,8 +69,9 @@ This loop should answer three daily questions before larger surfaces exist:
 project-specific split tasks, and can register generated sessions into the
 local work item registry. `devflow init` now has a first guarded scaffold implementation:
 without `--confirm`, it renders the plan only; with `--confirm`, it writes the
-minimum project contract and skips existing files instead of overwriting them.
-`devflow health` checks those scaffold files and configured gates.
+minimum project contract, sets `review.required` to `true`, and skips existing
+files instead of overwriting them. `devflow health` checks those scaffold files
+and configured gates.
 `devflow gates run` executes one configured gate and records pass/fail
 evidence.
 `devflow work create/start/update/rename/ready/block/unblock/list` provides the first
@@ -180,6 +181,11 @@ Outputs:
 - architecture maps
 - testing strategy
 - `.devflow/config.json`
+
+The generated `.devflow/config.json` enables `review.required` by default so a
+newly initialized repo gets the strict review loop immediately. The generated
+workflow notes point agents through `devflow review request`, `devflow review
+record`, and then `devflow finish`.
 
 Safety rules:
 

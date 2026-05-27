@@ -84,9 +84,11 @@ packages/cli/
 `devflow init` currently renders a scaffold plan by default and writes the
 minimum project contract only when `--confirm` is provided. The first scaffold
 includes `.devflow/config.json`, `AGENTS.md`, a docs router, workflow notes,
-testing strategy, and an architecture map index. Existing files are skipped
-instead of overwritten. `devflow health` checks that the same scaffold files
-and at least one configured gate are present. `devflow harness inspect` reports
+testing strategy, and an architecture map index. It also sets
+`review.required` to `true` and points workflow notes through `devflow review
+request`, `devflow review record`, and `devflow finish`. Existing files are
+skipped instead of overwritten. `devflow health` checks that the same scaffold
+files and at least one configured gate are present. `devflow harness inspect` reports
 native Codex and Claude Code readiness, MCP config presence, instruction files,
 Superpowers signals, CodeGraph-style provider signals, configured gates, and
 the smallest install or repair recommendations without writing files.
