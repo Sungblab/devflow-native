@@ -96,6 +96,11 @@ export function createFinishSummary(input) {
     nextPrompt,
     decisions: input.decisions ?? [],
   });
+  const reviewNextAction = createReviewNextAction({
+    workItemId: input.workItem.id,
+    reviewRequired: Boolean(input.reviewRequired),
+    reviewEvidence,
+  });
 
   return {
     schemaVersion: "0.1",
@@ -135,6 +140,7 @@ export function createFinishSummary(input) {
       reviewer: reviewEvidence?.reviewer ?? null,
       summary: reviewEvidence?.summary ?? null,
       observedAt: reviewEvidence?.observedAt ?? null,
+      nextAction: reviewNextAction,
     },
     risks,
     nextSession: {
@@ -186,6 +192,24 @@ export function createNextPrompt(input) {
   ];
 
   return `${lines.join("\n")}\n`;
+}
+
+function createReviewNextAction(input) {
+  if (!input.reviewRequired) {
+    return null;
+  }
+
+  if (!input.reviewEvidence || input.reviewEvidence.status === "changes-requested") {
+    return {
+      kind: "review_request",
+      command: `devflow review request --work ${input.workItemId} --target reviewer --persona strict-reviewer`,
+      reason: input.reviewEvidence?.status === "changes-requested"
+        ? "Required review still requests changes; request another review after fixes."
+        : "Required review has not been recorded yet.",
+    };
+  }
+
+  return null;
 }
 
 export function createReviewRequest(input = {}) {

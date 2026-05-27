@@ -112,7 +112,9 @@ It reads configured gates, recorded `gate.finished` events, and configured
 review requirements before returning `canClaimDone`, `doneBlockers`, gate
 classifications, review evidence, `structuredHandoff`, and `nextPrompt`. If
 `.devflow/config.json` sets `review.required` to `true`, finish requires a
-passing `review.completed` record for the work item.
+passing `review.completed` record for the work item and includes
+`review.nextAction.command` when the required review still needs to be
+requested.
 
 `devflow.gates_run` reads `.devflow/config.json`, finds a configured gate by
 `id`, executes its command without a shell, and appends a `gate.finished` event

@@ -174,6 +174,8 @@ test("finish summary requires review evidence when review gate is required", () 
 
   assert.equal(blocked.canClaimDone, false);
   assert.ok(blocked.doneBlockers.some((blocker) => blocker.kind === "missing_review"));
+  assert.equal(blocked.review.nextAction.command, "devflow review request --work review-required --target reviewer --persona strict-reviewer");
+  assert.match(blocked.review.nextAction.reason, /required review/i);
 
   const reviewed = createFinishSummary({
     workItem: { id: "review-required", title: "Review required" },

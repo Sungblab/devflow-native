@@ -1126,7 +1126,9 @@ If `.devflow/config.json` contains `"review": { "required": true }`, finish
 also requires review evidence for the work item. The latest
 `review.completed` event for that work item must have a passing status;
 `changes-requested` keeps `canClaimDone` false. Use `devflow review request`
-to generate the reviewer prompt before recording that evidence.
+to generate the reviewer prompt before recording that evidence. When review is
+required but not recorded, `finish` includes `review.nextAction.command` and
+`finish --guided` prints the same command as `Review next`.
 
 ## `devflow review request`
 

@@ -1354,6 +1354,23 @@ test("CLI finish requires recorded review when configured", async () => {
   const blockedJson = JSON.parse(blocked.stdout);
   assert.equal(blockedJson.canClaimDone, false);
   assert.ok(blockedJson.doneBlockers.some((blocker) => blocker.kind === "missing_review"));
+  assert.equal(
+    blockedJson.review.nextAction.command,
+    "devflow review request --work reviewed-work --target reviewer --persona strict-reviewer",
+  );
+
+  const guided = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "reviewed-work",
+    "--title",
+    "Reviewed work",
+    "--guided",
+  ]);
+  assert.match(guided.stdout, /Review next: devflow review request --work reviewed-work/);
 
   const review = await execFileAsync("node", [
     "packages/cli/src/index.js",

@@ -788,6 +788,7 @@ function renderGuidedFinish(summary) {
     `Can claim done: ${summary.canClaimDone ? "yes" : "no"}`,
     `Done blockers: ${summary.doneBlockers.length}`,
     `Review recommendation: ${summary.review.recommendation}`,
+    `Review next: ${summary.review.nextAction?.command ?? "none"}`,
     `Next task: ${extractNextTask(summary.nextSession.prompt)}`,
   ];
 
