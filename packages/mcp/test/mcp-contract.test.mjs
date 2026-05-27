@@ -76,6 +76,29 @@ test("MCP harness tools inspect, plan, and health-check native setup", async () 
   assert.match(health.content[0].text, /harness_health: ok/);
 });
 
+test("MCP harness health surfaces repair command for missing required review", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-harness-review-"));
+  await writeHarnessInstall(repoPath, {
+    targets: ["codex"],
+    confirmed: true,
+  });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ gates: [{ id: "unit", command: "npm test" }] })}\n`,
+  );
+
+  const health = await callTool("devflow.harness_health", {
+    repo: repoPath,
+    targets: ["codex"],
+  });
+
+  assert.equal(health.structuredContent.command, "harness_health");
+  assert.equal(health.structuredContent.status, "failed");
+  assert.equal(health.structuredContent.nextAction.command, "devflow harness repair --confirm");
+  assert.ok(health.structuredContent.checks.some((check) => check.kind === "review-required" && check.status === "failed"));
+  assert.match(health.content[0].text, /devflow harness repair --confirm/);
+});
+
 test("MCP health reports missing scaffold files", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-health-"));
   const result = await callTool("devflow.health", {

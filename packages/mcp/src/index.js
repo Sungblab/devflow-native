@@ -342,7 +342,16 @@ async function callHarnessHealth(args) {
     targets: parseHarnessTargets(args.targets),
   });
 
-  return toolResult(summary, `devflow harness_health: ${summary.status}`);
+  const nextAction = createHarnessHealthNextAction(summary);
+  if (nextAction) {
+    summary.nextAction = nextAction;
+  }
+
+  const text = nextAction
+    ? `devflow harness_health: ${summary.status}\nNext action: ${nextAction.command}\nReason: ${nextAction.reason}`
+    : `devflow harness_health: ${summary.status}`;
+
+  return toolResult(summary, text);
 }
 
 async function callSplit(args) {
@@ -799,6 +808,31 @@ function callNextPrompt(args) {
     },
     "devflow next_prompt",
   );
+}
+
+function createHarnessHealthNextAction(summary) {
+  const failedChecks = summary.checks?.filter((check) => check.status === "failed") ?? [];
+  if (failedChecks.length === 0) {
+    return null;
+  }
+
+  if (failedChecks.some((check) => check.kind === "review-required")) {
+    return {
+      kind: "harness_repair",
+      command: "devflow harness repair --confirm",
+      reason: "Required review evidence is disabled or missing; repair can enable review.required without dropping existing gates.",
+    };
+  }
+
+  if (failedChecks.some((check) => check.kind === "manifest-json" || check.kind === "mcp-config" || check.kind === "hook-script")) {
+    return {
+      kind: "harness_repair",
+      command: "devflow harness repair --confirm",
+      reason: "Installed native harness files failed health checks and may have built-in repair content.",
+    };
+  }
+
+  return null;
 }
 
 function toolResult(structuredContent, text) {

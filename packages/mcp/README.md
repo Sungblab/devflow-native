@@ -57,8 +57,11 @@ its command is missing, or its id duplicates another configured gate.
 `devflow.harness_health` expose the native harness read path to MCP-capable
 hosts. They accept `repo` plus optional `targets` as an array or comma-separated
 string. The inspect and plan tools are read-only, and health validates installed
-plugin manifests, MCP config, hook scripts, and configured gates without
-running install or repair writes.
+plugin manifests, MCP config, hook scripts, `review.required`, and configured
+gates without running install or repair writes. When health finds a repairable
+failure such as a missing required-review setting, the structured result and
+text include a `nextAction.command` such as `devflow harness repair --confirm`;
+the health tool still does not perform the write itself.
 
 `devflow.sessions_codex` is read-only and requires an explicit `codexHome`
 argument before it reads local Codex session candidates.
