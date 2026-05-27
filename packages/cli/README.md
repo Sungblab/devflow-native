@@ -97,9 +97,11 @@ native Codex/Claude gaps become create-if-missing actions, Superpowers remains
 an optional profile adoption action, and CodeGraph-style context remains
 optional unless an existing provider needs freshness checks.
 `devflow harness install --confirm` executes only the native
-`create-if-missing` actions from the plan. It writes missing Codex/Claude plugin
-manifests, hook config, hook scripts, MCP config, and start/finish skills, skips
-existing files, and ignores optional Superpowers/CodeGraph actions.
+`create-if-missing` actions from the plan plus the required-review config
+action. It writes missing Codex/Claude plugin manifests, hook config, hook
+scripts, MCP config, and start/finish skills, skips existing files, enables
+`review.required` in `.devflow/config.json` without dropping existing gates,
+and ignores optional Superpowers/CodeGraph actions.
 `devflow harness health` validates installed native harness files by checking
 plugin manifest JSON, MCP config JSON, executable hook scripts, and configured
 gates. Stop hooks may return Claude decision payloads while context-injection

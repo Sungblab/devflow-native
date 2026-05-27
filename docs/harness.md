@@ -123,7 +123,9 @@ adoption changes, and repairs without writing.
 
 `devflow harness install` should write only confirmed missing pieces. It should
 avoid overwriting rich project instructions, and it should prefer appending a
-small Devflow section or adding companion files over replacing mature docs.
+small Devflow section or adding companion files over replacing mature docs. It
+should also ensure `.devflow/config.json` has `review.required: true`, creating
+a minimal config when missing and preserving existing gates when present.
 
 `devflow harness health` should verify that the installed harness can run:
 plugin manifests are present, hook commands resolve, MCP launchers start, gates

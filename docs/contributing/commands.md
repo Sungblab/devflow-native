@@ -249,7 +249,8 @@ Responsibilities:
 - `inspect`: read the current repo and report readiness without writing files
 - `plan`: propose the smallest safe adoption or repair plan
 - `install`: write only confirmed missing harness pieces and avoid overwriting
-  rich project instructions
+  rich project instructions; it also enables `review.required` in
+  `.devflow/config.json` while preserving existing gate definitions
 - `health`: verify hook paths, MCP launchers, plugin manifests, gates, and the
   status/review/finish/next-prompt loop
 - `repair`: restore confirmed broken installed files that have built-in

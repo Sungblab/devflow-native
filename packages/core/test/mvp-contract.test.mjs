@@ -563,6 +563,7 @@ test("harness plan converts inspect findings into dry-run adoption actions", () 
   assert.equal(plan.dryRun, true);
   assert.equal(plan.status, "changes-proposed");
   assert.ok(plan.actions.some((action) => action.target === "codex" && action.action === "create-if-missing"));
+  assert.ok(plan.actions.some((action) => action.target === "review" && action.action === "configure-required-review"));
   assert.ok(plan.actions.some((action) => action.target === "superpowers" && action.action === "adopt-optional"));
   assert.ok(plan.actions.some((action) => action.target === "codegraph" && action.action === "skip-optional"));
   assert.ok(plan.actions.every((action) => action.writes === false));
@@ -608,12 +609,15 @@ test("harness install writes missing native files only after confirmation", asyn
   );
   const finishSkill = await readFile(join(repoPath, "plugins", "devflow", "skills", "finish", "SKILL.md"), "utf8");
   const stopHook = await readFile(join(repoPath, "plugins", "devflow", "hooks", "stop.mjs"), "utf8");
+  const config = JSON.parse(await readFile(join(repoPath, ".devflow", "config.json"), "utf8"));
 
   assert.equal(result.command, "harness_install");
   assert.equal(result.status, "installed");
   assert.ok(result.written.some((file) => file.path === "plugins/devflow/.codex-plugin/plugin.json"));
+  assert.ok(result.written.some((file) => file.path === ".devflow/config.json" && file.target === "review"));
   assert.ok(result.ignored.some((action) => action.target === "codegraph" && action.action === "skip-optional"));
   assert.equal(agents, "# Existing Agent Guide\n");
+  assert.equal(config.review.required, true);
   assert.equal(codexManifest.name, "devflow");
   assert.equal(claudeManifest.name, "devflow");
   assert.match(finishSkill, /devflow review request/);
@@ -624,6 +628,26 @@ test("harness install writes missing native files only after confirmation", asyn
   await assert.rejects(() => readFile(join(repoPath, ".codegraph"), "utf8"), {
     code: "ENOENT",
   });
+});
+
+test("harness install preserves existing config while enabling required review", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-harness-config-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ gates: [{ id: "unit", command: "npm test" }] }, null, 2)}\n`,
+    "utf8",
+  );
+
+  const result = await writeHarnessInstall(repoPath, {
+    targets: ["codex"],
+    confirmed: true,
+  });
+  const config = JSON.parse(await readFile(join(repoPath, ".devflow", "config.json"), "utf8"));
+
+  assert.equal(result.command, "harness_install");
+  assert.equal(config.review.required, true);
+  assert.deepEqual(config.gates, [{ id: "unit", command: "npm test" }]);
 });
 
 test("harness health validates manifests, hook scripts, MCP config, and gates", async () => {

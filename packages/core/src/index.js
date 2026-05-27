@@ -600,13 +600,14 @@ export function createHarnessInspectSummary(input = {}) {
   const existingPaths = input.existingPaths ?? [];
   const gates = normalizeGates(input.config?.gates);
   const invalidGates = validateGates(gates);
+  const review = createHarnessReviewSummary(input.config);
   const targetSummaries = {};
 
   for (const target of targets) {
     targetSummaries[target] = createHarnessTargetSummary(target, existingPaths);
   }
 
-  const recommendations = createHarnessRecommendations(targetSummaries, gates, invalidGates);
+  const recommendations = createHarnessRecommendations(targetSummaries, gates, invalidGates, review);
   const hasRepair = recommendations.some((item) => item.action === "repair");
   const hasInstall = recommendations.some((item) => item.action === "install");
 
@@ -631,6 +632,7 @@ export function createHarnessInspectSummary(input = {}) {
       configured: gates,
       invalid: invalidGates,
     },
+    review,
     recommendations,
     warnings: input.warnings ?? [],
   };
@@ -660,7 +662,11 @@ export async function readHarnessInspect(repoPath, options = {}) {
 export function createHarnessPlanSummary(input = {}) {
   const inspect = input.inspect ?? createHarnessInspectSummary(input);
   const actions = createHarnessPlanActions(inspect);
-  const writesPlanned = actions.some((action) => action.action === "create-if-missing" || action.action === "repair");
+  const writesPlanned = actions.some((action) => (
+    action.action === "create-if-missing"
+      || action.action === "repair"
+      || action.action === "configure-required-review"
+  ));
   const optionalAdoption = actions.some((action) => action.action === "adopt-optional");
 
   return {
@@ -692,6 +698,16 @@ export async function writeHarnessInstall(repoPath, options = {}) {
   const ignored = [];
 
   for (const action of plan.actions) {
+    if (action.action === "configure-required-review") {
+      const result = await ensureReviewRequiredConfig(repoPath);
+      if (result.status === "written") {
+        written.push({ path: ".devflow/config.json", target: "review" });
+      } else {
+        skipped.push({ path: ".devflow/config.json", reason: result.reason });
+      }
+      continue;
+    }
+
     if (action.action !== "create-if-missing") {
       ignored.push(action);
       continue;
@@ -1864,7 +1880,17 @@ function createRequiredPathTarget(target, existingPaths, requiredPaths) {
   };
 }
 
-function createHarnessRecommendations(targetSummaries, gates, invalidGates) {
+function createHarnessReviewSummary(config = {}) {
+  const required = config?.review?.required === true;
+
+  return {
+    status: required ? "required" : "missing",
+    required,
+    path: ".devflow/config.json",
+  };
+}
+
+function createHarnessRecommendations(targetSummaries, gates, invalidGates, review) {
   const recommendations = [];
 
   for (const [target, summary] of Object.entries(targetSummaries)) {
@@ -1901,6 +1927,15 @@ function createHarnessRecommendations(targetSummaries, gates, invalidGates) {
       target: "gates",
       action: "install",
       message: "Configure at least one verification gate in .devflow/config.json.",
+      paths: [".devflow/config.json"],
+    });
+  }
+
+  if (review?.required !== true) {
+    recommendations.push({
+      target: "review",
+      action: "install",
+      message: "Enable required review evidence in .devflow/config.json.",
       paths: [".devflow/config.json"],
     });
   }
@@ -1968,6 +2003,16 @@ function createHarnessPlanActions(inspect) {
       action: "repair",
       writes: false,
       reason: `Repair invalid gate ${gate.index}: ${gate.message}`,
+      paths: [".devflow/config.json"],
+    });
+  }
+
+  if (inspect.review?.required !== true) {
+    actions.push({
+      target: "review",
+      action: "configure-required-review",
+      writes: false,
+      reason: "Enable required review evidence in .devflow/config.json without overwriting existing gates.",
       paths: [".devflow/config.json"],
     });
   }
@@ -2090,6 +2135,51 @@ function harnessFileContent(path) {
   };
 
   return contents[path] ?? null;
+}
+
+async function ensureReviewRequiredConfig(repoPath) {
+  const path = ".devflow/config.json";
+  const target = join(repoPath, path);
+  let config;
+
+  try {
+    const raw = await readFile(target, "utf8");
+    try {
+      config = JSON.parse(raw);
+    } catch {
+      return { status: "skipped", reason: "invalid-json" };
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      throw error;
+    }
+
+    config = {
+      schemaVersion: 1,
+      gates: [{ id: "docs-check", command: "npm run docs:check" }],
+    };
+  }
+
+  if (config?.review?.required === true) {
+    return { status: "skipped", reason: "already-configured" };
+  }
+
+  const review = isPlainObject(config.review) ? config.review : {};
+  const nextConfig = {
+    ...config,
+    review: {
+      ...review,
+      required: true,
+    },
+  };
+
+  await mkdir(dirname(target), { recursive: true });
+  await writeFile(target, `${JSON.stringify(nextConfig, null, 2)}\n`, "utf8");
+  return { status: "written" };
+}
+
+function isPlainObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 async function validateHarnessJsonFiles(repoPath, inspect) {
