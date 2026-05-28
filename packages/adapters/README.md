@@ -13,7 +13,6 @@ packages/adapters/
     agents/
       codex.ts
       claude-code.ts
-      gemini-cli.ts
       generic-shell.ts
     platforms/
       powershell.ts

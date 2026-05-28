@@ -23,7 +23,6 @@ This is the documentation router for Devflow Native.
 | OpenCairn split example | [examples/opencairn-parallel-split.md](./examples/opencairn-parallel-split.md) |
 | Simple status output example | [examples/simple-status-output.md](./examples/simple-status-output.md) |
 | Session list filter examples | [examples/session-list-filters.md](./examples/session-list-filters.md) |
-| Optional Gemini CLI MCP template | [../templates/gemini-mcp/README.md](../templates/gemini-mcp/README.md) |
 | Repo-local Codex plugin start skill | [../plugins/devflow/skills/start/SKILL.md](../plugins/devflow/skills/start/SKILL.md) |
 | Repo-local Codex/Claude plugin split skill | [../plugins/devflow/skills/split/SKILL.md](../plugins/devflow/skills/split/SKILL.md) |
 | Repo-local Codex/Claude plugin next skill | [../plugins/devflow/skills/next/SKILL.md](../plugins/devflow/skills/next/SKILL.md) |
@@ -37,7 +36,7 @@ This is the documentation router for Devflow Native.
 - Project contract: durable docs, instructions, gates, and boundaries for a
   repository.
 - Work item: a task slice that can be assigned to one human or agent session.
-- Session: a Codex, Claude, Gemini, shell, or manual work session.
+- Session: a Codex, Claude Code, shell, or manual work session.
 - Gate: a command or review step that produces evidence.
 - Handoff: a next-session prompt plus summary of changed files, checks, and
   risks.

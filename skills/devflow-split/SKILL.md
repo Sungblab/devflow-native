@@ -15,7 +15,7 @@ manual prompt writing.
 - repository path
 - workflow profile: `plain`, `standard`, `superpowers`, `gstack`,
   `openharness`, or `hermes`
-- agent targets when relevant: Codex, Claude Code, Gemini CLI, Copilot CLI,
+- agent targets when relevant: Codex, Claude Code, Copilot CLI,
   OpenCode, Goose, Aider, or generic shell
 - platform target when commands are generated: Windows PowerShell, Linux/WSL, or
   macOS

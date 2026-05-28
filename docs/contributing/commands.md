@@ -960,7 +960,7 @@ work item, agent, observed time, and either the session id plus changed-file
 count or the manual note summary. If local state warnings are present, the text
 output includes a compact warning count.
 
-This command does not read Codex, Claude, or Gemini history. It only renders
+This command does not read Codex or Claude history. It only renders
 links already recorded in `.devflow/state/events.jsonl`. Use `--work <id>` to
 limit the list to one work item. Use `--agent <name>` to limit the list to one
 agent before the work item filter is applied. Use `--limit <n>` to show only the

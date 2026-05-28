@@ -17,7 +17,6 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   );
   const hooks = JSON.parse(await readFile("plugins/devflow/hooks/hooks.json", "utf8"));
   const mcpConfig = JSON.parse(await readFile("plugins/devflow/.mcp.json", "utf8"));
-  const geminiConfig = JSON.parse(await readFile("templates/gemini-mcp/settings.json", "utf8"));
   const startSkill = await readFile("plugins/devflow/skills/start/SKILL.md", "utf8");
   const splitSkill = await readFile("plugins/devflow/skills/split/SKILL.md", "utf8");
   const nextSkill = await readFile("plugins/devflow/skills/next/SKILL.md", "utf8");
@@ -41,10 +40,6 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.match(hooks.hooks.Stop[0].hooks[0].command, /stop\.mjs/);
   assert.deepEqual(mcpConfig.mcpServers.devflow.command, "node");
   assert.deepEqual(mcpConfig.mcpServers.devflow.args, ["packages/mcp/src/stdio.js"]);
-  assert.deepEqual(geminiConfig.mcpServers.devflow.command, "node");
-  assert.deepEqual(geminiConfig.mcpServers.devflow.args, ["packages/mcp/src/stdio.js"]);
-  assert.equal(geminiConfig.mcpServers.devflow.cwd, ".");
-  assert.equal(geminiConfig.mcpServers.devflow.trust, false);
 
   assert.deepEqual(marketplace.plugins[0], {
     name: "devflow",

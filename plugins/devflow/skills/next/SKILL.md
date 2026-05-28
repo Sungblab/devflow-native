@@ -6,7 +6,7 @@ description: Generate the next Solo Devflow OS session prompt from latest status
 # Devflow Next
 
 Use this when the maintainer asks for the next prompt, a handoff prompt, or a
-copy-paste prompt for another Codex, Claude Code, Gemini, Hermes, or shell
+copy-paste prompt for another Codex, Claude Code, Hermes, or shell
 session.
 
 ## Workflow

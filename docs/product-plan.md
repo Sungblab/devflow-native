@@ -51,8 +51,8 @@ handoff direction.
 ## Target User
 
 The primary user is a solo builder maintaining one or more serious repositories
-with AI assistance. They may use Codex, Claude Code, Gemini, GitHub review bots,
-local test harnesses, and private planning docs.
+with AI assistance. They may use Codex, Claude Code, GitHub review bots, local
+test harnesses, and private planning docs.
 
 They want the speed of agentic development without losing engineering control.
 
@@ -63,8 +63,8 @@ They want the speed of agentic development without losing engineering control.
 The first target is a developer who already uses AI coding agents for real
 projects and needs continuity across sessions, branches, tests, reviews, and
 handoffs. They are comfortable with git and terminals, but they do not want to
-manually reconstruct project state every time a new Codex, Claude Code, Gemini,
-or shell session starts.
+manually reconstruct project state every time a new Codex, Claude Code, or
+shell session starts.
 
 ### Secondary: Growing Vibe Coders
 
@@ -123,11 +123,11 @@ The product has five surfaces, ordered by MVP priority:
 
 - Agent plugins: Codex and Claude Code hooks/skills that restore context inside
   the agent the maintainer already uses.
-- MCP server: agent-neutral tools that Codex, Claude Code, Gemini, and other
+- MCP server: agent-neutral tools that Codex, Claude Code, and other
   MCP-capable hosts can call.
 - CLI: fallback and debug commands from PowerShell, WSL, or any terminal.
 - Agent integrations: Claude Code plugin/slash commands, Codex MCP config,
-  Gemini MCP config, and future host-specific adapters.
+  and future host-specific adapters.
 - Generated artifacts: optional HTML/text views for dense reviews, split
   boards, timelines, or handoffs.
 - Repo scaffold: templates and health checks committed into each project.
@@ -142,7 +142,7 @@ CLI, state files, and MCP tools are the durable shared machinery.
 
 Workflow systems such as Superpowers are profiles, not dependencies. Devflow
 should work well beside them while still supporting plain Codex, Claude Code,
-Gemini, Hermes, generic shell sessions, and future hosts.
+Hermes, generic shell sessions, and future hosts.
 
 Repeated-mistake memory should be layered:
 
@@ -159,7 +159,6 @@ First-class targets:
 
 - Claude Code
 - OpenAI Codex
-- Gemini CLI
 - GitHub Copilot CLI
 - OpenCode
 - Goose
@@ -295,8 +294,8 @@ The product should own:
   views
 - adapter-neutral integration points
 
-This allows Devflow Native to integrate with Codex, Claude Code, Gemini,
-Hermes, Orca, Lanes, RCFlow, and future tools instead of trying to replace them.
+This allows Devflow Native to integrate with Codex, Claude Code, Hermes, Orca,
+Lanes, RCFlow, and future tools instead of trying to replace them.
 
 ## Research Boundary
 

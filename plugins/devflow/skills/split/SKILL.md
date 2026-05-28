@@ -32,5 +32,5 @@ Summarize:
 - merge order
 - copy-paste prompts for the next sessions
 
-Keep Devflow as the continuity layer. Superpowers, Claude Code, Codex, Gemini,
+Keep Devflow as the continuity layer. Superpowers, Claude Code, Codex,
 and Hermes are profiles or hosts, not required runtimes.

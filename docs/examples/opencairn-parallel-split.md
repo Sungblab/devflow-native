@@ -83,7 +83,7 @@ Session 4: docs-health-registry-audit
     {
       "id": "docs-health-registry-audit",
       "role": "audit",
-      "agent": { "preferred": "Gemini CLI", "fallback": "generic-shell" },
+      "agent": { "preferred": "generic-shell", "fallback": "manual-review" },
       "branch": "codex/docs-health-registry-audit",
       "worktreePath": ".worktrees/docs-health-registry-audit",
       "ownedPaths": ["docs/**", "scripts/project-health.*", "AGENTS.md"],

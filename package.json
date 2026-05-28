@@ -14,8 +14,7 @@
     "packages/",
     "plugins/",
     "scripts/",
-    "skills/",
-    "templates/"
+    "skills/"
   ],
   "engines": {
     "node": ">=20"

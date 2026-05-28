@@ -186,7 +186,6 @@ Build:
 - Codex native plugin readiness and install surface
 - Claude Code plugin draft with slash commands
 - Codex MCP config template
-- Gemini MCP config template
 - Superpowers profile instructions that treat Devflow as a continuity layer,
   not a replacement methodology
 
@@ -214,7 +213,7 @@ review evidence tool `devflow.review_record`, and a minimal stdio JSON-RPC
 transport. The CLI also has `devflow split --json` with
 optional work registration and `devflow explain` renderers, plus `devflow prompt rewrite` for converting
 vague maintainer intent into agent-ready requirements. Host-specific Codex and
-Gemini MCP config templates are present. Project-specific split discovery can now read
+Claude plugin config templates are present. Project-specific split discovery can now read
 `.devflow/config.json` `split.tasks`; richer docs/code map inference remains
 later work. `devflow finish` now honors `.devflow/config.json`
 `review.required` by requiring a passing `review.completed` record before
@@ -235,7 +234,6 @@ Build:
 
 - Codex session adapter
 - Claude session adapter
-- Gemini session adapter
 - manual session notes
 - session-to-work-item linking
 

@@ -4,7 +4,7 @@
 flowchart TD
   User[Maintainer] --> CLI[devflow CLI]
   User --> Artifacts[Generated artifacts]
-  User --> Agent[Codex / Claude / Gemini / Copilot / OpenCode / Goose / Aider]
+  User --> Agent[Codex / Claude / Copilot / OpenCode / Goose / Aider]
 
   CLI --> Core[Core model]
   Artifacts --> Core

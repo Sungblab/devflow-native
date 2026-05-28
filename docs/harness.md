@@ -22,9 +22,9 @@ The first native targets are:
 
 The next targets are:
 
-- Gemini CLI
 - GitHub Copilot and VS Code instructions
 - Cursor rules
+- future MCP-capable agent hosts
 - optional context providers such as CodeGraph-style tools
 
 Codex and Claude Code should both call the same Devflow core through CLI and

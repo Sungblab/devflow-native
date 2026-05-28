@@ -33,7 +33,7 @@ The core product owns:
 - optional generated artifact views
 
 It should not become dependent on any single external methodology or runtime.
-Superpowers, gstack, OpenHarness, Hermes, Codex, Claude, and Gemini are
+Superpowers, gstack, OpenHarness, Hermes, Codex, Claude, and future agent hosts are
 profiles/adapters/references, not the center of the product.
 
 Use external projects as references carefully:

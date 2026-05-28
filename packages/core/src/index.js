@@ -1846,7 +1846,6 @@ function harnessProbePaths() {
   return [
     "AGENTS.md",
     "CLAUDE.md",
-    "GEMINI.md",
     ".github/copilot-instructions.md",
     ".github/instructions",
     ".cursor/rules",
@@ -1875,7 +1874,6 @@ function createInstructionChecks(existingPaths) {
   return [
     { path: "AGENTS.md", kind: "codex-shared", present: existingPaths.includes("AGENTS.md") },
     { path: "CLAUDE.md", kind: "claude-compat", present: existingPaths.includes("CLAUDE.md") },
-    { path: "GEMINI.md", kind: "gemini", present: existingPaths.includes("GEMINI.md") },
     {
       path: ".github/copilot-instructions.md",
       kind: "copilot",

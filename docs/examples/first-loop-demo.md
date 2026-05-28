@@ -19,7 +19,7 @@ node packages/cli/src/index.js doctor --platform windows-powershell --json
 node packages/cli/src/index.js status --simple
 ```
 
-After a Codex, Claude Code, Gemini, or manual terminal session changes the repo,
+After a Codex, Claude Code, or manual terminal session changes the repo,
 record the slice:
 
 ```powershell
@@ -89,7 +89,7 @@ Risks:
 Next task: Add a captured finish output fixture or move to the next core implementation slice.
 ```
 
-This is the shape a future Codex, Claude Code, Gemini, or shell session should
+This is the shape a future Codex, Claude Code, or shell session should
 receive before it starts changing files.
 
 ## What Devflow Records

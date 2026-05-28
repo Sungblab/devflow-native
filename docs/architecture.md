@@ -8,8 +8,8 @@ generated artifact views, and project scaffolding templates.
 
 ```text
              AI tools / terminals / IDEs
-        Codex   Claude   Gemini   Hermes   shell
-             \     |       |       /
+        Codex   Claude   Hermes   shell   future MCP hosts
+             \     |       |       |      /
        MCP tools / plugins / session adapters / hooks
                        |
                     ingest
@@ -51,14 +51,14 @@ packages/mcp
   devflow.status/devflow.split/devflow.finish/devflow.doctor/devflow.next_prompt/devflow.rewrite_prompt/devflow.sessions_codex/devflow.sessions_attach_plan/devflow.sessions_attach/devflow.sessions_list/devflow.sessions_note tools
 
 packages/integrations
-  Claude Code plugin, Codex plugin and MCP config, Gemini MCP config, editor hooks
+  Claude Code plugin, Codex plugin and MCP config, editor hooks
 
 plugins/devflow
   repo-local Codex and Claude Code plugin drafts with hooks, skills, and MCP
   config over the same core contracts
 
 packages/adapters
-  Codex, Claude, Gemini, Copilot, OpenCode, Goose, Aider, GitHub,
+  Codex, Claude, Copilot, OpenCode, Goose, Aider, GitHub,
   generic shell, test output parsers
 
 templates
@@ -145,7 +145,7 @@ devflow doctor
 ## MCP Tools
 
 The MCP server exposes the same core contracts to agent hosts. It should be
-usable from Codex, Claude Code, Gemini, and any future MCP-capable coding agent
+usable from Codex, Claude Code, and any future MCP-capable coding agent
 without granting those hosts extra credentials.
 
 Initial tools:
@@ -181,7 +181,7 @@ Rules:
 - Shared option parsing and validation for agent-facing contracts lives in
   `packages/core` so CLI and MCP adapters reject the same inputs.
 - Tools should return structured JSON plus short human-readable summaries.
-- Tools must not reuse Codex, Claude, or Gemini authentication tokens.
+- Tools must not reuse Codex or Claude authentication tokens.
 - Host-specific plugins may wrap these tools in slash commands or skills.
 - The first implementation is a testable handler layer. Stdio or HTTP MCP
   transport can wrap the same handlers later.
@@ -202,7 +202,6 @@ contracts.
 - Claude Code plugin draft: repo-local `plugins/devflow/.claude-plugin`
   manifest sharing the same `plugins/devflow/skills` contracts as the Codex
   plugin.
-- Gemini CLI: MCP configuration and transcript/session import when available.
 - Hermes Agent: adapter target for persistent-agent session records, memories,
   and tool events when exposed locally.
 - Generic shell: manual command and note capture for work that has no agent
@@ -215,7 +214,7 @@ agent they already use, while the same state remains available through
 Plugin skills should also be able to call `devflow doctor` or the future
 `devflow.doctor` MCP tool before command-heavy work. That output carries the
 local execution contract and repeated-mistake memory so Codex, Claude Code,
-Gemini, Hermes, and profile-driven workflows do not relearn the same shell,
+Hermes, and profile-driven workflows do not relearn the same shell,
 path, encoding, transport, or setup rules every session.
 
 Repeated-mistake memory is layered. Public product templates should describe
@@ -239,7 +238,6 @@ Initial adapter targets:
 
 - Codex: sessions, exec/resume metadata, tool calls, changed files.
 - Claude Code: project JSONL history, hooks, todos, subagent activity.
-- Gemini CLI: chat/session export and command output.
 - GitHub Copilot CLI: command-driven coding sessions and PR context.
 - OpenCode: local database/session history.
 - Goose: local database/session history.

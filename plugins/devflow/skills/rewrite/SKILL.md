@@ -7,7 +7,7 @@ description: Rewrite a vague maintainer request into an agent-ready Solo Devflow
 
 Use this when the maintainer gives a vague request such as "알아서 해",
 "계속 구현해", "다음 거 진행해", or asks to turn rough intent into a prompt for
-Codex, Claude Code, Gemini, Hermes, or a shell session.
+Codex, Claude Code, Hermes, or a shell session.
 
 ## Workflow
 

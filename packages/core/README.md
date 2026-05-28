@@ -65,5 +65,5 @@ packages/core/
 - Do not emit shell-specific command strings directly. Use command descriptors
   that platform adapters render.
 - Do not import artifact renderer code.
-- Do not assume Superpowers, gstack, OpenHarness, Hermes, Codex, Claude, or
-  Gemini are mandatory.
+- Do not assume Superpowers, gstack, OpenHarness, Hermes, Codex, or Claude are
+  mandatory.

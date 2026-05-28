@@ -49,7 +49,7 @@ Next step: Run npm run docs:check before finishing.
   attach-plan follow-up work.
 - `Latest session time` shows when the evidence was observed.
 - `Latest session agent` and `Latest session kind` tell whether the latest
-  evidence came from Codex, Claude, Gemini, manual notes, or another adapter.
+  evidence came from Codex, Claude Code, manual notes, or another adapter.
 - `Latest session summary` is populated for manual notes; attached sessions can
   still use `devflow sessions list --json` for more detail.
 - `Latest session files` is the changed-file count recorded on attached

@@ -14,12 +14,12 @@ stable surface each host provides:
 - CLI launch/resume only when the user explicitly asks Devflow to start an
   agent session.
 
-Devflow should not replace Codex, Claude Code, Gemini, Hermes, or other agents.
+Devflow should not replace Codex, Claude Code, Hermes, or other agents.
 It should give them a shared project truth layer: status, split plans, gate
 evidence, handoffs, next prompts, and beginner-friendly term explanations.
 
 Authentication remains owned by the host agent. Codex OAuth tokens, Claude
-account state, Gemini credentials, and Hermes provider keys must not be reused
+account state, and Hermes provider keys must not be reused
 by Devflow as if they were Devflow credentials.
 
 ## Agent Adapter Contract
@@ -87,7 +87,6 @@ confirmation.
 | --- | --- | --- |
 | Claude Code | P0 | Rich hooks, project history, todos, subagents. |
 | Codex | P0 | Native plugin/hooks, MCP, JSONL sessions, and resume model. |
-| Gemini CLI | P1 | Useful second reviewer and alternate model. |
 | GitHub Copilot CLI | P1 | Common enterprise/dev workflow target. |
 | OpenCode | P1 | Local DB/session model, useful cross-provider target. |
 | Goose | P2 | Local session DB and tool workflow. |
@@ -163,23 +162,6 @@ returns compact status and review request/record reminders at session end, so
 the required review loop remains visible even when the agent is about to leave.
 For completion claims, the Stop hook can block when status still recommends
 review.
-
-### Gemini CLI
-
-Preferred integration:
-
-- MCP config when available.
-- Transcript or session export import when available.
-- Review/audit session classification even when no files changed.
-
-Gemini can be a strong secondary reviewer. Devflow should preserve that as a
-session role rather than forcing every session to be an implementation session.
-
-Initial optional project-scoped MCP settings live at
-[`../../templates/gemini-mcp/settings.json`](../../templates/gemini-mcp/settings.json).
-Copy them to `.gemini/settings.json` in a target repo to point Gemini CLI at the
-local Devflow stdio server. Gemini is an adapter target and review option, not
-a required runtime.
 
 ### Hermes Agent
 
@@ -278,31 +260,6 @@ Initial emitted events:
 - `session.child.started`
 - `gate.finished` when hook output clearly maps to a configured gate
 
-### Gemini CLI
-
-Discovery inputs:
-
-- Gemini CLI export/history locations when configured.
-- Shell history or explicit exported transcript files when no stable local
-  store is available.
-- Current repo path, prompt text, command output, and git evidence.
-
-Discovery rules:
-
-- Prefer explicit transcript export over shell-history inference.
-- Mark repo matching as `medium` unless the transcript contains cwd metadata,
-  absolute paths, or repo-specific changed files.
-- Treat Gemini reviewer sessions as first-class review/audit sessions even when
-  they make no file edits.
-- Do not require Gemini-specific runtime features for core workflows.
-
-Initial emitted events:
-
-- `session.discovered`
-- `session.message`
-- `review.imported` for audit-style findings
-- `gate.finished` only when command output includes enough evidence
-
 ## Platform Adapter Contract
 
 A platform adapter generates commands and path handling for the user's OS.
@@ -325,7 +282,7 @@ Rendered command strings are platform views over the descriptor.
 | --- | --- | --- |
 | Windows PowerShell 7 | P0 | Maintainer's primary environment. |
 | WSL/Linux | P0 | Needed for tmux-heavy tools and Linux-native agent workflows. |
-| macOS | P1 | Common Claude/Codex/Gemini development environment. |
+| macOS | P1 | Common Claude/Codex development environment. |
 
 ## Platform Command Rules
 

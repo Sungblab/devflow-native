@@ -10,7 +10,7 @@ Devflow Native is a local-first workflow continuity tool for AI coding agents
 such as Claude Code and Codex. It records, verifies, and hands off development
 state inside the repository.
 
-It is not another coding agent. Codex, Claude Code, Gemini, shell sessions, and
+It is not another coding agent. Codex, Claude Code, shell sessions, and
 human reviewers still do the work. Devflow keeps the surrounding project truth,
 verification evidence, review state, and next-session prompt from being lost.
 
@@ -68,7 +68,7 @@ devflow harness health
 ### What Devflow Does Not Do
 
 - It is not an autonomous coding agent.
-- It does not replace Codex, Claude Code, Gemini, Superpowers, git, tests, or PR review.
+- It does not replace Codex, Claude Code, Superpowers, git, tests, or PR review.
 - It does not treat HTML dashboards or generated artifacts as source of truth.
 - It is not tied to one agent runtime or one workflow methodology.
 
@@ -118,7 +118,6 @@ packages/mcp      MCP handler and stdio transport over the same contracts
 packages/adapters agent/session history adapters
 plugins/devflow   repo-local Codex and Claude Code plugin drafts
 docs              product, architecture, roadmap, examples, and public notes
-templates         optional host config templates, including Gemini CLI MCP
 .devflow          dogfood project contract; runtime state is gitignored
 ```
 
@@ -138,7 +137,7 @@ Devflow Native는 Claude Code, Codex 같은 AI 코딩 에이전트가 작업하�
 과정을 로컬 저장소 안에서 기록하고, 검증하고, 다음 세션으로 넘겨주는
 workflow continuity 도구입니다.
 
-에이전트 자체가 아닙니다. 코드는 Codex, Claude Code, Gemini, shell
+에이전트 자체가 아닙니다. 코드는 Codex, Claude Code, shell
 session, 사람 리뷰어가 작성합니다. Devflow는 그 주변의 작업 상태,
 검증 근거, 리뷰 상태, 다음 세션 프롬프트를 잃어버리지 않게 유지합니다.
 
@@ -197,7 +196,7 @@ devflow harness health
 ### Devflow가 하지 않는 일
 
 - 자체적으로 코드를 작성하는 autonomous coding agent가 아닙니다.
-- Codex, Claude Code, Gemini, Superpowers, git, tests, PR review를 대체하지 않습니다.
+- Codex, Claude Code, Superpowers, git, tests, PR review를 대체하지 않습니다.
 - HTML dashboard나 생성 artifact를 source of truth로 삼지 않습니다.
 - 특정 agent runtime이나 methodology에 종속되지 않습니다.
 
@@ -247,7 +246,6 @@ packages/mcp      MCP handler and stdio transport over the same contracts
 packages/adapters agent/session history adapters
 plugins/devflow   repo-local Codex and Claude Code plugin drafts
 docs              product, architecture, roadmap, examples, and public notes
-templates         optional host config templates, including Gemini CLI MCP
 .devflow          dogfood project contract; runtime state is gitignored
 ```
 

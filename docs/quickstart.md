@@ -4,7 +4,7 @@ This quickstart is for open-source users who want Codex or Claude Code to set
 up Devflow Native for them.
 
 Devflow is not a coding agent. It is a repo-local continuity layer around
-Claude Code, Codex, Gemini, shell sessions, and manual review.
+Claude Code, Codex, shell sessions, and manual review.
 
 ## Requirements
 
