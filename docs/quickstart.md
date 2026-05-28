@@ -60,11 +60,14 @@ npm link
 devflow --help
 devflow --version
 npm run pack:check
+npm run publish:check
 ```
 
 `npm link` exposes the `devflow` command from the local checkout. `pack:check`
 builds the npm tarball, installs it into a temporary consumer project, and
 verifies that the packaged binary can render help and version output.
+`publish:check` additionally runs tests, documentation link checks, and
+`npm publish --dry-run` package contents guards.
 
 After npm publication, the intended global install command is:
 

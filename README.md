@@ -119,6 +119,8 @@ Before npm publication, `npm link` is the intended local install path for an
 agent-led setup. The package name is `@sungblab/devflow-native`, and
 `npm run pack:check` verifies that the packed tarball installs into a temporary
 consumer project and exposes the `devflow` binary.
+Run `npm run publish:check` before any real npm release. It performs the
+package install check plus `npm publish --dry-run` and package contents guards.
 
 `devflow finish` records local evidence in `.devflow/state/events.jsonl`.
 It also writes the latest human-readable prompt projection to
@@ -164,6 +166,7 @@ product implementation and public product documentation only.
 ## Documentation
 
 - [Quickstart](docs/quickstart.md)
+- [Release Checklist](docs/release.md)
 - [Product Plan](docs/product-plan.md)
 - [Architecture](docs/architecture.md)
 - [Research Boundary](docs/research/README.md)

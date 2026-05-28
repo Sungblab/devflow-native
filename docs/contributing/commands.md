@@ -132,6 +132,9 @@ appending another line.
 - `npm run pack:check` must verify the pre-release package tarball by
   installing it into a temporary consumer project and running the packaged
   binary.
+- `npm run publish:check` must pass before a real npm release. It wraps docs,
+  tests, tarball install verification, `npm publish --dry-run`, and package
+  contents guards.
 - Commands default to the current working directory.
 - `--repo <path>` overrides the repository path.
 - `--profile <name>` selects a workflow profile such as `plain`, `standard`,
