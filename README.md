@@ -10,46 +10,53 @@ It is not another coding agent. Codex, Claude Code, shell sessions, and human
 reviewers still do the work. Devflow keeps the surrounding project truth,
 verification evidence, review state, and next-session prompt from being lost.
 
-## Install
+## Ask Your Agent To Install It
 
-```powershell
-npm install -g devflow-native
-devflow --help
-devflow --version
-```
-
-## Recommended Setup
-
-Devflow is not meant to make users manually wire MCP, plugin, and hook settings
-one by one. The intended path is to ask the coding agent you already use to
-install and verify the harness.
+Devflow is not meant to make users manually install packages, wire MCP, copy
+plugin files, or edit hook settings one by one. The intended path is to ask the
+coding agent you already use to install and verify the harness for the current
+repository.
 
 Open Codex or Claude Code in the repository you want to equip, then paste:
 
 ```text
 Install Devflow Native for this repository.
 
-Use the published npm package `devflow-native` when possible. Do not replace
-existing project instructions. Inspect the current repo first, install only the
-missing Devflow harness pieces, configure MCP/plugin/hook integration when the
-host supports it, verify the result, and tell me exactly whether I need to
-restart Codex or Claude Code.
+Do not require me to install anything manually unless this environment blocks
+you. First inspect this repository and preserve existing instructions, tests,
+and project rules.
 
-Expected verification:
-- `devflow --help` works.
-- `devflow doctor` and `devflow status` work for this repo.
-- `devflow harness health` is ok, or the remaining host limitation is explicit.
-- Existing AGENTS.md, CLAUDE.md, README, tests, and project rules are preserved.
+If `devflow` is already available, use it. Otherwise use
+`npx devflow-native@latest` for one-shot setup, or install `devflow-native`
+globally only if that is the safest option for this environment.
+
+Run the setup and verification yourself:
+- initialize the local Devflow project scaffold when missing
+- install only missing Codex/Claude harness files
+- configure MCP/plugin/hook integration when the host supports it
+- verify `devflow --help` or `npx devflow-native@latest --help`
+- verify `devflow doctor`, `devflow status`, and `devflow harness health`
+  or their npx equivalents
+- tell me whether I need to restart Codex or Claude Code
+
+Do not overwrite existing AGENTS.md, CLAUDE.md, README, tests, or project
+rules. Summarize exactly what files changed.
 ```
 
-## Manual Checks
+## Manual Fallback
 
 ```powershell
-devflow doctor --platform windows-powershell --json
-devflow status --simple
-devflow harness inspect --json
-devflow harness plan --json
-devflow harness install --confirm --json
+npx devflow-native@latest --help
+npx devflow-native@latest init --confirm
+npx devflow-native@latest harness install --confirm
+npx devflow-native@latest harness health
+npx devflow-native@latest status --simple
+```
+
+For repeated local use, a global install is still fine:
+
+```powershell
+npm install -g devflow-native
 devflow harness health
 ```
 

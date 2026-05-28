@@ -10,19 +10,11 @@ workflow continuity 도구입니다.
 리뷰어가 작성합니다. Devflow는 그 주변의 작업 상태, 검증 근거, 리뷰 상태,
 다음 세션 프롬프트를 잃어버리지 않게 유지합니다.
 
-## 빠른 설치
+## 에이전트에게 설치까지 맡기기
 
-```powershell
-npm install -g devflow-native
-devflow --help
-devflow --version
-```
-
-## 추천 사용 방식
-
-사용자가 직접 MCP, 플러그인, hook 설정을 하나씩 따라 치는 제품이
-아닙니다. Devflow는 이미 쓰는 Codex나 Claude Code에게 설치와 점검을
-맡기는 흐름을 우선합니다.
+사용자가 직접 npm install, MCP, 플러그인, hook 설정을 하나씩 따라 치는
+제품이 아닙니다. Devflow는 이미 쓰는 Codex나 Claude Code에게 설치와
+점검을 맡기는 흐름을 우선합니다.
 
 설치하려는 저장소에서 Codex 또는 Claude Code를 열고 아래 프롬프트를
 붙여넣으세요.
@@ -30,27 +22,41 @@ devflow --version
 ```text
 Install Devflow Native for this repository.
 
-Use the published npm package `devflow-native` when possible. Do not replace
-existing project instructions. Inspect the current repo first, install only the
-missing Devflow harness pieces, configure MCP/plugin/hook integration when the
-host supports it, verify the result, and tell me exactly whether I need to
-restart Codex or Claude Code.
+Do not require me to install anything manually unless this environment blocks
+you. First inspect this repository and preserve existing instructions, tests,
+and project rules.
 
-Expected verification:
-- `devflow --help` works.
-- `devflow doctor` and `devflow status` work for this repo.
-- `devflow harness health` is ok, or the remaining host limitation is explicit.
-- Existing AGENTS.md, CLAUDE.md, README, tests, and project rules are preserved.
+If `devflow` is already available, use it. Otherwise use
+`npx devflow-native@latest` for one-shot setup, or install `devflow-native`
+globally only if that is the safest option for this environment.
+
+Run the setup and verification yourself:
+- initialize the local Devflow project scaffold when missing
+- install only missing Codex/Claude harness files
+- configure MCP/plugin/hook integration when the host supports it
+- verify `devflow --help` or `npx devflow-native@latest --help`
+- verify `devflow doctor`, `devflow status`, and `devflow harness health`
+  or their npx equivalents
+- tell me whether I need to restart Codex or Claude Code
+
+Do not overwrite existing AGENTS.md, CLAUDE.md, README, tests, or project
+rules. Summarize exactly what files changed.
 ```
 
-## 직접 확인할 때
+## 직접 실행할 때
 
 ```powershell
-devflow doctor --platform windows-powershell --json
-devflow status --simple
-devflow harness inspect --json
-devflow harness plan --json
-devflow harness install --confirm --json
+npx devflow-native@latest --help
+npx devflow-native@latest init --confirm
+npx devflow-native@latest harness install --confirm
+npx devflow-native@latest harness health
+npx devflow-native@latest status --simple
+```
+
+반복해서 쓸 프로젝트라면 전역 설치도 괜찮습니다.
+
+```powershell
+npm install -g devflow-native
 devflow harness health
 ```
 
