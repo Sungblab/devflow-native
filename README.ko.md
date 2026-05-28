@@ -2,45 +2,67 @@
 
 [English README](README.md)
 
-Devflow Native는 Claude Code, Codex 같은 AI 코딩 에이전트가 작업하는
-과정을 로컬 저장소 안에서 기록하고, 검증하고, 다음 세션으로 넘겨주는
-workflow continuity 도구입니다.
+Devflow Native는 Codex, Claude Code 같은 AI 코딩 에이전트 주변에 붙는
+local-first workflow harness입니다.
 
-에이전트 자체가 아닙니다. 코드는 Codex, Claude Code, shell session, 사람
-리뷰어가 작성합니다. Devflow는 그 주변의 작업 상태, 검증 근거, 리뷰 상태,
-다음 세션 프롬프트를 잃어버리지 않게 유지합니다.
+코드를 대신 짜는 도구가 아닙니다. 대신 repo가 에이전트가 무엇을 했고, 무엇을
+검증했고, 무엇이 아직 위험하고, 다음 세션이 어디서 이어가야 하는지 기억하게
+만듭니다.
 
-## 에이전트에게 설치까지 맡기기
+## 왜 필요한가
 
-사용자가 직접 npm install, MCP, 플러그인, hook 설정을 하나씩 따라 치는
-제품이 아닙니다. Devflow는 이미 쓰는 Codex나 Claude Code에게 설치와
-점검을 맡기는 흐름을 우선합니다.
+AI 코딩 에이전트는 점점 코드를 잘 생성합니다. 하지만 실제 병목은 종종
+continuity입니다.
 
-설치하려는 저장소에서 Codex 또는 Claude Code를 열고 아래 프롬프트를
-붙여넣으세요.
+- 지난 세션에서 무엇이 바뀌었는가?
+- 어떤 테스트, 타입체크, 빌드, 리뷰가 실제로 실행됐는가?
+- 무엇이 실패했고 무엇은 아직 안 했는가?
+- 다음 에이전트가 어떤 repo 문서와 규칙을 믿어야 하는가?
+- 정말 완료됐다고 말해도 되는가?
+
+긴 context, chat history, session compaction은 도움이 됩니다. 하지만 이것들은
+프로젝트 안에 남는 작업 상태 기록과 같지 않습니다. Devflow는 다음 Codex,
+Claude Code, shell, 사람 리뷰 세션이 처음부터 다시 추측하지 않도록 repo 안에
+작업 상태를 남깁니다.
+
+## 다른 도구와의 위치
+
+Devflow는 주변 도구를 대체하려는 제품이 아닙니다.
+
+```text
+Superpowers: agent가 따라야 할 개발 습관과 workflow skill
+CodeGraph:   codebase 구조와 context 탐색
+Codex/Claude: coding agent 실행 host
+Devflow:    작업 상태, 검증 기록, 리뷰 상태, 다음 세션 prompt
+```
+
+쉽게 말하면, 이전 세션이 어디서 멈췄는지 다음 에이전트가 추측하지 않게 만드는
+쪽입니다.
+
+## Devflow가 하는 일
+
+- gate와 review 정책이 들어간 `.devflow/config.json` 프로젝트 계약 생성
+- Codex/Claude용 local plugin, hook, MCP harness 설치 및 점검
+- repo 상태, 변경 파일, work/session 상태, gate, 최신 인수인계 상태 표시
+- 완료 전에 review evidence와 gate evidence 기록
+- `finish --dry-run`으로 정말 완료라고 말해도 되는지 미리 점검
+- 다음 에이전트 세션이 이어받을 prompt 생성
+
+## 빠르게 써보기
+
+권장 흐름은 agent-native setup입니다. 대상 repo에서 Codex나 Claude Code를 열고,
+설치와 점검을 에이전트에게 맡기세요.
 
 ```text
 Install Devflow Native for this repository.
 
-Do not require me to install anything manually unless this environment blocks
-you. First inspect this repository and preserve existing instructions, tests,
-and project rules.
+Inspect the repo first. Preserve existing AGENTS.md, CLAUDE.md, README, tests,
+and project rules. Use npx devflow-native@latest if devflow is not already
+installed.
 
-If `devflow` is already available, use it. Otherwise use
-`npx devflow-native@latest` for one-shot setup, or install `devflow-native`
-globally only if that is the safest option for this environment.
-
-Run the setup and verification yourself:
-- initialize the local Devflow project scaffold when missing
-- install only missing Codex/Claude harness files
-- configure MCP/plugin/hook integration when the host supports it
-- verify `devflow --help` or `npx devflow-native@latest --help`
-- verify `devflow doctor`, `devflow status`, and `devflow harness health`
-  or their npx equivalents
-- tell me whether I need to restart Codex or Claude Code
-
-Do not overwrite existing AGENTS.md, CLAUDE.md, README, tests, or project
-rules. Summarize exactly what files changed.
+Initialize the Devflow scaffold when missing, install only missing Codex/Claude
+harness files, run doctor/status/harness health, and tell me exactly what files
+changed and whether I need to restart the agent host.
 ```
 
 ## 직접 실행할 때
@@ -64,14 +86,6 @@ npm install -g devflow-native
 devflow harness health
 ```
 
-## Devflow가 하는 일
-
-- 현재 작업, agent/manual session, gate evidence, risk, handoff를 로컬에 기록
-- Codex와 Claude Code용 repo-local plugin/hook/MCP harness를 설치 및 점검
-- `continue`, `next`, `finish`, `review` 같은 짧은 지시를 다음 작업 흐름으로 연결
-- 검증 없는 완료 선언을 막기 위해 gate evidence와 review evidence를 확인
-- 다음 세션이 바로 이어받을 수 있는 handoff prompt를 유지
-
 ## Devflow가 하지 않는 일
 
 - 자체적으로 코드를 작성하는 autonomous coding agent가 아닙니다.
@@ -93,6 +107,10 @@ Codex 또는 Claude Code가 저장소를 연다
   -> Devflow finish flow가 docs impact, gates, risks, next prompt를 확인한다
   -> completion evidence가 .devflow/state/events.jsonl에 기록된다
 ```
+
+`.devflow/state/`, `.devflow/next-prompt.md` 같은 runtime state는 기본적으로
+local-only입니다. `.devflow/config.json` 같은 공개 프로젝트 계약은 저장소가
+Devflow workflow를 채택할 때 커밋할 수 있습니다.
 
 ## 주요 명령
 

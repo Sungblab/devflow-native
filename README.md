@@ -2,45 +2,67 @@
 
 [한국어 문서](README.ko.md)
 
-Devflow Native is a local-first workflow continuity tool for AI coding agents
-such as Claude Code and Codex. It records, verifies, and hands off development
-state inside the repository.
+Devflow Native is a local-first workflow harness for AI coding agents such as
+Codex and Claude Code.
 
-It is not another coding agent. Codex, Claude Code, shell sessions, and human
-reviewers still do the work. Devflow keeps the surrounding project truth,
-verification evidence, review state, and next-session prompt from being lost.
+It does not write code for you. Instead, it helps the repository remember what
+the agents did, what they verified, what still looks risky, and what the next
+session should pick up.
 
-## Ask Your Agent To Install It
+## Why This Exists
 
-Devflow is not meant to make users manually install packages, wire MCP, copy
-plugin files, or edit hook settings one by one. The intended path is to ask the
-coding agent you already use to install and verify the harness for the current
-repository.
+AI coding agents are getting better at generating code. The next bottleneck is
+often continuity:
 
-Open Codex or Claude Code in the repository you want to equip, then paste:
+- What changed in the last session?
+- Which tests, typechecks, builds, or reviews actually ran?
+- What failed or was skipped?
+- Which repo docs and project rules should the next agent trust?
+- Is it really safe to say the task is done?
+
+Long context, chat history, and session compaction help, but they are not the
+same as project-local workflow state. Devflow keeps that state in the repo so a
+new Codex, Claude Code, shell, or human review session can resume without
+rediscovering everything from scratch.
+
+## How It Fits
+
+Devflow is not trying to replace the tools around it.
+
+```text
+Superpowers: agent development habits and workflow skills
+CodeGraph:   codebase structure and context navigation
+Codex/Claude: execution hosts for coding agents
+Devflow:    work state, verification records, review state, and next-session prompts
+```
+
+In plain terms: Devflow asks the repo to remember enough that the next agent
+does not have to guess where the previous one stopped.
+
+## What It Does
+
+- Creates a `.devflow/config.json` project contract with gates and review policy.
+- Installs and checks local Codex/Claude plugin, hook, and MCP harness files.
+- Shows repo status, changed files, work/session state, gates, and latest handoff.
+- Records review evidence and gate evidence before work is called done.
+- Provides `finish --dry-run` to check whether a task can honestly be claimed complete.
+- Generates the prompt the next agent session should continue from.
+
+## Quick Try
+
+The intended path is agent-native setup: open Codex or Claude Code in the target
+repo and ask it to install Devflow safely.
 
 ```text
 Install Devflow Native for this repository.
 
-Do not require me to install anything manually unless this environment blocks
-you. First inspect this repository and preserve existing instructions, tests,
-and project rules.
+Inspect the repo first. Preserve existing AGENTS.md, CLAUDE.md, README, tests,
+and project rules. Use npx devflow-native@latest if devflow is not already
+installed.
 
-If `devflow` is already available, use it. Otherwise use
-`npx devflow-native@latest` for one-shot setup, or install `devflow-native`
-globally only if that is the safest option for this environment.
-
-Run the setup and verification yourself:
-- initialize the local Devflow project scaffold when missing
-- install only missing Codex/Claude harness files
-- configure MCP/plugin/hook integration when the host supports it
-- verify `devflow --help` or `npx devflow-native@latest --help`
-- verify `devflow doctor`, `devflow status`, and `devflow harness health`
-  or their npx equivalents
-- tell me whether I need to restart Codex or Claude Code
-
-Do not overwrite existing AGENTS.md, CLAUDE.md, README, tests, or project
-rules. Summarize exactly what files changed.
+Initialize the Devflow scaffold when missing, install only missing Codex/Claude
+harness files, run doctor/status/harness health, and tell me exactly what files
+changed and whether I need to restart the agent host.
 ```
 
 ## Manual Fallback
@@ -65,14 +87,6 @@ npm install -g devflow-native
 devflow harness health
 ```
 
-## What Devflow Does
-
-- Records active work, agent/manual sessions, gate evidence, risks, and handoffs locally.
-- Installs and checks repo-local plugin, hook, and MCP harnesses for Codex and Claude Code.
-- Connects short prompts such as `continue`, `next`, `finish`, or `review` to the right workflow.
-- Checks gate and review evidence before a task is claimed done.
-- Maintains a handoff prompt so the next session can continue immediately.
-
 ## What Devflow Does Not Do
 
 - It is not an autonomous coding agent.
@@ -94,6 +108,10 @@ Maintainer says "finish" or "review"
   -> Devflow finish flow checks docs impact, gates, risks, and next prompt
   -> completion evidence is recorded in .devflow/state/events.jsonl
 ```
+
+Runtime state such as `.devflow/state/` and `.devflow/next-prompt.md` is local
+by default. Public project contracts such as `.devflow/config.json` can be
+committed when a repository wants to adopt Devflow as part of its workflow.
 
 ## Common Commands
 
