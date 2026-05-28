@@ -53,6 +53,10 @@ npx devflow-native@latest harness health
 npx devflow-native@latest status --simple
 ```
 
+`harness install --confirm`은 생성된 `plugins/devflow/` 하네스 파일을 기본적으로
+`.gitignore`에 추가해 로컬 파일로 둡니다. 대상 저장소가 그 플러그인 파일을
+공개 개발 워크플로로 커밋해야 할 때만 `--repo-visible`을 사용하세요.
+
 반복해서 쓸 프로젝트라면 전역 설치도 괜찮습니다.
 
 ```powershell
@@ -119,7 +123,7 @@ packages/core     shared product model, local state, gates, handoff contracts
 packages/cli      terminal command surface over core contracts
 packages/mcp      MCP handler and stdio transport over the same contracts
 packages/adapters agent/session history adapters
-plugins/devflow   repo-local Codex and Claude Code plugin drafts
+plugins/devflow   dogfood Codex and Claude Code plugin drafts
 docs              product, architecture, roadmap, examples, and public notes
 .devflow          dogfood project contract; runtime state is gitignored
 ```

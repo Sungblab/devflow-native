@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const DEVFLOW_RUNTIME_GITIGNORE_ENTRIES = [".devflow/state/", ".devflow/next-prompt.md"];
+const DEVFLOW_LOCAL_HARNESS_GITIGNORE_ENTRIES = ["plugins/devflow/"];
 
 export function createStatusSummary(input = {}) {
   const changedFiles = input.changedFiles ?? [];
@@ -742,9 +743,11 @@ export async function writeHarnessInstall(repoPath, options = {}) {
     }
   }
 
-  const gitignore = await ensureDevflowRuntimeGitignore(repoPath);
+  const gitignore = await ensureDevflowRuntimeGitignore(repoPath, {
+    includeLocalHarness: !isRepoVisibleHarnessInstall(options),
+  });
   if (gitignore.status === "written") {
-    written.push({ path: ".gitignore", target: "runtime-state-ignore" });
+    written.push({ path: ".gitignore", target: "local-state-ignore" });
   } else {
     skipped.push({ path: ".gitignore", reason: gitignore.reason });
   }
@@ -813,18 +816,20 @@ export async function writeHarnessRepair(repoPath, options = {}) {
     });
   }
 
-  const gitignore = await ensureDevflowRuntimeGitignore(repoPath);
+  const gitignore = await ensureDevflowRuntimeGitignore(repoPath, {
+    includeLocalHarness: !isRepoVisibleHarnessInstall(options),
+  });
   if (gitignore.status === "written") {
     repaired.push({
       path: ".gitignore",
-      kind: "runtime-state-ignore",
-      reason: "Ensure Devflow runtime state stays local.",
+      kind: "local-state-ignore",
+      reason: "Ensure Devflow runtime and local harness files stay local.",
     });
   } else {
     skipped.push({
       path: ".gitignore",
       reason: gitignore.reason,
-      message: "Devflow runtime state ignore entries are already present.",
+      message: "Devflow runtime and local harness ignore entries are already present.",
     });
   }
 
@@ -954,9 +959,13 @@ export async function writeInitPlan(repoPath, plan, options = {}) {
   };
 }
 
-export async function ensureDevflowRuntimeGitignore(repoPath) {
+export async function ensureDevflowRuntimeGitignore(repoPath, options = {}) {
   const target = join(repoPath, ".gitignore");
   let existing = "";
+  const expectedEntries = [
+    ...DEVFLOW_RUNTIME_GITIGNORE_ENTRIES,
+    ...(options.includeLocalHarness ? DEVFLOW_LOCAL_HARNESS_GITIGNORE_ENTRIES : []),
+  ];
 
   try {
     existing = await readFile(target, "utf8");
@@ -972,13 +981,13 @@ export async function ensureDevflowRuntimeGitignore(repoPath) {
       .map((line) => line.trim())
       .filter(Boolean),
   );
-  const missing = DEVFLOW_RUNTIME_GITIGNORE_ENTRIES.filter((entry) => !existingLines.has(entry));
+  const missing = expectedEntries.filter((entry) => !existingLines.has(entry));
 
   if (missing.length === 0) {
     return {
       status: "skipped",
       reason: "already-exists",
-      entries: DEVFLOW_RUNTIME_GITIGNORE_ENTRIES,
+      entries: expectedEntries,
     };
   }
 
@@ -990,6 +999,10 @@ export async function ensureDevflowRuntimeGitignore(repoPath) {
     status: "written",
     entries: missing,
   };
+}
+
+function isRepoVisibleHarnessInstall(options = {}) {
+  return Boolean(options.repoVisible ?? options["repo-visible"]);
 }
 
 export async function recordWorkCreatedEvent(repoPath, workItem, options = {}) {

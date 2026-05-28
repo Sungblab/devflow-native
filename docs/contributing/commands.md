@@ -247,6 +247,7 @@ Examples:
 devflow harness inspect --targets codex,claude,superpowers,codegraph --json
 devflow harness plan --targets codex,claude --json
 devflow harness install --targets codex,claude,git-hooks --confirm --json
+devflow harness install --targets codex,claude --confirm --repo-visible --json
 devflow harness health --json
 devflow harness repair --json
 ```
@@ -261,6 +262,12 @@ Targets:
   that can count as workflow evidence
 - `codegraph`: optional graph context provider availability and freshness
 - `git-hooks`: local finish or commit guards when configured
+
+By default, `harness install --confirm` treats generated `plugins/devflow/`
+files as local agent harness files and adds that directory to `.gitignore`.
+Use `--repo-visible` only when the target repository should commit those plugin
+files as its public development workflow. Runtime files under `.devflow/state/`
+and `.devflow/next-prompt.md` remain ignored.
 
 Responsibilities:
 
@@ -1185,7 +1192,8 @@ human-readable prompt projection. Use `devflow prompt latest --json` to return
 the latest derived handoff metadata plus that prompt content.
 `devflow init --confirm`, `devflow harness install --confirm`, and
 `devflow harness repair --confirm` ensure those runtime files are listed in
-`.gitignore` by default.
+`.gitignore` by default. Harness install and repair also ignore
+`plugins/devflow/` unless `--repo-visible` is supplied.
 
 ## `devflow review request`
 

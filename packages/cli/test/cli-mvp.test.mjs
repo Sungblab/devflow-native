@@ -878,6 +878,7 @@ test("CLI harness install requires confirmation and writes missing native files"
     await readFile(join(repoPath, "plugins", "devflow", ".codex-plugin", "plugin.json"), "utf8"),
   );
   const config = JSON.parse(await readFile(join(repoPath, ".devflow", "config.json"), "utf8"));
+  const gitignore = await readFile(join(repoPath, ".gitignore"), "utf8");
 
   assert.equal(parsed.command, "harness_install");
   assert.equal(parsed.status, "installed");
@@ -886,6 +887,7 @@ test("CLI harness install requires confirmation and writes missing native files"
   assert.ok(parsed.ignored.some((action) => action.target === "codegraph"));
   assert.equal(config.review.required, true);
   assert.equal(codexManifest.name, "devflow");
+  assert.match(gitignore, /^plugins\/devflow\/$/m);
 });
 
 test("CLI harness health validates installed native harness", async () => {

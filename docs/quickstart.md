@@ -141,9 +141,11 @@ node packages/cli/src/index.js prompt latest
 `finish` records completion evidence in `.devflow/state/events.jsonl` and writes
 the latest handoff prompt projection to `.devflow/next-prompt.md`.
 Use `finish --dry-run --json` when you want a read-only readiness check before
-recording anything. `init --confirm` and `harness install --confirm` add those
-runtime state paths to `.gitignore` so generated handoff state stays local by
-default.
+recording anything. `init --confirm` and `harness install --confirm` add runtime
+state paths to `.gitignore`, and `harness install --confirm` also ignores
+`plugins/devflow/` by default so generated agent harness files stay local.
+Pass `--repo-visible` only when the target repository should publicly adopt
+those plugin files.
 
 ## Install The Native Harness
 

@@ -652,9 +652,25 @@ test("harness install writes missing native files only after confirmation", asyn
   assert.match(stopHook, /review\.nextAction\.recordCommand/);
   assert.match(gitignore, /^\.devflow\/state\/$/m);
   assert.match(gitignore, /^\.devflow\/next-prompt\.md$/m);
+  assert.match(gitignore, /^plugins\/devflow\/$/m);
   await assert.rejects(() => readFile(join(repoPath, ".codegraph"), "utf8"), {
     code: "ENOENT",
   });
+});
+
+test("harness install can leave plugin files repo-visible when explicitly requested", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-harness-repo-visible-"));
+
+  await writeHarnessInstall(repoPath, {
+    targets: ["codex"],
+    confirmed: true,
+    repoVisible: true,
+  });
+
+  const gitignore = await readFile(join(repoPath, ".gitignore"), "utf8");
+  assert.match(gitignore, /^\.devflow\/state\/$/m);
+  assert.match(gitignore, /^\.devflow\/next-prompt\.md$/m);
+  assert.doesNotMatch(gitignore, /^plugins\/devflow\/$/m);
 });
 
 test("harness install preserves existing config while enabling required review", async () => {

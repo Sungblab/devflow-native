@@ -53,6 +53,11 @@ npx devflow-native@latest harness health
 npx devflow-native@latest status --simple
 ```
 
+`harness install --confirm` keeps generated `plugins/devflow/` harness files
+local by default by adding them to `.gitignore`. Use `--repo-visible` only when
+the target repository should commit those plugin files as part of its public
+development workflow.
+
 For repeated local use, a global install is still fine:
 
 ```powershell
@@ -119,7 +124,7 @@ packages/core     shared product model, local state, gates, handoff contracts
 packages/cli      terminal command surface over core contracts
 packages/mcp      MCP handler and stdio transport over the same contracts
 packages/adapters agent/session history adapters
-plugins/devflow   repo-local Codex and Claude Code plugin drafts
+plugins/devflow   dogfood Codex and Claude Code plugin drafts
 docs              product, architecture, roadmap, examples, and public notes
 .devflow          dogfood project contract; runtime state is gitignored
 ```

@@ -810,6 +810,7 @@ function renderHelp(group) {
       "devflow harness inspect [--json]",
       "devflow harness plan [--json]",
       "devflow harness install --confirm [--json]",
+      "devflow harness install --confirm --repo-visible [--json]",
       "devflow harness health [--json]",
       "devflow harness repair --confirm [--json]",
     ],
@@ -1064,7 +1065,8 @@ function parseOptionsAndPositionals(rawArgs) {
       key === "start" ||
       key === "once" ||
       key === "dry-run" ||
-      key === "check"
+      key === "check" ||
+      key === "repo-visible"
     ) {
       options[key] = true;
       continue;
