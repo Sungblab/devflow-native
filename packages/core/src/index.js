@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
+const DEVFLOW_RUNTIME_GITIGNORE_ENTRIES = [".devflow/state/", ".devflow/next-prompt.md"];
 
 export function createStatusSummary(input = {}) {
   const changedFiles = input.changedFiles ?? [];
@@ -741,6 +742,13 @@ export async function writeHarnessInstall(repoPath, options = {}) {
     }
   }
 
+  const gitignore = await ensureDevflowRuntimeGitignore(repoPath);
+  if (gitignore.status === "written") {
+    written.push({ path: ".gitignore", target: "runtime-state-ignore" });
+  } else {
+    skipped.push({ path: ".gitignore", reason: gitignore.reason });
+  }
+
   return {
     schemaVersion: "0.1",
     command: "harness_install",
@@ -802,6 +810,21 @@ export async function writeHarnessRepair(repoPath, options = {}) {
       path: check.path,
       kind: check.kind,
       reason: check.message,
+    });
+  }
+
+  const gitignore = await ensureDevflowRuntimeGitignore(repoPath);
+  if (gitignore.status === "written") {
+    repaired.push({
+      path: ".gitignore",
+      kind: "runtime-state-ignore",
+      reason: "Ensure Devflow runtime state stays local.",
+    });
+  } else {
+    skipped.push({
+      path: ".gitignore",
+      reason: gitignore.reason,
+      message: "Devflow runtime state ignore entries are already present.",
     });
   }
 
@@ -916,11 +939,56 @@ export async function writeInitPlan(repoPath, plan, options = {}) {
     written.push({ path: file.path });
   }
 
+  const gitignore = await ensureDevflowRuntimeGitignore(repoPath);
+  if (gitignore.status === "written") {
+    written.push({ path: ".gitignore" });
+  } else {
+    skipped.push({ path: ".gitignore", reason: gitignore.reason });
+  }
+
   return {
     schemaVersion: "0.1",
     command: "init_result",
     written,
     skipped,
+  };
+}
+
+export async function ensureDevflowRuntimeGitignore(repoPath) {
+  const target = join(repoPath, ".gitignore");
+  let existing = "";
+
+  try {
+    existing = await readFile(target, "utf8");
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      throw error;
+    }
+  }
+
+  const existingLines = new Set(
+    existing
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean),
+  );
+  const missing = DEVFLOW_RUNTIME_GITIGNORE_ENTRIES.filter((entry) => !existingLines.has(entry));
+
+  if (missing.length === 0) {
+    return {
+      status: "skipped",
+      reason: "already-exists",
+      entries: DEVFLOW_RUNTIME_GITIGNORE_ENTRIES,
+    };
+  }
+
+  const normalized = existing.length > 0 && !existing.endsWith("\n") ? `${existing}\n` : existing;
+  const prefix = normalized.length > 0 && !normalized.endsWith("\n\n") ? "\n" : "";
+  await writeFile(target, `${normalized}${prefix}${missing.join("\n")}\n`, "utf8");
+
+  return {
+    status: "written",
+    entries: missing,
   };
 }
 

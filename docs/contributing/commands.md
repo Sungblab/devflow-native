@@ -1079,6 +1079,7 @@ Example:
 
 ```powershell
 devflow finish --work worker-static-quality --profile standard --platform powershell --json
+devflow finish --work worker-static-quality --dry-run --json
 ```
 
 Guided renderer:
@@ -1104,6 +1105,11 @@ Outputs:
 - PR/review recommendation
 - next-session prompt
 - append-only `.devflow/state/events.jsonl` `work.completed` event
+
+Use `--dry-run` or `--check` when an agent must inspect finish readiness
+without writing local state. Dry-run output uses the same finish contract but
+does not append `.devflow/state/events.jsonl` or rewrite
+`.devflow/next-prompt.md`.
 
 JSON output:
 
@@ -1177,6 +1183,9 @@ required but not recorded, `finish` includes `review.nextAction.command` and
 handoff history and rewrites `.devflow/next-prompt.md` as the latest
 human-readable prompt projection. Use `devflow prompt latest --json` to return
 the latest derived handoff metadata plus that prompt content.
+`devflow init --confirm`, `devflow harness install --confirm`, and
+`devflow harness repair --confirm` ensure those runtime files are listed in
+`.gitignore` by default.
 
 ## `devflow review request`
 

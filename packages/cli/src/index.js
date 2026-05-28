@@ -60,7 +60,7 @@ const version = readPackageVersion();
 try {
   if (args.length === 0 || command === "help" || command === "--help" || command === "-h") {
     renderHelp(command === "help" ? args[1] : undefined);
-  } else if (args[1] === "help" || args[1] === "--help" || args[1] === "-h") {
+  } else if (isHelpRequested(args)) {
     renderHelp(command);
   } else if (command === "--version" || command === "-v") {
     process.stdout.write(`devflow ${version}\n`);
@@ -312,7 +312,10 @@ async function renderFinish(argsForCommand) {
     nextTask: options["next-task"],
   });
 
-  await recordFinishEvent(repoPath, summary);
+  if (!options["dry-run"] && !options.check) {
+    await recordFinishEvent(repoPath, summary);
+  }
+
   if (options.guided) {
     renderGuidedFinish(summary);
     return;
@@ -821,6 +824,11 @@ function renderHelp(group) {
       "devflow review request --work <id> [--target reviewer]",
       "devflow review record --work <id> --reviewer <name> --status passed --summary <text> [--json]",
     ],
+    finish: [
+      "devflow finish --work <id> [--json]",
+      "devflow finish --work <id> --dry-run --json",
+      "devflow finish --work <id> --guided",
+    ],
     prompt: [
       "devflow prompt next [--objective <text>]",
       "devflow prompt latest [--json]",
@@ -1027,6 +1035,14 @@ function parseOptions(rawArgs) {
   return parseOptionsAndPositionals(rawArgs).options;
 }
 
+function isHelpRequested(rawArgs) {
+  return (
+    rawArgs.includes("--help") ||
+    rawArgs.includes("-h") ||
+    rawArgs[1] === "help"
+  );
+}
+
 function parseOptionsAndPositionals(rawArgs) {
   const options = {};
   const positional = [];
@@ -1046,7 +1062,9 @@ function parseOptionsAndPositionals(rawArgs) {
       key === "confirm" ||
       key === "register" ||
       key === "start" ||
-      key === "once"
+      key === "once" ||
+      key === "dry-run" ||
+      key === "check"
     ) {
       options[key] = true;
       continue;

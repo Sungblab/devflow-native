@@ -414,14 +414,35 @@ test("init plan writes scaffold files only after confirmation", async () => {
   const config = JSON.parse(await readFile(join(repoPath, ".devflow", "config.json"), "utf8"));
   const docsRouter = await readFile(join(repoPath, "docs", "README.md"), "utf8");
   const workflow = await readFile(join(repoPath, "docs", "contributing", "workflow.md"), "utf8");
+  const gitignore = await readFile(join(repoPath, ".gitignore"), "utf8");
 
-  assert.equal(result.written.length, plan.files.length);
+  assert.equal(result.written.length, plan.files.length + 1);
   assert.equal(config.defaultProfile, "standard");
   assert.equal(config.defaultPlatform, "windows-powershell");
   assert.equal(config.review.required, true);
   assert.match(docsRouter, /Project Contract/);
   assert.match(workflow, /devflow review request/);
   assert.match(workflow, /devflow review record/);
+  assert.match(gitignore, /^\.devflow\/state\/$/m);
+  assert.match(gitignore, /^\.devflow\/next-prompt\.md$/m);
+});
+
+test("init plan preserves and deduplicates Devflow runtime gitignore entries", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-init-gitignore-"));
+  await writeFile(join(repoPath, ".gitignore"), "node_modules\n.devflow/state/\n", "utf8");
+  const plan = createInitPlan({
+    repo: repoPath,
+    profile: "standard",
+    platform: "windows-powershell",
+  });
+
+  await writeInitPlan(repoPath, plan, { confirmed: true });
+  await writeInitPlan(repoPath, plan, { confirmed: true });
+
+  const gitignore = await readFile(join(repoPath, ".gitignore"), "utf8");
+  assert.equal((gitignore.match(/^\.devflow\/state\/$/gm) ?? []).length, 1);
+  assert.equal((gitignore.match(/^\.devflow\/next-prompt\.md$/gm) ?? []).length, 1);
+  assert.match(gitignore, /^node_modules$/m);
 });
 
 test("health summary reports missing scaffold files and gates", () => {
@@ -612,11 +633,13 @@ test("harness install writes missing native files only after confirmation", asyn
   const finishSkill = await readFile(join(repoPath, "plugins", "devflow", "skills", "finish", "SKILL.md"), "utf8");
   const stopHook = await readFile(join(repoPath, "plugins", "devflow", "hooks", "stop.mjs"), "utf8");
   const config = JSON.parse(await readFile(join(repoPath, ".devflow", "config.json"), "utf8"));
+  const gitignore = await readFile(join(repoPath, ".gitignore"), "utf8");
 
   assert.equal(result.command, "harness_install");
   assert.equal(result.status, "installed");
   assert.ok(result.written.some((file) => file.path === "plugins/devflow/.codex-plugin/plugin.json"));
   assert.ok(result.written.some((file) => file.path === ".devflow/config.json" && file.target === "review"));
+  assert.ok(result.written.some((file) => file.path === ".gitignore"));
   assert.ok(result.ignored.some((action) => action.target === "codegraph" && action.action === "skip-optional"));
   assert.equal(agents, "# Existing Agent Guide\n");
   assert.equal(config.review.required, true);
@@ -627,6 +650,8 @@ test("harness install writes missing native files only after confirmation", asyn
   assert.match(finishSkill, /review\.nextAction\.recordCommand/);
   assert.match(stopHook, /devflow review request --work <id>/);
   assert.match(stopHook, /review\.nextAction\.recordCommand/);
+  assert.match(gitignore, /^\.devflow\/state\/$/m);
+  assert.match(gitignore, /^\.devflow\/next-prompt\.md$/m);
   await assert.rejects(() => readFile(join(repoPath, ".codegraph"), "utf8"), {
     code: "ENOENT",
   });

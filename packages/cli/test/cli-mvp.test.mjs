@@ -27,6 +27,24 @@ test("CLI renders help and group help", async () => {
   assert.match(group.stdout, /devflow harness health/);
 });
 
+test("CLI help flags after options do not execute write commands", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-help-no-write-"));
+  const { stdout } = await execFileAsync(
+    "node",
+    [join(process.cwd(), "packages/cli/src/index.js"), "finish", "--json", "--help"],
+    { cwd: repoPath },
+  );
+
+  assert.match(stdout, /^Devflow Native finish commands$/m);
+  assert.match(stdout, /--dry-run/);
+  await assert.rejects(() => readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8"), {
+    code: "ENOENT",
+  });
+  await assert.rejects(() => readFile(join(repoPath, ".devflow", "next-prompt.md"), "utf8"), {
+    code: "ENOENT",
+  });
+});
+
 test("CLI renders version", async () => {
   const { stdout } = await execFileAsync("node", ["packages/cli/src/index.js", "--version"]);
 
@@ -687,7 +705,7 @@ test("CLI init --confirm writes the minimum project scaffold", async () => {
   const config = JSON.parse(await readFile(join(repoPath, ".devflow", "config.json"), "utf8"));
 
   assert.equal(parsed.command, "init");
-  assert.equal(parsed.result.written.length, parsed.files.length);
+  assert.equal(parsed.result.written.length, parsed.files.length + 1);
   assert.equal(config.defaultProfile, "standard");
   assert.equal(config.defaultPlatform, "windows-powershell");
   assert.equal(config.review.required, true);
@@ -1519,6 +1537,33 @@ test("CLI finish renders JSON evidence summary", async () => {
     status: "passed",
   });
   assert.match(parsed.nextSession.prompt, /file-backed state persistence/);
+});
+
+test("CLI finish dry run renders evidence without writing local state", async () => {
+  const repoPath = await createTempGitRepo();
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--work",
+    "dry-run-loop",
+    "--gate",
+    "unit:npm test:passed",
+    "--dry-run",
+    "--json",
+  ]);
+
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.command, "finish");
+  assert.equal(parsed.workItem.id, "dry-run-loop");
+  assert.equal(parsed.evidence.gates[0].status, "passed");
+  await assert.rejects(() => readFile(join(repoPath, ".devflow", "state", "events.jsonl"), "utf8"), {
+    code: "ENOENT",
+  });
+  await assert.rejects(() => readFile(join(repoPath, ".devflow", "next-prompt.md"), "utf8"), {
+    code: "ENOENT",
+  });
 });
 
 test("CLI finish blocks done claim when configured gate has no recorded evidence", async () => {
