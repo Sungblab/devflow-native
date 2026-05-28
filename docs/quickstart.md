@@ -1,7 +1,7 @@
 # Quickstart
 
-This quickstart is for open-source users who want to try Devflow Native from
-source before any packaged installer exists.
+This quickstart is for open-source users who want Codex or Claude Code to set
+up Devflow Native for them from source before any packaged installer exists.
 
 Devflow is not a coding agent. It is a repo-local continuity layer around
 Claude Code, Codex, Gemini, shell sessions, and manual review.
@@ -14,7 +14,41 @@ Claude Code, Codex, Gemini, shell sessions, and manual review.
 
 No hosted service is required for the MVP loop.
 
-## Clone And Inspect
+## Recommended: Ask Your Agent To Install It
+
+Open Codex or Claude Code in the repository you want to equip, then paste:
+
+```text
+Install Devflow Native for this repository.
+
+Use https://github.com/Sungblab/devflow-native as the source. Do not replace
+existing project instructions. Inspect the current repo first, install only the
+missing Devflow harness pieces, configure MCP/plugin/hook integration when the
+host supports it, verify the result, and tell me exactly whether I need to
+restart Codex or Claude Code.
+
+Expected verification:
+- Devflow CLI help works.
+- Devflow doctor/status work for this repo.
+- Devflow harness health is ok, or the remaining host limitation is explicit.
+- Existing AGENTS.md, CLAUDE.md, README, tests, and project rules are preserved.
+```
+
+The intended user flow is:
+
+```text
+User asks Codex or Claude Code to install Devflow
+  -> the agent inspects the target repo
+  -> the agent installs the local Devflow harness
+  -> the agent verifies CLI, MCP, plugin, hook, and review guard health
+  -> the user restarts Codex or Claude Code if the host requires a reload
+  -> future sessions receive compact Devflow context automatically
+```
+
+The commands below are mainly for the installing agent, debugging, or users who
+prefer to inspect each step manually.
+
+## Manual Clone And Inspect
 
 ```powershell
 git clone https://github.com/Sungblab/devflow-native.git
@@ -34,7 +68,7 @@ The `doctor` command shows local shell, path, and tool assumptions that an agent
 session should respect. The `status --simple` command shows the current branch,
 changed files, attached sessions, latest handoff, and recommended next check.
 
-## Try It In Another Repo
+## Manual Setup In Another Repo
 
 Use a disposable or existing local repo:
 
@@ -100,4 +134,3 @@ docs.
 - Devflow records and verifies workflow state; it does not run autonomous
   coding work by itself.
 - Research notes and evaluation fixtures live in a separate private repository.
-

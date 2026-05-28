@@ -43,6 +43,30 @@ usable by the next agent session.
 
 The primary surface is the repo-local plugin at `plugins/devflow`.
 
+Devflow is meant to be installed by the coding agent you already use. A
+maintainer should be able to paste one bootstrap prompt into Codex or Claude
+Code, let that agent clone or inspect Devflow, install the repo-local harness,
+verify MCP/plugin/hook wiring, and then restart the agent host with Devflow
+context active.
+
+Copy this into Codex or Claude Code from the repository you want to equip:
+
+```text
+Install Devflow Native for this repository.
+
+Use https://github.com/Sungblab/devflow-native as the source. Do not replace
+existing project instructions. Inspect the current repo first, install only the
+missing Devflow harness pieces, configure MCP/plugin/hook integration when the
+host supports it, verify the result, and tell me exactly whether I need to
+restart Codex or Claude Code.
+
+Expected verification:
+- Devflow CLI help works.
+- Devflow doctor/status work for this repo.
+- Devflow harness health is ok, or the remaining host limitation is explicit.
+- Existing AGENTS.md, CLAUDE.md, README, tests, and project rules are preserved.
+```
+
 When enabled in Codex or Claude Code, the plugin is expected to:
 
 - load compact `doctor` and `status` context at session start
@@ -74,8 +98,8 @@ Maintainer says "끝내" or "pr ㄱㄱ"
 
 ## Local Engine
 
-The local engine still exposes direct commands for development and fallback
-use:
+The local engine exposes direct commands for the installing agent, development,
+and fallback use:
 
 ```powershell
 node packages/cli/src/index.js --help
