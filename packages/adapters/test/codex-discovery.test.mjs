@@ -12,14 +12,14 @@ import {
 
 test("Codex discovery maps matching session metadata into normalized events", () => {
   const result = discoverCodexSessions({
-    repoPath: "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os",
+    repoPath: "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
     records: [
       {
         id: "019c6e27-e55b-73d1-87d8-4e01f1f75043",
-        cwd: "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os",
+        cwd: "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
         startedAt: "2026-05-16T10:00:00+09:00",
         updatedAt: "2026-05-16T10:42:00+09:00",
-        sourcePath: "C:\\Users\\Sungbin\\.codex\\sessions\\2026\\05\\16\\rollout.jsonl",
+        sourcePath: "C:\\Users\\You\\.codex\\sessions\\2026\\05\\16\\rollout.jsonl",
         hasToolCalls: true,
         hasFileEdits: true,
         changedFiles: ["packages/adapters/src/index.js"],
@@ -43,12 +43,12 @@ test("Codex discovery maps matching session metadata into normalized events", ()
 
 test("Codex discovery keeps uncertain records visible with warnings", () => {
   const result = discoverCodexSessions({
-    repoPath: "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os",
+    repoPath: "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
     records: [
       {
         id: "uncertain",
         cwd: null,
-        sourcePath: "C:\\Users\\Sungbin\\.codex\\sessions\\unknown.jsonl",
+        sourcePath: "C:\\Users\\You\\.codex\\sessions\\unknown.jsonl",
       },
     ],
   });
@@ -86,7 +86,7 @@ test("Codex JSONL parser extracts safe metadata from a synthetic fixture", () =>
       type: "session_meta",
       payload: {
         id: "019c7714-3b77-74d1-9866-e1f484aae2ab",
-        cwd: "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os",
+        cwd: "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
         timestamp: "2026-05-16T11:00:00+09:00",
       },
     }),
@@ -102,11 +102,11 @@ test("Codex JSONL parser extracts safe metadata from a synthetic fixture", () =>
   ].join("\n");
 
   const record = parseCodexSessionJsonl(content, {
-    sourcePath: "C:\\Users\\Sungbin\\.codex\\sessions\\fixture.jsonl",
+    sourcePath: "C:\\Users\\You\\.codex\\sessions\\fixture.jsonl",
   });
 
   assert.equal(record.id, "019c7714-3b77-74d1-9866-e1f484aae2ab");
-  assert.equal(record.cwd, "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os");
+  assert.equal(record.cwd, "C:\\Users\\You\\Documents\\GitHub\\devflow-demo");
   assert.equal(record.startedAt, "2026-05-16T11:00:00+09:00");
   assert.equal(record.updatedAt, "2026-05-16T11:00:00+09:00");
   assert.equal(record.hasToolCalls, true);

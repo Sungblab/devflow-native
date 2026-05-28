@@ -1,6 +1,6 @@
 # Testing Strategy
 
-Solo Devflow OS uses small local gates first. Every implementation slice should
+Devflow Native uses small local gates first. Every implementation slice should
 record the commands that prove the changed contract, CLI path, MCP handler, or
 documentation surface still works.
 

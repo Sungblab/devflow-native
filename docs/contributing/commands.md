@@ -353,7 +353,7 @@ Reads current project state.
 Example:
 
 ```powershell
-devflow status --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --profile standard --platform powershell --json
+devflow status --repo C:\Projects\devflow-demo --profile standard --platform powershell --json
 ```
 
 Beginner-friendly renderer:
@@ -408,7 +408,7 @@ JSON output:
     "agent": "Codex"
   },
   "repo": {
-    "absolutePath": "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os",
+    "absolutePath": "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
     "root": ".",
     "branch": "main",
     "head": null,
@@ -830,7 +830,7 @@ Discovers Codex sessions from an explicitly supplied Codex home directory.
 Example:
 
 ```powershell
-devflow sessions codex --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --codex-home C:\Users\Sungbin\.codex --json
+devflow sessions codex --repo C:\Projects\devflow-demo --codex-home C:\Users\You\.codex --json
 ```
 
 The command composes the adapter helpers:
@@ -901,7 +901,7 @@ Writes an approved attach-plan proposal as a `session.attached` event.
 Example:
 
 ```powershell
-devflow sessions attach --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --input .devflow/attach-plan.json --session high-confidence --confirm --json
+devflow sessions attach --repo C:\Projects\devflow-demo --input .devflow/attach-plan.json --session high-confidence --confirm --json
 ```
 
 Inputs:
@@ -937,10 +937,10 @@ For copy-paste filter combinations, see
 Example:
 
 ```powershell
-devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --json
-devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --agent Codex --work phase-6-session-import --json
-devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --work phase-6-session-import --since 2026-05-15T12:00:00.000Z --limit 1
-devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --sort observedAt:desc --limit 5
+devflow sessions list --repo C:\Projects\devflow-demo --json
+devflow sessions list --repo C:\Projects\devflow-demo --agent Codex --work phase-6-session-import --json
+devflow sessions list --repo C:\Projects\devflow-demo --work phase-6-session-import --since 2026-05-15T12:00:00.000Z --limit 1
+devflow sessions list --repo C:\Projects\devflow-demo --sort observedAt:desc --limit 5
 ```
 
 Outputs:
@@ -978,7 +978,7 @@ Records a manual or external session note as local session evidence.
 Example:
 
 ```powershell
-devflow sessions note --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --work phase-6-session-import --agent manual --summary "Reviewed local session context outside an agent transcript." --json
+devflow sessions note --repo C:\Projects\devflow-demo --work phase-6-session-import --agent manual --summary "Reviewed local session context outside an agent transcript." --json
 ```
 
 Inputs:
@@ -1005,7 +1005,7 @@ running commands.
 Example:
 
 ```powershell
-devflow doctor --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --platform windows-powershell --json
+devflow doctor --repo C:\Projects\devflow-demo --platform windows-powershell --json
 ```
 
 Inputs:

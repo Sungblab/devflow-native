@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://solo-devflow-os.local/schemas/gate-evidence.schema.json",
+  "$id": "https://devflow-native.local/schemas/gate-evidence.schema.json",
   "title": "Devflow Gate Evidence",
   "type": "object",
   "additionalProperties": false,

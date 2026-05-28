@@ -1,6 +1,6 @@
 ---
 name: rewrite
-description: Rewrite a vague maintainer request into an agent-ready Solo Devflow OS prompt using current project context.
+description: Rewrite a vague maintainer request into an agent-ready Devflow Native prompt using current project context.
 ---
 
 # Devflow Rewrite

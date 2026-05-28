@@ -65,7 +65,7 @@ function emptyTestState() {
 test("status summary captures repo, dirty files, gates, and prompt recommendation", () => {
   const summary = createStatusSummary({
     repo: {
-      absolutePath: "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os",
+      absolutePath: "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
       branch: "main",
       head: "abc123",
     },
@@ -172,13 +172,13 @@ test("finish summary records evidence, skipped checks, risks, and next-session p
       id: "mvp-loop",
       title: "MVP status-finish-next loop",
     },
-    intent: "Start the first useful Solo Devflow OS loop.",
+    intent: "Start the first useful Devflow Native loop.",
     changedFiles: [{ path: "packages/core/src/index.js", status: "added" }],
     gates: [{ id: "unit", command: "npm test", status: "passed" }],
     skipped: [{ id: "artifact-smoke", reason: "No artifact view exists in this slice." }],
     risks: [{ severity: "low", message: "No persistent SQLite store yet." }],
     nextTask: "Add file-backed .devflow state persistence.",
-    nextPrompt: "Continue Solo Devflow OS by adding file-backed state persistence.",
+    nextPrompt: "Continue Devflow Native by adding file-backed state persistence.",
   });
 
   assert.equal(summary.command, "finish");
@@ -370,7 +370,7 @@ test("next prompt includes objective, changed files, evidence, risks, and next t
 test("prompt rewrite turns vague intent into agent-ready requirements", () => {
   const rewrite = createPromptRewrite({
     request: "알아서 다음 구현 계속해",
-    context: "Solo Devflow OS roadmap has Phase 7 remaining prompt rewrite helper.",
+    context: "Devflow Native roadmap has Phase 7 remaining prompt rewrite helper.",
   });
 
   assert.equal(rewrite.schemaVersion, "0.1");
@@ -1503,7 +1503,7 @@ test("term explanation translates beginner-facing development terms", () => {
 test("split plan creates disjoint worktree sessions with prompts and commands", () => {
   const plan = createSplitPlan({
     runId: "2026-05-16-devflow-next",
-    goal: "Continue Solo Devflow OS MCP work.",
+    goal: "Continue Devflow Native MCP work.",
     sessionCount: 2,
     profile: "standard",
     platform: "windows-powershell",
@@ -1959,7 +1959,7 @@ test("configured gate runner records failed command evidence", async () => {
 test("doctor summary renders platform rules and repeated mistake memory", () => {
   const summary = createDoctorSummary({
     repo: {
-      absolutePath: "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os",
+      absolutePath: "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
     },
     platform: {
       name: "windows-powershell",

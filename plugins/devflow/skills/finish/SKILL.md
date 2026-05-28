@@ -1,6 +1,6 @@
 ---
 name: finish
-description: Use when finishing a Solo Devflow OS task from Codex; records evidence, checks documentation impact, respects Codex goal state, and asks the maintainer for commit/PR/continue direction.
+description: Use when finishing a Devflow Native task from Codex; records evidence, checks documentation impact, respects Codex goal state, and asks the maintainer for commit/PR/continue direction.
 ---
 
 # Devflow Finish

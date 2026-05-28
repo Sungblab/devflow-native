@@ -189,7 +189,7 @@ export function createDoctorSummary(input = {}) {
 
 export function createNextPrompt(input) {
   const lines = [
-    input.objective ?? "Continue Solo Devflow OS from the latest handoff.",
+    input.objective ?? "Continue Devflow Native from the latest handoff.",
     "",
     "Changed files:",
     ...formatList(input.changedFiles ?? []),
@@ -483,7 +483,7 @@ export function createInitPlan(input = {}) {
       content: [
         "# Project Contract",
         "",
-        "This project is managed with Solo Devflow OS.",
+        "This project is managed with Devflow Native.",
         "",
         "## Read First",
         "",
@@ -1362,7 +1362,7 @@ export function createSplitPlan(input = {}) {
     createSplitSession({
       task,
       index,
-      goal: input.goal ?? "Continue Solo Devflow OS from the latest project state.",
+      goal: input.goal ?? "Continue Devflow Native from the latest project state.",
       profileName,
       platform,
       baseRef: base.ref,
@@ -1374,7 +1374,7 @@ export function createSplitPlan(input = {}) {
     schemaVersion: "0.1",
     command: "split",
     runId: input.runId ?? createRunId(input.goal),
-    goal: input.goal ?? "Continue Solo Devflow OS from the latest project state.",
+    goal: input.goal ?? "Continue Devflow Native from the latest project state.",
     profile: {
       name: profileName,
       requiredRuntime: false,
@@ -3180,7 +3180,7 @@ function inferPromptIntent(request, context) {
     return "Close the current work with evidence, risks, and a next-session handoff.";
   }
 
-  return "Continue the next safe Solo Devflow OS implementation slice from current repo state.";
+  return "Continue the next safe Devflow Native implementation slice from current repo state.";
 }
 
 const glossary = {
@@ -3338,7 +3338,7 @@ function createWorktreeCommand(id, branch, worktreePath, baseRef) {
 
 function createSplitPrompt(input) {
   const lines = [
-    `You are working on ${input.id} for Solo Devflow OS.`,
+    `You are working on ${input.id} for Devflow Native.`,
     `Role: ${input.role}.`,
     `Goal: ${input.goal}`,
     `Profile: ${input.profileName}.`,

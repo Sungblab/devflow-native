@@ -73,7 +73,7 @@ but wants to keep growing a project instead of throwing prototypes away. This
 user may not know words such as sidebar, toast notification, modal, route,
 state management, middleware, or responsive layout.
 
-Solo Devflow OS should not become a general coding course. The beginner value is
+Devflow Native should not become a general coding course. The beginner value is
 translation at the point of work:
 
 - explain development and UI terms that appear in agent output
@@ -201,7 +201,7 @@ Idea
 
 ## Contract-First Sliced Execution
 
-Solo Devflow OS should support a contract-first, sliced execution workflow.
+Devflow Native should support a contract-first, sliced execution workflow.
 This is neither classic waterfall nor unconstrained vibe coding.
 
 The operating model:
@@ -266,7 +266,7 @@ assumption in the spec, plan, event log, or handoff, and continue.
 
 ## Competitive Position
 
-Solo Devflow OS should not compete primarily as a multi-agent IDE or autonomous
+Devflow Native should not compete primarily as a multi-agent IDE or autonomous
 ticket-to-PR runner. That space already has tools focused on launching,
 streaming, and supervising agents.
 

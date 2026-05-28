@@ -106,7 +106,7 @@ test("repo-local plugin hooks emit compact context for agent sessions", async ()
   const userPrompt = await runHook("plugins/devflow/hooks/user-prompt-submit.mjs", {
     hook_event_name: "UserPromptSubmit",
     cwd: process.cwd(),
-    prompt: "ㄱㄱ",
+    prompt: "continue",
   });
   const stop = await runHook("plugins/devflow/hooks/stop.mjs", {
     hook_event_name: "Stop",

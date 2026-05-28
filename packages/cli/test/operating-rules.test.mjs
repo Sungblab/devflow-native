@@ -31,5 +31,5 @@ test("agent guide and finish skill encode end-of-answer operating rules", async 
   assert.match(mistakesExample, /framework-major-version-drift/);
   assert.match(mistakesExample, /shell-file-io-friction/);
   assert.doesNotMatch(mistakesExample, /tailwind/i);
-  assert.doesNotMatch(mistakesExample, /Sungbin/);
+  assert.doesNotMatch(mistakesExample, /You/);
 });

@@ -52,7 +52,7 @@ Normalized session discovery output:
   "sessionId": "019c6e27-e55b-73d1-87d8-4e01f1f75043",
   "agent": "Codex",
   "project": {
-    "absolutePath": "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os",
+    "absolutePath": "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
     "confidence": "high"
   },
   "startedAt": "2026-05-15T10:00:00+09:00",

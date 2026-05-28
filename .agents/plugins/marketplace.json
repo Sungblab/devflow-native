@@ -1,7 +1,7 @@
 {
-  "name": "solo-devflow-os-local",
+  "name": "devflow-native-local",
   "interface": {
-    "displayName": "Solo Devflow OS Local"
+    "displayName": "Devflow Native Local"
   },
   "plugins": [
     {

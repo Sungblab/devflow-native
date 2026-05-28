@@ -1,6 +1,6 @@
 ---
 name: devflow-finish
-description: Use at the end of a Solo Devflow OS task to record changed files, verification evidence, unresolved risks, PR or review recommendation, and the next-session prompt.
+description: Use at the end of a Devflow Native task to record changed files, verification evidence, unresolved risks, PR or review recommendation, and the next-session prompt.
 ---
 
 # Devflow Finish

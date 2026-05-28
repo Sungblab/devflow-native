@@ -1,6 +1,6 @@
 ---
 name: start
-description: Use when starting or resuming work in a Solo Devflow OS project from Codex; loads local execution rules, repeated-mistake memory, project state, and optional workflow-profile context before editing.
+description: Use when starting or resuming work in a Devflow Native project from Codex; loads local execution rules, repeated-mistake memory, project state, and optional workflow-profile context before editing.
 ---
 
 # Devflow Start

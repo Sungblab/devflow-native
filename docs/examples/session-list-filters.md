@@ -9,7 +9,7 @@ from `.devflow/state/events.jsonl`.
 Use this when resuming a project and you only need the latest local evidence:
 
 ```powershell
-devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --sort observedAt:desc --limit 5
+devflow sessions list --repo C:\Projects\devflow-demo --sort observedAt:desc --limit 5
 ```
 
 Expected text shape:
@@ -33,7 +33,7 @@ Use this when a handoff references a specific work item and you need only its
 recorded sessions:
 
 ```powershell
-devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --work phase-6-session-import --json
+devflow sessions list --repo C:\Projects\devflow-demo --work phase-6-session-import --json
 ```
 
 Important JSON fields:
@@ -55,7 +55,7 @@ Use this when filtering a long project history down to a single agent after a
 known review, merge, or handoff timestamp:
 
 ```powershell
-devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --agent Codex --since 2026-05-16T00:00:00.000Z --sort observedAt:asc --json
+devflow sessions list --repo C:\Projects\devflow-demo --agent Codex --since 2026-05-16T00:00:00.000Z --sort observedAt:asc --json
 ```
 
 This orders matches from oldest to newest after applying the agent and time
@@ -67,7 +67,7 @@ Use this when the maintainer asks what happened most recently for one work item
 and one agent:
 
 ```powershell
-devflow sessions list --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --work phase-6-session-import --agent Codex --sort observedAt:desc --limit 1 --json
+devflow sessions list --repo C:\Projects\devflow-demo --work phase-6-session-import --agent Codex --sort observedAt:desc --limit 1 --json
 ```
 
 Filter order:
@@ -87,7 +87,7 @@ In an MCP host, call `devflow.sessions_list` with equivalent arguments:
 
 ```json
 {
-  "repo": "C:\\Users\\Sungbin\\Documents\\GitHub\\solo-devflow-os",
+  "repo": "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
   "work": "phase-6-session-import",
   "agent": "Codex",
   "sort": "observedAt:desc",

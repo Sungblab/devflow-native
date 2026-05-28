@@ -1,6 +1,6 @@
 ---
 name: sessions
-description: Discover Codex sessions and produce confirmation-gated attach plans for a Solo Devflow OS repo through read-only CLI or MCP probes.
+description: Discover Codex sessions and produce confirmation-gated attach plans for a Devflow Native repo through read-only CLI or MCP probes.
 ---
 
 # Devflow Sessions

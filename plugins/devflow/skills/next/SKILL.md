@@ -1,6 +1,6 @@
 ---
 name: next
-description: Generate the next Solo Devflow OS session prompt from latest status, changed files, evidence commands, risks, and the requested next task.
+description: Generate the next Devflow Native session prompt from latest status, changed files, evidence commands, risks, and the requested next task.
 ---
 
 # Devflow Next

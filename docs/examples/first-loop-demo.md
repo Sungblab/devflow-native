@@ -1,6 +1,6 @@
 # First Loop Demo
 
-This example shows the smallest useful Solo Devflow OS loop. It is designed for
+This example shows the smallest useful Devflow Native loop. It is designed for
 the current local CLI prototype, before hosted sync or generated artifacts exist.
 
 ## Goal
@@ -37,7 +37,7 @@ Then generate the prompt for the next session:
 
 ```powershell
 node packages/cli/src/index.js prompt next `
-  --objective "Continue Solo Devflow OS from the recorded first loop." `
+  --objective "Continue Devflow Native from the recorded first loop." `
   --command "npm run docs:check" `
   --risk "No generated artifact demo exists yet." `
   --next-task "Add a captured example of finish output and next prompt."
@@ -70,7 +70,7 @@ The next prompt renderer turns the same local context into a copy-paste
 handoff:
 
 ```text
-Continue Solo Devflow OS after the README first-loop docs slice.
+Continue Devflow Native after the README first-loop docs slice.
 
 Changed files:
 - README.md
@@ -117,7 +117,7 @@ resume without trusting chat memory alone.
 In general, the next prompt should be copy-pasteable into an agent host:
 
 ```text
-Objective: Continue Solo Devflow OS from the recorded first loop.
+Objective: Continue Devflow Native from the recorded first loop.
 
 Changed files:
 - README.md

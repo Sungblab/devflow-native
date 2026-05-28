@@ -1,6 +1,6 @@
 # Architecture Maps
 
-These maps provide the visual entry point for Solo Devflow OS. Keep them as
+These maps provide the visual entry point for Devflow Native. Keep them as
 Mermaid Markdown so they render in GitHub and VS Code Markdown Preview.
 
 ## Maps

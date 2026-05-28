@@ -57,7 +57,7 @@ devflow harness health
 
 - Records active work, agent/manual sessions, gate evidence, risks, and handoffs locally.
 - Installs and checks repo-local plugin, hook, and MCP harnesses for Codex and Claude Code.
-- Connects short maintainer prompts such as `ㄱㄱ`, `이어가`, `끝내`, or `pr ㄱㄱ` to the right workflow.
+- Connects short prompts such as `continue`, `next`, `finish`, or `review` to the right workflow.
 - Checks gate and review evidence before a task is claimed done.
 - Maintains a handoff prompt so the next session can continue immediately.
 
@@ -74,11 +74,11 @@ devflow harness health
 Codex or Claude Code opens the repo
   -> Devflow session-start hook injects compact repo context
 
-Maintainer says "ㄱㄱ" or "이어가"
+Maintainer says "continue" or "next"
   -> Devflow prompt hook classifies workflow intent
   -> the agent starts from status, active work, and handoff state
 
-Maintainer says "끝내" or "pr ㄱㄱ"
+Maintainer says "finish" or "review"
   -> Devflow finish flow checks docs impact, gates, risks, and next prompt
   -> completion evidence is recorded in .devflow/state/events.jsonl
 ```

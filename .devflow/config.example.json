@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "projectName": "solo-devflow-os",
+  "projectName": "devflow-demo",
   "defaultProfile": "standard",
   "defaultPlatform": "windows-powershell",
   "docsRouter": "docs/README.md",

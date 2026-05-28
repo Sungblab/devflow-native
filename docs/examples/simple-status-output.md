@@ -8,9 +8,9 @@ human-readable renderer over the same local state used by `devflow status
 ## Command
 
 ```powershell
-devflow status --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --simple
-devflow status --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --work phase-6-session-import --simple
-devflow status --repo C:\Users\Sungbin\Documents\GitHub\solo-devflow-os --agent Codex --simple
+devflow status --repo C:\Projects\devflow-demo --simple
+devflow status --repo C:\Projects\devflow-demo --work phase-6-session-import --simple
+devflow status --repo C:\Projects\devflow-demo --agent Codex --simple
 ```
 
 ## Example Output

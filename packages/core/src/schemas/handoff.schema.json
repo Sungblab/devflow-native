@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://solo-devflow-os.local/schemas/handoff.schema.json",
+  "$id": "https://devflow-native.local/schemas/handoff.schema.json",
   "title": "Devflow Structured Handoff",
   "type": "object",
   "additionalProperties": false,

@@ -71,7 +71,7 @@ Use external projects as references carefully:
   likely to have changed, verify it from the repo or current primary docs.
 - Minimize maintainer questions. Ask only when local context cannot answer the
   question and a wrong assumption would create real risk.
-- When the maintainer says to handle it autonomously, "알아서", "ㄱㄱ", or similar,
+- When the maintainer says to handle it autonomously, "continue", "finish this", or similar,
   choose the next concrete action from repo state, product intent, and risk
   level. Do not stop after the literal smallest interpretation of the prompt.
 

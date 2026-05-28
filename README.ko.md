@@ -58,7 +58,7 @@ devflow harness health
 
 - 현재 작업, agent/manual session, gate evidence, risk, handoff를 로컬에 기록
 - Codex와 Claude Code용 repo-local plugin/hook/MCP harness를 설치 및 점검
-- `ㄱㄱ`, `이어가`, `끝내`, `pr ㄱㄱ` 같은 짧은 maintainer prompt를 다음 작업 흐름으로 연결
+- `continue`, `next`, `finish`, `review` 같은 짧은 지시를 다음 작업 흐름으로 연결
 - 검증 없는 완료 선언을 막기 위해 gate evidence와 review evidence를 확인
 - 다음 세션이 바로 이어받을 수 있는 handoff prompt를 유지
 
@@ -75,11 +75,11 @@ devflow harness health
 Codex 또는 Claude Code가 저장소를 연다
   -> Devflow session-start hook이 compact repo context를 주입한다
 
-사용자가 "ㄱㄱ" 또는 "이어가"라고 말한다
+사용자가 "continue" 또는 "next"라고 말한다
   -> Devflow prompt hook이 workflow intent를 분류한다
   -> agent가 status, active work, handoff state를 읽고 시작한다
 
-사용자가 "끝내" 또는 "pr ㄱㄱ"라고 말한다
+사용자가 "finish" 또는 "review"라고 말한다
   -> Devflow finish flow가 docs impact, gates, risks, next prompt를 확인한다
   -> completion evidence가 .devflow/state/events.jsonl에 기록된다
 ```

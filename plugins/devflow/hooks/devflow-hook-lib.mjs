@@ -65,13 +65,13 @@ export function readLatestHandoffPrompt(repoPath, maxLength = 2200) {
 
 export function detectIntent(prompt = "") {
   const normalized = prompt.trim().toLowerCase();
-  if (/^(ㄱㄱ|고|go|이어가|계속|다음|알아서)/i.test(normalized)) {
+  if (/^(continue|next|go|proceed|resume|계속|다음)/i.test(normalized)) {
     return "continue_or_start";
   }
-  if (/(끝내|마무리|finish|done|완료)/i.test(normalized)) {
+  if (/(finish|done|complete|wrap up|마무리|완료)/i.test(normalized)) {
     return "finish";
   }
-  if (/(pr\s*ㄱㄱ|pr|pull request|리뷰)/i.test(normalized)) {
+  if (/(review|pull request|pr|리뷰)/i.test(normalized)) {
     return "review_or_pr";
   }
   if (/(시각화|html|artifact|리포트|보드)/i.test(normalized)) {

@@ -1,9 +1,9 @@
 {
   "name": "devflow",
-  "description": "Solo Devflow OS continuity skills for project truth, evidence, handoffs, and local execution rules.",
+  "description": "Devflow Native continuity skills for project truth, evidence, handoffs, and local execution rules.",
   "version": "0.1.0",
   "author": {
-    "name": "Solo Devflow OS"
+    "name": "Devflow Native"
   },
   "license": "MIT",
   "keywords": [

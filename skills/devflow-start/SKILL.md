@@ -1,6 +1,6 @@
 ---
 name: devflow-start
-description: Use when starting or resuming work in a Solo Devflow OS managed project; reads project docs, git state, active work, gates, and handoff context before choosing the next slice.
+description: Use when starting or resuming work in a Devflow Native managed project; reads project docs, git state, active work, gates, and handoff context before choosing the next slice.
 ---
 
 # Devflow Start

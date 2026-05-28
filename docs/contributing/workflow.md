@@ -1,6 +1,6 @@
 # Development Workflow
 
-Solo Devflow OS should dogfood its own product model.
+Devflow Native should dogfood its own product model.
 
 ## Default Loop
 
