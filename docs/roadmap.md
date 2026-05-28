@@ -6,7 +6,6 @@ Deliverables:
 
 - product plan
 - architecture
-- research notes
 - roadmap
 - initial command contract
 - plugin-first information architecture
@@ -46,30 +45,11 @@ Exit criteria:
 - the product's first daily loop works from plugin skills, CLI, or future MCP
   tools without a dashboard or hosted sync
 
-## Phase 1R: Research Contract And Harness Skeleton
+## Private Research Track
 
-Build:
-
-- research framing docs under `docs/research/`
-- structured handoff and gate-evidence JSON schemas in `packages/core`
-- baseline condition templates under `experiments/conditions/`
-- initial experiment harness README and protocol notes
-
-Exit criteria:
-
-- the product/research split is clear to an external reader
-- structured handoff and gate evidence have stable fields before implementation
-  hardens `devflow finish`
-- experiment conditions can compare no handoff, raw transcript,
-  token-matched summary, artifact-only, structured handoff, gate evidence only,
-  structured handoff plus gate evidence, and human oracle handoff
-
-Current implementation note: research docs, schemas, scorer skeletons, and
-condition templates exist. The next research slice is
-[`task-001` A-H pilot inputs](./research/ko/next-development-slice.md), which
-should add canonical interrupted snapshot inputs, hidden evaluator metadata,
-observable-only provenance, and leakage tests before any CLI/MCP experiment
-automation.
+Active research notes, reports, paper drafts, pilot fixtures, and scoring
+scripts are maintained outside this public repository in the private
+`devflow-native-research` repository. This public roadmap tracks product work.
 
 ## Phase 2: Repo Scaffold And Health
 

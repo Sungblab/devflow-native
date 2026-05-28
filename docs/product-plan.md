@@ -298,20 +298,13 @@ The product should own:
 This allows Devflow Native to integrate with Codex, Claude Code, Gemini,
 Hermes, Orca, Lanes, RCFlow, and future tools instead of trying to replace them.
 
-## Research Position
+## Research Boundary
 
-The same local state can support a focused research harness. The research
-question is not whether a general agent memory system is useful. It is whether
-structured same-task handoff plus deterministic gate evidence improves
-multi-session coding-agent continuation.
+The same local state can support separate evaluation work, but active research
+notes, paper drafts, pilot fixtures, scoring scripts, and non-public analysis
+belong in the private `devflow-native-research` repository. The public product
+repo should keep reusable product contracts and public-facing documentation.
 
-Research surfaces should stay separate from the product core:
-
-- `packages/core` owns the product contracts for work items, events, gates, and
-  handoffs.
-- `docs/research/` owns research questions, baselines, metrics, and rubrics.
-- `experiments/` owns condition templates, fixtures, run records, and later
-  scoring scripts.
-
-The source of truth remains structured `.devflow` state and append-only event
-logs. HTML artifacts are optional views for humans, not evidence records.
+`packages/core` owns the product contracts for work items, events, gates, and
+handoffs. Private research harnesses may consume those contracts, but product
+code should not depend on private experiment fixtures or scoring scripts.

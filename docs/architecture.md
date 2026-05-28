@@ -61,10 +61,6 @@ packages/adapters
   Codex, Claude, Gemini, Copilot, OpenCode, Goose, Aider, GitHub,
   generic shell, test output parsers
 
-experiments
-  research harness fixtures, condition templates, run/result schemas, and
-  scoring scripts over recorded Devflow state
-
 templates
   AGENTS.md, docs index, architecture maps, testing strategy, health scripts
 ```
@@ -276,12 +272,12 @@ HTML artifacts from structured `.devflow` state:
 - timeline views for session, gate, review, and handoff events
 - handoff views for next-session prompts and unresolved risks
 
-## Research Harness Boundary
+## Research Boundary
 
-The research harness evaluates Devflow state, but it does not replace the
-product model. Experiment fixtures, conditions, and scoring logic live under
-`experiments/` and consume the same handoff and gate-evidence contracts used by
-the CLI and MCP layers. Product code should not depend on experiment runners.
+Private research harnesses may evaluate Devflow state, but they do not replace
+the product model. Research notes, experiment fixtures, conditions, scoring
+logic, and non-public reports live in the private `devflow-native-research`
+repository. Product code should not depend on private experiment runners.
 
 Generated artifacts are views. They must not become the source of truth, and
 agents should not read full HTML back into context by default.

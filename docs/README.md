@@ -11,20 +11,7 @@ This is the documentation router for Devflow Native.
 | System structure and technical boundaries | [architecture.md](./architecture.md) |
 | Agent and platform adapter strategy | [architecture/adapters.md](./architecture/adapters.md) |
 | MCP handler package | [../packages/mcp/README.md](../packages/mcp/README.md) |
-| Research harness framing | [research/README.md](./research/README.md) |
-| Korean research index | [research/ko/README.md](./research/ko/README.md) |
-| Korean research primer | [research/ko/primer.md](./research/ko/primer.md) |
-| Korean paper preview | [research/ko/paper-preview.html](./research/ko/paper-preview.html) |
-| Research decision log | [research/ko/decision-log.md](./research/ko/decision-log.md) |
-| Contract-first sliced execution | [research/ko/contract-first-sliced-execution.md](./research/ko/contract-first-sliced-execution.md) |
-| Research related-work map | [research/related-work.md](./research/related-work.md) |
-| Research paper outline | [research/paper-outline.md](./research/paper-outline.md) |
-| Long-context and cold-start cost notes | [research/ko/long-context-and-cost.md](./research/ko/long-context-and-cost.md) |
-| 2026-05-26 research refresh | [research/ko/research-refresh-2026-05-26.md](./research/ko/research-refresh-2026-05-26.md) |
-| Existing tool and related-work notes | [research.md](./research.md) |
-| Research experiment design | [research/experiment-design.md](./research/experiment-design.md) |
-| Research metrics and rubrics | [research/metrics.md](./research/metrics.md) |
-| Next research development slice | [research/ko/next-development-slice.md](./research/ko/next-development-slice.md) |
+| Research boundary | [research/README.md](./research/README.md) |
 | Build order | [roadmap.md](./roadmap.md) |
 | Development workflow for this repo | [contributing/workflow.md](./contributing/workflow.md) |
 | Context and handoff rules | [contributing/context-rules.md](./contributing/context-rules.md) |

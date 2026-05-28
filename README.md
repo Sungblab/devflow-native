@@ -15,8 +15,6 @@ off work without losing context.
   CLI and MCP contracts.
 - A repo-local record of what changed, what was verified, what is still risky,
   and what the next session should do.
-- A research harness for measuring whether structured handoff plus gate
-  evidence improves multi-session coding-agent reliability.
 
 ## What It Is Not
 
@@ -111,27 +109,17 @@ The durable source of truth is structured `.devflow` state and append-only
 events. CLI, MCP, and plugin skills are different ways to read or write that
 same state.
 
-## Research Framing
+## Research Boundary
 
-Devflow Native can also be used as a research harness for studying
-multi-session AI coding agents.
-
-The core research question is:
-
-> Does structured workflow-state handoff with gate evidence improve
-> continuation success and reduce false completion compared with no handoff,
-> raw transcript handoff, token-matched free-form summary, static repository
-> context, gate-only evidence, and human oracle handoff?
-
-The product remains a local-first continuity layer. The research harness
-evaluates whether that layer measurably improves coding-agent reliability at
-session boundaries.
+Research notes, paper drafts, pilot fixtures, and non-public evaluation data are
+kept in a separate private repository. This public repository contains the
+product implementation and public product documentation only.
 
 ## First-Class Concepts
 
 - Project contract: durable repo rules, architecture boundaries, docs index,
   test strategy, and quality gates.
-- Work item: a feature, fix, audit, cleanup, research task, or release slice.
+- Work item: a feature, fix, audit, cleanup, or release slice.
 - Session: a Codex, Claude, Gemini, or manual terminal session attached to a
   work item.
 - Gate: a command or external review that proves a slice is ready.
@@ -143,8 +131,7 @@ session boundaries.
 
 - [Product Plan](docs/product-plan.md)
 - [Architecture](docs/architecture.md)
-- [Research Harness](docs/research/README.md)
-- [Related Work Notes](docs/research.md)
+- [Research Boundary](docs/research/README.md)
 - [Roadmap](docs/roadmap.md)
 
 ## Repository Structure
@@ -155,8 +142,7 @@ packages/cli      terminal command surface over core contracts
 packages/mcp      MCP handler and stdio transport over the same contracts
 packages/adapters agent/session history adapters
 plugins/devflow   repo-local Codex and Claude Code plugin drafts
-docs              product, architecture, roadmap, examples, research notes
-experiments       research conditions, schemas, scorer skeletons, fixtures
+docs              product, architecture, roadmap, examples, and public notes
 templates         future project scaffold templates
 ```
 
@@ -183,7 +169,6 @@ gates, remaining risks, a structured handoff, and the next-session prompt.
 
 ## Status
 
-This repository is still an MVP and research prototype. The local CLI, MCP
-handler layer, repo-local plugin drafts, research docs, schemas, and experiment
-skeleton are present. Richer artifact generation, hosted sync, and automated
-experiment execution are later work.
+This repository is still an MVP. The local CLI, MCP handler layer, and
+repo-local plugin drafts are present. Richer artifact generation, hosted sync,
+and broader adapter coverage are later work.
