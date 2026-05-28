@@ -17,7 +17,7 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   );
   const hooks = JSON.parse(await readFile("plugins/devflow/hooks/hooks.json", "utf8"));
   const mcpConfig = JSON.parse(await readFile("plugins/devflow/.mcp.json", "utf8"));
-  const geminiConfig = JSON.parse(await readFile("templates/gemini/settings.json", "utf8"));
+  const geminiConfig = JSON.parse(await readFile("templates/gemini-mcp/settings.json", "utf8"));
   const startSkill = await readFile("plugins/devflow/skills/start/SKILL.md", "utf8");
   const splitSkill = await readFile("plugins/devflow/skills/split/SKILL.md", "utf8");
   const nextSkill = await readFile("plugins/devflow/skills/next/SKILL.md", "utf8");

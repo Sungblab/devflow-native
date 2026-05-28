@@ -118,7 +118,8 @@ packages/mcp      MCP handler and stdio transport over the same contracts
 packages/adapters agent/session history adapters
 plugins/devflow   repo-local Codex and Claude Code plugin drafts
 docs              product, architecture, roadmap, examples, and public notes
-templates         future project scaffold templates
+templates         optional host config templates, including Gemini CLI MCP
+.devflow          dogfood project contract; runtime state is gitignored
 ```
 
 ### Status
@@ -246,7 +247,8 @@ packages/mcp      MCP handler and stdio transport over the same contracts
 packages/adapters agent/session history adapters
 plugins/devflow   repo-local Codex and Claude Code plugin drafts
 docs              product, architecture, roadmap, examples, and public notes
-templates         future project scaffold templates
+templates         optional host config templates, including Gemini CLI MCP
+.devflow          dogfood project contract; runtime state is gitignored
 ```
 
 ### 현재 상태
