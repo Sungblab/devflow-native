@@ -8,6 +8,31 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
+test("CLI renders first-run help with no arguments", async () => {
+  const { stdout } = await execFileAsync("node", ["packages/cli/src/index.js"]);
+
+  assert.match(stdout, /^Devflow Native$/m);
+  assert.match(stdout, /Try from source:/);
+  assert.match(stdout, /node packages\/cli\/src\/index\.js status --simple/);
+  assert.match(stdout, /Core commands:/);
+});
+
+test("CLI renders help and group help", async () => {
+  const root = await execFileAsync("node", ["packages/cli/src/index.js", "--help"]);
+  assert.match(root.stdout, /Group help:/);
+  assert.match(root.stdout, /devflow harness --help/);
+
+  const group = await execFileAsync("node", ["packages/cli/src/index.js", "harness", "--help"]);
+  assert.match(group.stdout, /^Devflow Native harness commands$/m);
+  assert.match(group.stdout, /devflow harness health/);
+});
+
+test("CLI renders version", async () => {
+  const { stdout } = await execFileAsync("node", ["packages/cli/src/index.js", "--version"]);
+
+  assert.match(stdout, /^devflow 0\.0\.0$/m);
+});
+
 test("CLI status renders JSON contract", async () => {
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",

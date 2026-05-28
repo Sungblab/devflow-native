@@ -54,9 +54,16 @@ import {
 
 const args = process.argv.slice(2);
 const command = args[0];
+const version = "0.0.0";
 
 try {
-  if (command === "init") {
+  if (args.length === 0 || command === "help" || command === "--help" || command === "-h") {
+    renderHelp(command === "help" ? args[1] : undefined);
+  } else if (args[1] === "help" || args[1] === "--help" || args[1] === "-h") {
+    renderHelp(command);
+  } else if (command === "--version" || command === "-v") {
+    process.stdout.write(`devflow ${version}\n`);
+  } else if (command === "init") {
     await renderInit(args.slice(1));
   } else if (command === "health") {
     await renderHealth(args.slice(1));
@@ -780,6 +787,93 @@ function render(summary, asJson) {
   }
 
   process.stdout.write(`${summary.command}: ${summary.schemaVersion}\n`);
+}
+
+function renderHelp(group) {
+  const groups = {
+    harness: [
+      "devflow harness inspect [--json]",
+      "devflow harness plan [--json]",
+      "devflow harness install --confirm [--json]",
+      "devflow harness health [--json]",
+      "devflow harness repair --confirm [--json]",
+    ],
+    work: [
+      "devflow work create --id <id> --title <title> [--json]",
+      "devflow work start <id> [--json]",
+      "devflow work ready <id> [--json]",
+      "devflow work list [--status active|ready|blocked] [--json]",
+    ],
+    gates: ["devflow gates run <gate-id> [--work <id>] [--json]"],
+    review: [
+      "devflow review request --work <id> [--target reviewer]",
+      "devflow review record --work <id> --reviewer <name> --status passed --summary <text> [--json]",
+    ],
+    prompt: [
+      "devflow prompt next [--objective <text>]",
+      "devflow prompt latest [--json]",
+      "devflow prompt rewrite --request <text> [--context <text>] [--json]",
+    ],
+    sessions: [
+      "devflow sessions note --work <id> --summary <text> [--json]",
+      "devflow sessions list [--work <id>] [--agent <name>] [--json]",
+      "devflow sessions codex --codex-home <path> [--json]",
+    ],
+  };
+
+  if (group && groups[group]) {
+    process.stdout.write(
+      [
+        `Devflow Native ${group} commands`,
+        "",
+        ...groups[group],
+        "",
+        "Run `devflow --help` for the full first-run guide.",
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
+
+  process.stdout.write(
+    [
+      "Devflow Native",
+      "",
+      "A local-first workflow companion for AI coding agent sessions.",
+      "",
+      "Try from source:",
+      "  node packages/cli/src/index.js doctor --platform windows-powershell --json",
+      "  node packages/cli/src/index.js status --simple",
+      "  node packages/cli/src/index.js harness health",
+      "",
+      "Core commands:",
+      "  init                 Plan or write a .devflow project scaffold",
+      "  health               Check the project scaffold",
+      "  doctor               Inspect local shell/tooling rules",
+      "  status               Show repo, work, session, gate, and handoff state",
+      "  harness <command>    Inspect/install/verify Codex and Claude harness files",
+      "  work <command>       Create, start, update, ready, block, or list work",
+      "  gates run <id>       Run one configured verification gate",
+      "  review <command>     Request or record review evidence",
+      "  finish               Record finish evidence and next-session prompt",
+      "  prompt <command>     Generate, read, or rewrite handoff prompts",
+      "  sessions <command>   Attach, note, and list session evidence",
+      "  split                Generate parallel worktree/session slices",
+      "  explain <term>       Explain development terms in context",
+      "",
+      "Common options:",
+      "  --repo <path>        Use a repository path other than the current directory",
+      "  --json               Print machine-readable output",
+      "  --help, -h           Show this help",
+      "  --version, -v        Show the CLI version",
+      "",
+      "Group help:",
+      "  devflow harness --help",
+      "  devflow work --help",
+      "  devflow prompt --help",
+      "",
+    ].join("\n"),
+  );
 }
 
 function renderHarnessHealthText(summary) {

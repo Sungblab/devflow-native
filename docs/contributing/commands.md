@@ -122,6 +122,11 @@ appending another line.
 
 ## Shared CLI Rules
 
+- `devflow`, `devflow --help`, and `devflow help` render first-run command
+  guidance instead of failing with an unknown command.
+- `devflow <group> --help` renders group-level examples for command groups
+  such as `harness`, `work`, `prompt`, `sessions`, `review`, and `gates`.
+- `devflow --version` prints the CLI version.
 - Commands default to the current working directory.
 - `--repo <path>` overrides the repository path.
 - `--profile <name>` selects a workflow profile such as `plain`, `standard`,

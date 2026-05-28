@@ -78,6 +78,7 @@ The local engine still exposes direct commands for development and fallback
 use:
 
 ```powershell
+node packages/cli/src/index.js --help
 node packages/cli/src/index.js doctor --platform windows-powershell --json
 node packages/cli/src/index.js status --simple
 node packages/cli/src/index.js finish --json
@@ -129,6 +130,7 @@ product implementation and public product documentation only.
 
 ## Documentation
 
+- [Quickstart](docs/quickstart.md)
 - [Product Plan](docs/product-plan.md)
 - [Architecture](docs/architecture.md)
 - [Research Boundary](docs/research/README.md)
