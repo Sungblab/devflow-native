@@ -1,7 +1,7 @@
 # Quickstart
 
 This quickstart is for open-source users who want Codex or Claude Code to set
-up Devflow Native for them from source before any packaged installer exists.
+up Devflow Native for them.
 
 Devflow is not a coding agent. It is a repo-local continuity layer around
 Claude Code, Codex, Gemini, shell sessions, and manual review.
@@ -49,9 +49,18 @@ User asks Codex or Claude Code to install Devflow
 The commands below are mainly for the installing agent, debugging, or users who
 prefer to inspect each step manually.
 
-## Manual Local Install
+## Manual Install
 
-Before npm publication, use `npm link` from a clone of this repo:
+Use the published npm package:
+
+```powershell
+npm install -g devflow-native
+devflow --help
+devflow --version
+```
+
+For local source development, use `npm link` from a clone of this repo:
+
 
 ```powershell
 git clone https://github.com/Sungblab/devflow-native.git
@@ -68,13 +77,6 @@ builds the npm tarball, installs it into a temporary consumer project, and
 verifies that the packaged binary can render help and version output.
 `publish:check` additionally runs tests, documentation link checks, and
 `npm publish --dry-run` package contents guards.
-
-After npm publication, the intended global install command is:
-
-```powershell
-npm install -g devflow-native
-devflow --help
-```
 
 ## Manual Clone And Inspect
 
@@ -157,8 +159,7 @@ docs.
 
 ## Current Limits
 
-- The MVP is source-first; the package metadata and pack check are present, but
-  the package is not published to npm yet.
+- The MVP package is published to npm as `devflow-native`.
 - Plugin installation still depends on the host tool's local plugin support.
 - Devflow records and verifies workflow state; it does not run autonomous
   coding work by itself.

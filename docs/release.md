@@ -1,7 +1,6 @@
 # Release Checklist
 
-Devflow Native is source-first today, but the package metadata is prepared for
-an npm release as `devflow-native`.
+Devflow Native is published to npm as `devflow-native`.
 
 Do not run the final publish command from an agent session unless the maintainer
 explicitly asks for a real public npm release.
@@ -54,5 +53,3 @@ npm install -g devflow-native
 devflow --help
 devflow --version
 ```
-
-Then update the quickstart to promote the npm install path above `npm link`.
