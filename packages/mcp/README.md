@@ -146,7 +146,7 @@ with status, command, exit code, and stdout/stderr summaries. Hosts can pass
 Run:
 
 ```powershell
-npm run mcp:stdio
+devflow mcp stdio
 ```
 
 The current transport accepts newline-delimited JSON-RPC requests on stdin and
@@ -174,8 +174,8 @@ The repo-local Codex plugin at `plugins/devflow` includes `.mcp.json`:
 {
   "mcpServers": {
     "devflow": {
-      "command": "node",
-      "args": ["packages/mcp/src/stdio.js"]
+      "command": "npx",
+      "args": ["--yes", "devflow-native@latest", "mcp", "stdio"]
     }
   }
 }

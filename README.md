@@ -99,7 +99,7 @@ devflow status --simple
 devflow finish --guided
 devflow prompt latest
 devflow harness health
-npm run mcp:stdio
+devflow mcp stdio
 ```
 
 ## Documentation

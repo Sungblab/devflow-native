@@ -38,8 +38,8 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.match(hooks.hooks.SessionStart[0].hooks[0].command, /session-start\.mjs/);
   assert.match(hooks.hooks.UserPromptSubmit[0].hooks[0].command, /user-prompt-submit\.mjs/);
   assert.match(hooks.hooks.Stop[0].hooks[0].command, /stop\.mjs/);
-  assert.deepEqual(mcpConfig.mcpServers.devflow.command, "node");
-  assert.deepEqual(mcpConfig.mcpServers.devflow.args, ["packages/mcp/src/stdio.js"]);
+  assert.deepEqual(mcpConfig.mcpServers.devflow.command, "npx");
+  assert.deepEqual(mcpConfig.mcpServers.devflow.args, ["--yes", "devflow-native@latest", "mcp", "stdio"]);
 
   assert.deepEqual(marketplace.plugins[0], {
     name: "devflow",

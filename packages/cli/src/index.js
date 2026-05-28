@@ -78,6 +78,8 @@ try {
     await renderHarnessHealth(args.slice(2));
   } else if (command === "harness" && args[1] === "repair") {
     await renderHarnessRepair(args.slice(2));
+  } else if (command === "mcp" && args[1] === "stdio") {
+    await import("../../mcp/src/stdio.js");
   } else if (command === "status") {
     await renderStatus(args.slice(1));
   } else if (command === "explain") {
@@ -829,6 +831,9 @@ function renderHelp(group) {
       "devflow sessions list [--work <id>] [--agent <name>] [--json]",
       "devflow sessions codex --codex-home <path> [--json]",
     ],
+    mcp: [
+      "devflow mcp stdio",
+    ],
   };
 
   if (group && groups[group]) {
@@ -862,6 +867,7 @@ function renderHelp(group) {
       "  doctor               Inspect local shell/tooling rules",
       "  status               Show repo, work, session, gate, and handoff state",
       "  harness <command>    Inspect/install/verify Codex and Claude harness files",
+      "  mcp stdio            Run the Devflow MCP stdio server",
       "  work <command>       Create, start, update, ready, block, or list work",
       "  gates run <id>       Run one configured verification gate",
       "  review <command>     Request or record review evidence",
@@ -879,6 +885,7 @@ function renderHelp(group) {
       "",
       "Group help:",
       "  devflow harness --help",
+      "  devflow mcp --help",
       "  devflow work --help",
       "  devflow prompt --help",
       "",

@@ -35,7 +35,7 @@ npm publish --dry-run --json
 The dry run should identify the package as:
 
 ```text
-devflow-native@0.1.0
+devflow-native@0.1.1
 ```
 
 ## Publish

@@ -30,7 +30,7 @@ test("CLI renders help and group help", async () => {
 test("CLI renders version", async () => {
   const { stdout } = await execFileAsync("node", ["packages/cli/src/index.js", "--version"]);
 
-  assert.match(stdout, /^devflow 0\.1\.0$/m);
+  assert.match(stdout, /^devflow \d+\.\d+\.\d+$/m);
 });
 
 test("CLI status renders JSON contract", async () => {

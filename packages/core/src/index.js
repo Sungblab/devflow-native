@@ -2182,8 +2182,8 @@ function harnessFileContent(path) {
       {
         mcpServers: {
           devflow: {
-            command: "node",
-            args: ["packages/mcp/src/stdio.js"],
+            command: "npx",
+            args: ["--yes", "devflow-native@latest", "mcp", "stdio"],
             cwd: ".",
           },
         },
