@@ -116,9 +116,9 @@ npm run mcp:stdio
 ```
 
 Before npm publication, `npm link` is the intended local install path for an
-agent-led setup. The package name is `@sungblab/devflow-native`, and
-`npm run pack:check` verifies that the packed tarball installs into a temporary
-consumer project and exposes the `devflow` binary.
+agent-led setup. The package name is `devflow-native`, and `npm run pack:check`
+verifies that the packed tarball installs into a temporary consumer project and
+exposes the `devflow` binary.
 Run `npm run publish:check` before any real npm release. It performs the
 package install check plus `npm publish --dry-run` and package contents guards.
 

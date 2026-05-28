@@ -1,5 +1,5 @@
 {
-  "name": "@sungblab/devflow-native",
+  "name": "devflow-native",
   "version": "0.1.0",
   "description": "Local-first workflow continuity harness for AI coding agents.",
   "license": "MIT",
@@ -23,9 +23,6 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Sungblab/devflow-native.git"
-  },
-  "publishConfig": {
-    "access": "public"
   },
   "scripts": {
     "docs:check": "node scripts/check-doc-links.mjs",

@@ -72,7 +72,7 @@ verifies that the packaged binary can render help and version output.
 After npm publication, the intended global install command is:
 
 ```powershell
-npm install -g @sungblab/devflow-native
+npm install -g devflow-native
 devflow --help
 ```
 

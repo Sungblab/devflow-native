@@ -36,11 +36,7 @@ if (manifest.private === true) {
   throw new Error("Package manifest is still private.");
 }
 
-if (!manifest.name.startsWith("@sungblab/")) {
-  throw new Error(`Unexpected package scope: ${manifest.name}`);
-}
-
-if (manifest.publishConfig?.access !== "public") {
+if (manifest.name.includes("/") && manifest.publishConfig?.access !== "public") {
   throw new Error("Scoped package must set publishConfig.access to public.");
 }
 
