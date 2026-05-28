@@ -126,7 +126,12 @@ appending another line.
   guidance instead of failing with an unknown command.
 - `devflow <group> --help` renders group-level examples for command groups
   such as `harness`, `work`, `prompt`, `sessions`, `review`, and `gates`.
-- `devflow --version` prints the CLI version.
+- `devflow --version` prints the version from the root package manifest.
+- `npm link` from the source checkout exposes the same `devflow` binary used by
+  `node packages/cli/src/index.js`.
+- `npm run pack:check` must verify the pre-release package tarball by
+  installing it into a temporary consumer project and running the packaged
+  binary.
 - Commands default to the current working directory.
 - `--repo <path>` overrides the repository path.
 - `--profile <name>` selects a workflow profile such as `plain`, `standard`,

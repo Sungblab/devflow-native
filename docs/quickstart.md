@@ -29,6 +29,7 @@ restart Codex or Claude Code.
 
 Expected verification:
 - Devflow CLI help works.
+- Source install or npm link exposes a `devflow` command.
 - Devflow doctor/status work for this repo.
 - Devflow harness health is ok, or the remaining host limitation is explicit.
 - Existing AGENTS.md, CLAUDE.md, README, tests, and project rules are preserved.
@@ -47,6 +48,30 @@ User asks Codex or Claude Code to install Devflow
 
 The commands below are mainly for the installing agent, debugging, or users who
 prefer to inspect each step manually.
+
+## Manual Local Install
+
+Before npm publication, use `npm link` from a clone of this repo:
+
+```powershell
+git clone https://github.com/Sungblab/devflow-native.git
+cd devflow-native
+npm link
+devflow --help
+devflow --version
+npm run pack:check
+```
+
+`npm link` exposes the `devflow` command from the local checkout. `pack:check`
+builds the npm tarball, installs it into a temporary consumer project, and
+verifies that the packaged binary can render help and version output.
+
+After npm publication, the intended global install command is:
+
+```powershell
+npm install -g @sungblab/devflow-native
+devflow --help
+```
 
 ## Manual Clone And Inspect
 
@@ -129,7 +154,8 @@ docs.
 
 ## Current Limits
 
-- The MVP is source-first; it is not published as an npm package yet.
+- The MVP is source-first; the package metadata and pack check are present, but
+  the package is not published to npm yet.
 - Plugin installation still depends on the host tool's local plugin support.
 - Devflow records and verifies workflow state; it does not run autonomous
   coding work by itself.

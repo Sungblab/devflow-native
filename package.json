@@ -1,14 +1,36 @@
 {
-  "name": "devflow-native",
-  "version": "0.0.0",
-  "private": true,
+  "name": "@sungblab/devflow-native",
+  "version": "0.1.0",
+  "description": "Local-first workflow continuity harness for AI coding agents.",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "devflow": "packages/cli/src/index.js"
   },
+  "files": [
+    "AGENTS.md",
+    "README.md",
+    "docs/",
+    "packages/",
+    "plugins/",
+    "scripts/",
+    "skills/",
+    "templates/"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sungblab/devflow-native.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "docs:check": "node scripts/check-doc-links.mjs",
     "mcp:stdio": "node packages/mcp/src/stdio.js",
+    "pack:check": "node scripts/check-package-install.mjs",
     "test": "node --test"
   }
 }

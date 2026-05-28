@@ -62,6 +62,7 @@ restart Codex or Claude Code.
 
 Expected verification:
 - Devflow CLI help works.
+- Source install or npm link exposes a `devflow` command.
 - Devflow doctor/status work for this repo.
 - Devflow harness health is ok, or the remaining host limitation is explicit.
 - Existing AGENTS.md, CLAUDE.md, README, tests, and project rules are preserved.
@@ -102,6 +103,9 @@ The local engine exposes direct commands for the installing agent, development,
 and fallback use:
 
 ```powershell
+npm link
+devflow --help
+devflow --version
 node packages/cli/src/index.js --help
 node packages/cli/src/index.js doctor --platform windows-powershell --json
 node packages/cli/src/index.js status --simple
@@ -110,6 +114,11 @@ node packages/cli/src/index.js prompt next
 node packages/cli/src/index.js prompt latest
 npm run mcp:stdio
 ```
+
+Before npm publication, `npm link` is the intended local install path for an
+agent-led setup. The package name is `@sungblab/devflow-native`, and
+`npm run pack:check` verifies that the packed tarball installs into a temporary
+consumer project and exposes the `devflow` binary.
 
 `devflow finish` records local evidence in `.devflow/state/events.jsonl`.
 It also writes the latest human-readable prompt projection to

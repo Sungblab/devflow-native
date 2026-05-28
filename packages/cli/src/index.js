@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { cwd, exit } from "node:process";
@@ -54,7 +55,7 @@ import {
 
 const args = process.argv.slice(2);
 const command = args[0];
-const version = "0.0.0";
+const version = readPackageVersion();
 
 try {
   if (args.length === 0 || command === "help" || command === "--help" || command === "-h") {
@@ -787,6 +788,15 @@ function render(summary, asJson) {
   }
 
   process.stdout.write(`${summary.command}: ${summary.schemaVersion}\n`);
+}
+
+function readPackageVersion() {
+  try {
+    const raw = readFileSync(new URL("../../../package.json", import.meta.url), "utf8");
+    return JSON.parse(raw).version ?? "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
 }
 
 function renderHelp(group) {
