@@ -128,6 +128,53 @@ test("repo-local plugin hooks emit compact context for agent sessions", async ()
   assert.match(stop.hookSpecificOutput.additionalContext, /Current compact status/);
 });
 
+test("repo-local prompt hook understands terse Korean maintainer commands", async () => {
+  const continuePrompt = await runHook("plugins/devflow/hooks/user-prompt-submit.mjs", {
+    hook_event_name: "UserPromptSubmit",
+    cwd: process.cwd(),
+    prompt: "ㄱㄱ 진행해",
+  });
+  const finishPrompt = await runHook("plugins/devflow/hooks/user-prompt-submit.mjs", {
+    hook_event_name: "UserPromptSubmit",
+    cwd: process.cwd(),
+    prompt: "끝내",
+  });
+  const shorthandFinishPrompt = await runHook("plugins/devflow/hooks/user-prompt-submit.mjs", {
+    hook_event_name: "UserPromptSubmit",
+    cwd: process.cwd(),
+    prompt: "ㄱㄱ 진행해 끝내",
+  });
+
+  assert.match(continuePrompt.hookSpecificOutput.additionalContext, /continue_or_start/);
+  assert.match(finishPrompt.hookSpecificOutput.additionalContext, /finish/);
+  assert.match(shorthandFinishPrompt.hookSpecificOutput.additionalContext, /finish/);
+});
+
+test("repo-local prompt hook applies workflow intent priority and next actions", async () => {
+  const handoffPrompt = await runHook("plugins/devflow/hooks/user-prompt-submit.mjs", {
+    hook_event_name: "UserPromptSubmit",
+    cwd: process.cwd(),
+    prompt: "여기까지 하고 다음 세션 프롬프트 줘",
+  });
+  const prPrompt = await runHook("plugins/devflow/hooks/user-prompt-submit.mjs", {
+    hook_event_name: "UserPromptSubmit",
+    cwd: process.cwd(),
+    prompt: "pr ㄱㄱ",
+  });
+  const artifactPrompt = await runHook("plugins/devflow/hooks/user-prompt-submit.mjs", {
+    hook_event_name: "UserPromptSubmit",
+    cwd: process.cwd(),
+    prompt: "html 리포트 ㄱㄱ",
+  });
+
+  assert.match(handoffPrompt.hookSpecificOutput.additionalContext, /handoff/);
+  assert.match(handoffPrompt.hookSpecificOutput.additionalContext, /devflow prompt next/);
+  assert.match(prPrompt.hookSpecificOutput.additionalContext, /review_or_pr/);
+  assert.match(prPrompt.hookSpecificOutput.additionalContext, /devflow review request/);
+  assert.match(artifactPrompt.hookSpecificOutput.additionalContext, /artifact_requested/);
+  assert.match(artifactPrompt.hookSpecificOutput.additionalContext, /devflow status --json/);
+});
+
 test("repo-local session start hook surfaces the latest persisted handoff", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-plugin-handoff-"));
   await mkdir(join(repoPath, ".devflow"), { recursive: true });

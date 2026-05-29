@@ -65,6 +65,25 @@ harness files, run doctor/status/harness health, and tell me exactly what files
 changed and whether I need to restart the agent host.
 ```
 
+Maintainer shorthand is part of the intended workflow. The prompt hook maps
+short commands into workflow intent and gives the agent the next Devflow actions
+to run:
+
+- `ㄱㄱ`, `진행해`, `계속`, `continue`, `next`, `go` -> continue/start from
+  `devflow status --json` and `devflow prompt latest`.
+- `끝내`, `마무리`, `완료`, `finish`, `done` -> run `devflow finish --guided`
+  and follow any review or gate blockers before claiming completion.
+- `다음 세션 프롬프트 줘`, `여기까지`, `handoff` -> create a handoff with
+  `devflow status --json` and `devflow prompt next`.
+- `리뷰`, `pr`, `pull request` -> request and record review evidence.
+- `html`, `리포트`, `보드` -> inspect status first and generate an artifact only
+  when it is explicitly useful.
+
+When a prompt contains mixed signals, Devflow uses this priority:
+`finish > handoff > review/pr > artifact > continue`. The agent still has to
+inspect repo state, run required gates, and record review evidence before
+claiming that work is complete.
+
 ## Manual Fallback
 
 ```powershell
@@ -112,6 +131,34 @@ Maintainer says "finish" or "review"
 Runtime state such as `.devflow/state/` and `.devflow/next-prompt.md` is local
 by default. Public project contracts such as `.devflow/config.json` can be
 committed when a repository wants to adopt Devflow as part of its workflow.
+
+## Dogfood Smoke
+
+Devflow Native is dogfooded against OpenCairn, a larger Windows/PowerShell
+monorepo, to keep the product honest on mature-repo adoption instead of only
+greenfield demos.
+
+Latest local smoke, run from `C:\Users\Sungbin\Documents\GitHub\opencairn-monorepo`:
+
+```powershell
+devflow harness inspect --json
+devflow harness health --json
+devflow gates run docs-check --work local-work --json
+devflow finish --json
+```
+
+Observed result on 2026-05-29:
+
+- Codex and Claude harness targets reported `ready`.
+- Harness health reported `status: ok`; plugin manifests, MCP config, hook
+  scripts, and `review.required` passed.
+- `docs-check` passed when recorded against `local-work`.
+- `finish` kept `canClaimDone: false` until review evidence was recorded, which
+  is the intended guardrail.
+
+This is a smoke record, not a performance benchmark. It proves the current
+harness can install, inspect, run hooks, record gate evidence, and block unsafe
+finish claims in a real repository.
 
 ## Common Commands
 

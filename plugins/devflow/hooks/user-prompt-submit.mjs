@@ -1,5 +1,12 @@
 #!/usr/bin/env node
-import { compactJson, detectIntent, readHookInput, runDevflow, writeHookContext } from "./devflow-hook-lib.mjs";
+import {
+  compactJson,
+  detectIntent,
+  intentNextActions,
+  readHookInput,
+  runDevflow,
+  writeHookContext,
+} from "./devflow-hook-lib.mjs";
 
 const input = await readHookInput();
 const repoPath = input.cwd ?? process.cwd();
@@ -11,6 +18,7 @@ if (!intent) {
 }
 
 const status = runDevflow(repoPath, ["status", "--json"]);
+const nextActions = intentNextActions(intent);
 const context = [
   `Devflow detected intent: ${intent}`,
   "- Resolve fast maintainer wording from repo state before asking questions.",
@@ -18,6 +26,9 @@ const context = [
   "- Superpowers may guide method; Devflow records project truth, gates, sessions, and handoffs.",
   "- Do not generate HTML unless requested, state is visually dense, or an artifact is explicitly useful.",
   "- On finish/review intent, verify gates, run devflow review request when review is required, record devflow review record evidence, and record finish evidence before claiming completion.",
+  "",
+  "Recommended Devflow next actions:",
+  ...nextActions.map((action) => `- ${action}`),
   "",
   "Current compact status:",
   compactJson(status, 3000),

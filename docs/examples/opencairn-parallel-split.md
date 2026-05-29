@@ -3,6 +3,38 @@
 This example shows the kind of output `devflow split` should generate for a
 large repository.
 
+## Dogfood Smoke
+
+OpenCairn is also used as a real mature-repo smoke target for the native
+harness. The point is not performance timing; the point is whether Devflow can
+adopt an existing Windows/PowerShell monorepo, run its harness checks, capture
+gate evidence, and refuse an unsafe completion claim.
+
+The latest local smoke used:
+
+```powershell
+devflow harness inspect --json
+devflow harness health --json
+devflow gates run docs-check --work local-work --json
+devflow finish --json
+```
+
+Expected shape:
+
+- `harness inspect` reports Codex and Claude targets as `ready`.
+- `harness health` reports `status: ok` for manifests, MCP config, hook scripts,
+  and required review configuration.
+- `gates run docs-check --work local-work` records passing gate evidence tied to
+  the work item.
+- `finish` removes the unknown-gate blocker once work-scoped evidence exists,
+  but keeps `canClaimDone: false` while review evidence is missing.
+
+In day-to-day maintainer usage, short prompts are expected. For example,
+`ㄱㄱ 진행해` should resolve to `continue_or_start`, while
+`ㄱㄱ 진행해 끝내` should resolve to `finish` because finish is higher priority
+than continue. The prompt hook should then tell the agent which Devflow command
+to run next, such as `devflow finish --guided` or `devflow prompt next`.
+
 ## Input
 
 ```powershell

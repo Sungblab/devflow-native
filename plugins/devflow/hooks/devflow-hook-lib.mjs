@@ -65,11 +65,11 @@ export function readLatestHandoffPrompt(repoPath, maxLength = 2200) {
 
 export function detectIntent(prompt = "") {
   const normalized = prompt.trim().toLowerCase();
-  if (/^(continue|next|go|proceed|resume|계속|다음)/i.test(normalized)) {
-    return "continue_or_start";
-  }
-  if (/(finish|done|complete|wrap up|마무리|완료)/i.test(normalized)) {
+  if (/(finish|done|complete|wrap up|마무리|완료|끝내|닫아|마감)/i.test(normalized)) {
     return "finish";
+  }
+  if (/(handoff|next session|next-session|다음 세션|다음세션|인수인계|프롬프트 줘|프롬프트줘|여기까지)/i.test(normalized)) {
+    return "handoff";
   }
   if (/(review|pull request|pr|리뷰)/i.test(normalized)) {
     return "review_or_pr";
@@ -77,5 +77,42 @@ export function detectIntent(prompt = "") {
   if (/(시각화|html|artifact|리포트|보드)/i.test(normalized)) {
     return "artifact_requested";
   }
+  if (/^(continue|next|go|proceed|resume|계속|다음|진행|진행해|가자|ㄱㄱ|고고)/i.test(normalized)) {
+    return "continue_or_start";
+  }
   return null;
+}
+
+export function intentNextActions(intent) {
+  switch (intent) {
+    case "finish":
+      return [
+        "devflow finish --guided",
+        "If finish reports review.nextAction.command, run it and record the outcome with review.nextAction.recordCommand.",
+      ];
+    case "handoff":
+      return [
+        "devflow status --json",
+        "devflow prompt next",
+        "Record changed files, verification, risks, and a copy-paste next-session prompt.",
+      ];
+    case "review_or_pr":
+      return [
+        "devflow review request --work <work-id> --target reviewer --persona strict-reviewer",
+        "devflow review record --work <work-id> --reviewer <reviewer> --status <passed|changes-requested> --summary <summary>",
+      ];
+    case "artifact_requested":
+      return [
+        "devflow status --json",
+        "Generate an artifact only when the repo state is visually dense or the maintainer explicitly asked for it.",
+      ];
+    case "continue_or_start":
+      return [
+        "devflow status --json",
+        "devflow prompt latest",
+        "Continue from repo state and latest handoff before asking the maintainer for more context.",
+      ];
+    default:
+      return [];
+  }
 }

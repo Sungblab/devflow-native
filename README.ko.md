@@ -65,6 +65,23 @@ harness files, run doctor/status/harness health, and tell me exactly what files
 changed and whether I need to restart the agent host.
 ```
 
+짧은 maintainer 지시도 의도한 workflow에 포함됩니다. Prompt hook은 짧은 말을
+workflow intent로 바꾸고, agent가 다음에 실행할 Devflow action을 같이 줍니다.
+
+- `ㄱㄱ`, `진행해`, `계속`, `continue`, `next`, `go` -> `devflow status --json`,
+  `devflow prompt latest`에서 이어가기
+- `끝내`, `마무리`, `완료`, `finish`, `done` -> `devflow finish --guided`를
+  실행하고 review/gate blocker를 처리한 뒤 완료 선언
+- `다음 세션 프롬프트 줘`, `여기까지`, `handoff` -> `devflow status --json`,
+  `devflow prompt next`로 인수인계 생성
+- `리뷰`, `pr`, `pull request` -> review evidence 요청 및 기록
+- `html`, `리포트`, `보드` -> 먼저 상태를 확인하고, 명시적으로 유용할 때만
+  artifact 생성
+
+Prompt 안에 신호가 섞이면 Devflow는 `finish > handoff > review/pr > artifact
+> continue` 우선순위를 씁니다. 다만 agent는 여전히 repo 상태를 확인하고,
+필요한 gate를 실행하고, review evidence를 기록해야 완료라고 말할 수 있습니다.
+
 ## 직접 실행할 때
 
 ```powershell
@@ -111,6 +128,35 @@ Codex 또는 Claude Code가 저장소를 연다
 `.devflow/state/`, `.devflow/next-prompt.md` 같은 runtime state는 기본적으로
 local-only입니다. `.devflow/config.json` 같은 공개 프로젝트 계약은 저장소가
 Devflow workflow를 채택할 때 커밋할 수 있습니다.
+
+## Dogfood Smoke
+
+Devflow Native는 OpenCairn 같은 큰 Windows/PowerShell monorepo에 직접 적용해
+검증합니다. 새 저장소 데모가 아니라, 이미 문서/규칙/dirty worktree가 있는
+성숙한 repo를 안전하게 채택하는지 보기 위한 smoke입니다.
+
+최근 로컬 smoke는 `C:\Users\Sungbin\Documents\GitHub\opencairn-monorepo`에서
+아래 명령으로 확인했습니다.
+
+```powershell
+devflow harness inspect --json
+devflow harness health --json
+devflow gates run docs-check --work local-work --json
+devflow finish --json
+```
+
+2026-05-29 관찰 결과:
+
+- Codex와 Claude harness target이 `ready`로 보고됐습니다.
+- Harness health는 `status: ok`였고 plugin manifest, MCP config, hook script,
+  `review.required`가 통과했습니다.
+- `docs-check`는 `local-work`에 gate evidence로 기록했을 때 통과했습니다.
+- `finish`는 review evidence가 기록되기 전까지 `canClaimDone: false`를
+  유지했습니다. 이게 의도한 완료 guardrail입니다.
+
+이건 성능 benchmark가 아니라 smoke record입니다. 현재 harness가 실제 repo에서
+설치, 점검, hook 실행, gate evidence 기록, 안전하지 않은 finish claim 차단까지
+동작한다는 증거입니다.
 
 ## 주요 명령
 
