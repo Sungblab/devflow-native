@@ -180,6 +180,7 @@ devflow mcp stdio
 - [Architecture](docs/architecture.md)
 - [Harness](docs/harness.md)
 - [Research Boundary](docs/research/README.md)
+- [Open Source Promotion Plan](docs/marketing/open-source-promotion.md)
 - [Roadmap](docs/roadmap.md)
 
 ## Repository Structure

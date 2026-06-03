@@ -14,6 +14,7 @@ This is the documentation router for Devflow Native.
 | Agent and platform adapter strategy | [architecture/adapters.md](./architecture/adapters.md) |
 | MCP handler package | [../packages/mcp/README.md](../packages/mcp/README.md) |
 | Research boundary | [research/README.md](./research/README.md) |
+| Open-source promotion plan | [marketing/open-source-promotion.md](./marketing/open-source-promotion.md) |
 | Build order | [roadmap.md](./roadmap.md) |
 | Development workflow for this repo | [contributing/workflow.md](./contributing/workflow.md) |
 | Context and handoff rules | [contributing/context-rules.md](./contributing/context-rules.md) |
