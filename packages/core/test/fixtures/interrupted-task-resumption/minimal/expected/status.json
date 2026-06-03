@@ -1,0 +1,7 @@
+{
+  "workItemId": "interrupted-resumption-fixture",
+  "latestSessionId": "codex-public-fixture-001",
+  "failedGateId": "unit",
+  "nextTask": "Fix the redirect assertion and rerun the unit gate."
+}
+

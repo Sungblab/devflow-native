@@ -2036,6 +2036,74 @@ test("CLI sessions codex renders explicit read-only Codex discovery JSON", async
   assert.equal(parsed.discovery.sessions[0].signals.hasFileEdits, true);
 });
 
+test("CLI session adapter discovery renders explicit Claude OpenCode and Cline records", async () => {
+  const repoPath = await createTempGitRepo();
+  const inputPath = join(await mkdtemp(join(tmpdir(), "devflow-cli-agent-records-")), "records.json");
+  await writeFile(
+    inputPath,
+    `${JSON.stringify({
+      records: [
+        {
+          id: "claude-cli-1",
+          cwd: repoPath,
+          hasToolCalls: true,
+          changedFiles: ["packages/adapters/src/index.js"],
+        },
+      ],
+    })}\n`,
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "claude",
+    "--repo",
+    repoPath,
+    "--input",
+    inputPath,
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "sessions_claude");
+  assert.equal(parsed.discovery.sessions[0].agent, "Claude Code");
+  assert.equal(parsed.discovery.sessions[0].project.confidence, "high");
+});
+
+test("CLI session adapter discovery can read an explicit Claude history path", async () => {
+  const repoPath = await createTempGitRepo();
+  const historyRoot = await mkdtemp(join(tmpdir(), "devflow-cli-claude-history-"));
+  await writeFile(
+    join(historyRoot, "project.jsonl"),
+    `${JSON.stringify({
+      sessionId: "claude-history-cli-1",
+      cwd: repoPath,
+      timestamp: "2026-06-03T13:00:00.000Z",
+      type: "tool_use",
+      name: "Edit",
+      changedFiles: ["packages/adapters/src/index.js"],
+    })}\n`,
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "sessions",
+    "claude",
+    "--repo",
+    repoPath,
+    "--history",
+    historyRoot,
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "sessions_claude");
+  assert.equal(parsed.files.length, 1);
+  assert.equal(parsed.discovery.sessions[0].sessionId, "claude-history-cli-1");
+  assert.equal(parsed.discovery.sessions[0].project.confidence, "high");
+  assert.equal(parsed.discovery.sessions[0].signals.hasFileEdits, true);
+});
+
 test("CLI sessions attach-plan renders dry-run attach proposals", async () => {
   const inputPath = join(await mkdtemp(join(tmpdir(), "devflow-cli-attach-plan-")), "input.json");
   await writeFile(

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "defaultProfile": "standard",
+  "defaultPlatform": "windows-powershell",
+  "review": {
+    "required": true
+  },
+  "gates": [
+    {
+      "id": "unit",
+      "command": "npm test",
+      "recommended": true
+    }
+  ]
+}
+

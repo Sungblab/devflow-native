@@ -214,6 +214,14 @@ caller-provided JSONL content without auto-reading private histories.
 path, then returns normalized discovery records with confidence, signals,
 source paths, and warnings. Automatic import from `%USERPROFILE%\.codex`
 history contents is a later slice.
+The same normalized shape is now shared by `discoverClaudeSessions`,
+`discoverOpenCodeSessions`, and `discoverClineSessions`. Claude Code can parse
+caller-provided JSONL metadata through `parseClaudeSessionJsonl`; OpenCode and
+Cline currently accept caller-provided records through `parseOpenCodeSessionRecord`
+and `parseClineSessionJson`. These adapters are still read-only and do not
+probe private host directories automatically. `findAgentSessionFiles` can read
+only an explicit `historyPath` supplied by the caller, so CLI `--history` and
+MCP `historyPath` imports stay opt-in.
 
 Session-to-work linking remains confirmation-gated. The CLI
 `devflow sessions attach-plan` command and MCP `devflow.sessions_attach_plan`
@@ -233,6 +241,16 @@ same session list. Session list calls can be filtered by work item through CLI
 `--limit <n>` or MCP `limit`. Callers that need deterministic chronology can
 also sort matches before limiting with CLI
 `--sort observedAt:asc|observedAt:desc` or MCP `sort`.
+
+### Interrupted Resumption Fixtures
+
+Public interrupted-task examples should stay synthetic and contract-oriented.
+The minimal fixture lives under
+`packages/core/test/fixtures/interrupted-task-resumption/minimal/` and contains
+only reusable state: `.devflow/config.json`, `state/events.jsonl`, a latest
+`next-prompt.md` projection, and expected reader outputs. Private pilot traces,
+hidden labels, scoring scripts, participant notes, and non-public reports stay
+in `devflow-native-research`.
 
 ### Claude Code
 

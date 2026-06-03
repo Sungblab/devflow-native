@@ -1001,6 +1001,105 @@ export async function ensureDevflowRuntimeGitignore(repoPath, options = {}) {
   };
 }
 
+export function createInterruptedResumptionFixture(input = {}) {
+  const fixtureId = input.fixtureId ?? createRunId(input.workItem?.id ?? "interrupted-resumption");
+  const workItem = {
+    id: input.workItem?.id ?? "interrupted-work",
+    title: input.workItem?.title ?? "Interrupted development work",
+  };
+  const observedAt = input.interruption?.stoppedAt ?? input.observedAt ?? new Date(0).toISOString();
+  const changedFiles = input.changedFiles ?? [];
+  const gates = input.gates ?? [];
+  const nextTask = input.nextTask ?? "Resume from the interrupted work state and record fresh evidence.";
+  const nextPrompt = createNextPrompt({
+    objective: `Resume ${workItem.id}: ${workItem.title}`,
+    changedFiles: changedFiles.map((file) => file.path ?? file),
+    commands: gates.map((gate) => gate.command).filter(Boolean),
+    risks: [
+      input.interruption?.reason
+        ? `Prior session interrupted: ${input.interruption.reason}.`
+        : "Prior session was interrupted before finish evidence was complete.",
+    ],
+    nextTask,
+  });
+  const eventLog = createInterruptedFixtureEventLog({
+    workItem,
+    observedAt,
+    changedFiles,
+    gates,
+    nextPrompt,
+  });
+
+  return {
+    schemaVersion: "0.1",
+    command: "research_interrupted_resumption_fixture",
+    fixtureId,
+    repo: {
+      absolutePath: input.repo?.absolutePath ?? process.cwd(),
+    },
+    workItem,
+    interruption: {
+      stoppedAt: observedAt,
+      reason: input.interruption?.reason ?? "interrupted-before-finish",
+    },
+    conditions: [
+      {
+        id: "no-note",
+        label: "No saved continuity cue",
+        materials: {
+          prompt: "Continue the interrupted task from the repository alone.",
+        },
+      },
+      {
+        id: "chat-summary",
+        label: "Ad hoc chat summary",
+        materials: {
+          summary:
+            input.chatSummary ??
+            `${workItem.title} was interrupted after changes to ${formatChangedFileSummary(changedFiles)}.`,
+        },
+      },
+      {
+        id: "devflow-state",
+        label: "Devflow local state and latest handoff",
+        materials: {
+          eventLog,
+          nextPrompt,
+        },
+      },
+    ],
+    metrics: [
+      {
+        id: "time_to_first_correct_action",
+        unit: "seconds",
+        description: "Elapsed time until the resuming agent takes the first action aligned with the next task.",
+      },
+      {
+        id: "reexploration_commands",
+        unit: "count",
+        description: "Commands or file reads spent rediscovering already-recorded context.",
+      },
+      {
+        id: "gate_recovery",
+        unit: "pass-fail",
+        description: "Whether the resuming session reruns or repairs the recorded gate state.",
+      },
+      {
+        id: "false_done_claim",
+        unit: "boolean",
+        description: "Whether the resuming session claims completion without required evidence.",
+      },
+      {
+        id: "token_cost",
+        unit: "tokens",
+        description: "Approximate prompt and tool-output tokens needed to resume.",
+      },
+    ],
+    publicBoundary:
+      "This public fixture is synthetic and reusable. Private pilot data, model traces, scoring scripts, and participant notes belong in devflow-native-research.",
+  };
+}
+
 function isRepoVisibleHarnessInstall(options = {}) {
   return Boolean(options.repoVisible ?? options["repo-visible"]);
 }
@@ -2624,15 +2723,20 @@ function deriveStateFromEvents(events, warnings = []) {
   const completedWork = events.filter(
     (event) => event.type === "work.completed" && event.payload?.command === "finish",
   );
-  const latestCompletion = completedWork.at(-1);
-  const olderCompletions = completedWork.slice(0, -1);
+  const handoffEvents = events.filter(
+    (event) =>
+      (event.type === "work.completed" && event.payload?.command === "finish") ||
+      event.type === "handoff.generated",
+  );
+  const latestHandoff = handoffEvents.at(-1);
+  const olderHandoffs = handoffEvents.slice(0, -1);
 
   return {
     events,
     warnings,
     handoffs: {
-      latest: latestCompletion ? createHandoffEvidence(latestCompletion) : null,
-      stale: olderCompletions.map(createHandoffEvidence).reverse(),
+      latest: latestHandoff ? createHandoffEvidence(latestHandoff) : null,
+      stale: olderHandoffs.map(createHandoffEvidence).reverse(),
     },
     gates: {
       latestById: createLatestGateEvidence(events),
@@ -2650,6 +2754,15 @@ function deriveStateFromEvents(events, warnings = []) {
 }
 
 function createHandoffEvidence(event) {
+  if (event.type === "handoff.generated") {
+    return {
+      workItemId: event.payload.workItemId,
+      title: event.payload.title ?? event.payload.workItemId,
+      observedAt: event.observedAt,
+      prompt: event.payload.prompt,
+    };
+  }
+
   return {
     workItemId: event.payload.workItem.id,
     title: event.payload.workItem.title,
@@ -3161,6 +3274,62 @@ function createHealthRecommendations(missingFiles, gates, invalidGates = []) {
   }
 
   return recommendations;
+}
+
+function createInterruptedFixtureEventLog(input) {
+  const basePayload = {
+    schemaVersion: "0.1",
+    observedAt: input.observedAt,
+  };
+
+  return [
+    {
+      ...basePayload,
+      type: "work.created",
+      payload: {
+        id: input.workItem.id,
+        title: input.workItem.title,
+        status: "active",
+        ownedPaths: input.changedFiles.map((file) => file.path ?? file),
+      },
+    },
+    {
+      ...basePayload,
+      type: "session.attached",
+      payload: {
+        sessionId: `${input.workItem.id}-interrupted-session`,
+        workItemId: input.workItem.id,
+        agent: "Codex",
+        confidence: "manual",
+        changedFiles: input.changedFiles.map((file) => file.path ?? file),
+        warnings: ["Synthetic fixture session; not real private agent history."],
+      },
+    },
+    ...input.gates.map((gate) => ({
+      ...basePayload,
+      type: "gate.finished",
+      payload: {
+        ...gate,
+        workItemId: gate.workItemId ?? input.workItem.id,
+      },
+    })),
+    {
+      ...basePayload,
+      type: "handoff.generated",
+      payload: {
+        workItemId: input.workItem.id,
+        prompt: input.nextPrompt,
+      },
+    },
+  ];
+}
+
+function formatChangedFileSummary(changedFiles) {
+  if (!Array.isArray(changedFiles) || changedFiles.length === 0) {
+    return "no recorded files";
+  }
+
+  return changedFiles.map((file) => file.path ?? file).join(", ");
 }
 
 function emptyDevflowState() {

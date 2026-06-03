@@ -1,9 +1,16 @@
 import { readFile } from "node:fs/promises";
 
 import {
+  discoverClaudeSessions,
   discoverCodexSessions,
+  discoverClineSessions,
+  findAgentSessionFiles,
   findCodexSessionFiles,
+  discoverOpenCodeSessions,
+  parseClineSessionJson,
   parseCodexSessionJsonl,
+  parseClaudeSessionJsonl,
+  parseOpenCodeSessionRecord,
 } from "../../adapters/src/index.js";
 import {
   createDoctorSummary,
@@ -85,6 +92,18 @@ const tools = [
   {
     name: "devflow.sessions_codex",
     description: "Read explicit Codex session metadata through the Devflow adapter contract.",
+  },
+  {
+    name: "devflow.sessions_claude",
+    description: "Normalize caller-provided Claude Code session metadata through the Devflow adapter contract.",
+  },
+  {
+    name: "devflow.sessions_opencode",
+    description: "Normalize caller-provided OpenCode session metadata through the Devflow adapter contract.",
+  },
+  {
+    name: "devflow.sessions_cline",
+    description: "Normalize caller-provided Cline session metadata through the Devflow adapter contract.",
   },
   {
     name: "devflow.sessions_attach_plan",
@@ -211,6 +230,18 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.sessions_codex") {
     return callCodexSessions(args);
+  }
+
+  if (name === "devflow.sessions_claude") {
+    return callAgentSessions("claude", args);
+  }
+
+  if (name === "devflow.sessions_opencode") {
+    return callAgentSessions("opencode", args);
+  }
+
+  if (name === "devflow.sessions_cline") {
+    return callAgentSessions("cline", args);
   }
 
   if (name === "devflow.sessions_attach_plan") {
@@ -457,6 +488,105 @@ async function callCodexSessions(args) {
   };
 
   return toolResult(summary, `devflow sessions_codex: ${summary.files.length} files`);
+}
+
+async function callAgentSessions(adapter, args) {
+  const repoPath = args.repo ?? process.cwd();
+  const { records, files, warnings } = await readAgentRecords(adapter, args);
+  const discovery = discoverRecords(adapter, {
+    repoPath,
+    records,
+  });
+  const command = `sessions_${adapter}`;
+  const summary = {
+    schemaVersion: "0.1",
+    command,
+    repo: {
+      absolutePath: repoPath,
+    },
+    files,
+    discovery,
+    warnings,
+  };
+
+  return toolResult(summary, `devflow ${command}: ${summary.discovery.sessions.length} sessions`);
+}
+
+async function readAgentRecords(adapter, args) {
+  const records = (args.records ?? []).map((record) => parseAgentRecord(adapter, record));
+  const files = [];
+  const warnings = [];
+
+  if (args.historyPath) {
+    const candidates = await findAgentSessionFiles(adapter, {
+      historyPath: args.historyPath,
+    });
+    files.push(...candidates.files);
+    warnings.push(...candidates.warnings);
+
+    for (const file of candidates.files) {
+      try {
+        const content = await readFile(file.path, "utf8");
+        records.push(...parseAgentSessionFile(adapter, file, content));
+      } catch (error) {
+        warnings.push(`Failed to read ${adapter} session candidate ${file.path}: ${error.message}`);
+      }
+    }
+  }
+
+  return { records, files, warnings };
+}
+
+function parseAgentSessionFile(adapter, file, content) {
+  if (adapter === "claude" && file.kind === "session-jsonl") {
+    return [
+      parseClaudeSessionJsonl(content, {
+        sourcePath: file.path,
+      }),
+    ];
+  }
+
+  if (file.kind === "session-jsonl") {
+    return String(content ?? "")
+      .split(/\r?\n/u)
+      .filter((line) => line.trim().length > 0)
+      .map((line) => parseAgentRecord(adapter, JSON.parse(line), { sourcePath: file.path }));
+  }
+
+  const parsed = JSON.parse(content);
+  const rawRecords = Array.isArray(parsed) ? parsed : parsed.records ?? [parsed];
+  return rawRecords.map((record) => parseAgentRecord(adapter, record, { sourcePath: file.path }));
+}
+
+function parseAgentRecord(adapter, record, input = {}) {
+  if (adapter === "opencode") {
+    return parseOpenCodeSessionRecord(record, input);
+  }
+
+  if (adapter === "cline") {
+    return parseClineSessionJson(record, input);
+  }
+
+  return {
+    ...record,
+    sourcePath: input.sourcePath ?? record.sourcePath,
+  };
+}
+
+function discoverRecords(adapter, input) {
+  if (adapter === "claude") {
+    return discoverClaudeSessions(input);
+  }
+
+  if (adapter === "opencode") {
+    return discoverOpenCodeSessions(input);
+  }
+
+  if (adapter === "cline") {
+    return discoverClineSessions(input);
+  }
+
+  throw new Error(`Unsupported session adapter: ${adapter}`);
 }
 
 function callSessionAttachPlan(args) {

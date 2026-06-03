@@ -251,7 +251,14 @@ JSONL content. `discoverCodexSessions` accepts caller-supplied Codex-like record
 normalizes them into discovery events with confidence, source, and warning
 fields. The CLI exposes this as `devflow sessions codex --codex-home <path>
 --json`; MCP exposes the same read-only probe as `devflow.sessions_codex`. It
-does not attach sessions to work items. Core has a pure
+does not attach sessions to work items.
+The adapter layer also normalizes caller-provided Claude Code, OpenCode, and
+Cline session records through the same discovery shape, exposed to MCP as
+`devflow.sessions_claude`, `devflow.sessions_opencode`, and
+`devflow.sessions_cline`. CLI `--history <path>` and MCP `historyPath` can read
+only an explicit exported file or directory; these tools remain read-only and
+do not probe private history directories automatically.
+Core has a pure
 `createSessionAttachPlan` contract that proposes attach candidates and keeps
 low-confidence sessions confirmation-gated before any future state write. The
 CLI exposes this dry-run planner as `devflow sessions attach-plan --input
@@ -273,6 +280,12 @@ chronological ordering is available before limiting through CLI
 `--sort observedAt:asc|observedAt:desc` and MCP `sort`. The CLI also has a
 human-readable default renderer for quick terminal inspection while `--json`
 keeps the agent contract stable.
+
+Current research-enabling note: `packages/core` now includes a synthetic
+interrupted task resumption fixture contract and a public minimal fixture under
+`packages/core/test/fixtures/interrupted-task-resumption/minimal/`. It compares
+no-note, ad hoc chat-summary, and Devflow-state resumption materials without
+publishing private traces, hidden labels, scoring scripts, or pilot data.
 
 ## Phase 7: Beginner Guidance Profile
 

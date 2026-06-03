@@ -5,9 +5,17 @@ import { join } from "node:path";
 import test from "node:test";
 
 import {
+  discoverAgentSessions,
+  discoverClaudeSessions,
   discoverCodexSessions,
+  discoverClineSessions,
+  findAgentSessionFiles,
   findCodexSessionFiles,
+  discoverOpenCodeSessions,
+  parseClaudeSessionJsonl,
   parseCodexSessionJsonl,
+  parseClineSessionJson,
+  parseOpenCodeSessionRecord,
 } from "../src/index.js";
 
 test("Codex discovery maps matching session metadata into normalized events", () => {
@@ -80,6 +88,30 @@ test("Codex file discovery finds JSONL candidates under an explicit codex home",
   assert.equal(result.files[0].sizeBytes, 3);
 });
 
+test("agent file discovery reads only explicit history paths for non-Codex adapters", async () => {
+  const historyRoot = await mkdtemp(join(tmpdir(), "devflow-agent-history-"));
+  await mkdir(join(historyRoot, "nested"), { recursive: true });
+  await writeFile(join(historyRoot, "claude.jsonl"), "{}\n");
+  await writeFile(join(historyRoot, "nested", "cline.json"), "{}\n");
+  await writeFile(join(historyRoot, "ignore.txt"), "ignore\n");
+
+  const claude = await findAgentSessionFiles("claude", { historyPath: historyRoot });
+  const cline = await findAgentSessionFiles("cline", { historyPath: historyRoot });
+  const missing = await findAgentSessionFiles("opencode", {});
+
+  assert.equal(claude.adapter, "claude");
+  assert.equal(claude.historyPath, historyRoot);
+  assert.equal(claude.files.length, 1);
+  assert.match(claude.files[0].path, /claude\.jsonl$/);
+  assert.equal(claude.files[0].kind, "session-jsonl");
+  assert.equal(cline.adapter, "cline");
+  assert.equal(cline.files.length, 1);
+  assert.match(cline.files[0].path, /cline\.json$/);
+  assert.equal(cline.files[0].kind, "session-json");
+  assert.deepEqual(missing.files, []);
+  assert.match(missing.warnings[0], /historyPath is required/);
+});
+
 test("Codex JSONL parser extracts safe metadata from a synthetic fixture", () => {
   const content = [
     JSON.stringify({
@@ -113,4 +145,116 @@ test("Codex JSONL parser extracts safe metadata from a synthetic fixture", () =>
   assert.equal(record.hasFileEdits, true);
   assert.equal(record.sourceKind, "local-history");
   assert.match(record.warnings[0], /Invalid JSONL/);
+});
+
+test("Claude discovery maps project JSONL metadata into normalized session events", () => {
+  const result = discoverClaudeSessions({
+    repoPath: "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
+    records: [
+      {
+        id: "claude-session-1",
+        cwd: "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
+        startedAt: "2026-06-03T09:00:00.000Z",
+        updatedAt: "2026-06-03T09:30:00.000Z",
+        sourcePath: "C:\\Users\\You\\.claude\\projects\\devflow.jsonl",
+        hasToolCalls: true,
+        hasFileEdits: true,
+        changedFiles: ["packages/adapters/src/index.js"],
+      },
+    ],
+  });
+
+  assert.equal(result.adapter, "claude");
+  assert.equal(result.sessions[0].agent, "Claude Code");
+  assert.equal(result.sessions[0].sessionId, "claude-session-1");
+  assert.equal(result.sessions[0].project.confidence, "high");
+  assert.equal(result.sessions[0].signals.hasFileEdits, true);
+  assert.deepEqual(result.sessions[0].events[1], {
+    type: "git.diff.captured",
+    changedFiles: ["packages/adapters/src/index.js"],
+  });
+});
+
+test("Claude discovery warnings name the Claude adapter when cwd is missing", () => {
+  const result = discoverClaudeSessions({
+    repoPath: "C:\\repo",
+    records: [{ id: "claude-missing-cwd" }],
+  });
+
+  assert.match(result.sessions[0].warnings[0], /Claude Code session/);
+});
+
+test("Claude JSONL parser extracts safe metadata from synthetic project history", () => {
+  const content = [
+    JSON.stringify({
+      sessionId: "claude-jsonl-1",
+      cwd: "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
+      timestamp: "2026-06-03T10:00:00.000Z",
+      type: "tool_use",
+      name: "Edit",
+      changedFiles: ["packages/core/src/index.js"],
+    }),
+    JSON.stringify({
+      timestamp: "2026-06-03T10:05:00.000Z",
+      type: "tool_use",
+      name: "Bash",
+    }),
+  ].join("\n");
+
+  const record = parseClaudeSessionJsonl(content, {
+    sourcePath: "C:\\Users\\You\\.claude\\projects\\fixture.jsonl",
+  });
+
+  assert.equal(record.id, "claude-jsonl-1");
+  assert.equal(record.cwd, "C:\\Users\\You\\Documents\\GitHub\\devflow-demo");
+  assert.equal(record.startedAt, "2026-06-03T10:00:00.000Z");
+  assert.equal(record.updatedAt, "2026-06-03T10:05:00.000Z");
+  assert.equal(record.hasToolCalls, true);
+  assert.equal(record.hasFileEdits, true);
+  assert.deepEqual(record.changedFiles, ["packages/core/src/index.js"]);
+});
+
+test("OpenCode and Cline records normalize through the shared agent adapter contract", () => {
+  const opencodeRecord = parseOpenCodeSessionRecord({
+    id: "opencode-1",
+    workspace: "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
+    createdAt: "2026-06-03T11:00:00.000Z",
+    updatedAt: "2026-06-03T11:10:00.000Z",
+    toolCalls: [{ name: "edit" }],
+    files: ["packages/mcp/src/index.js"],
+  });
+  const clineRecord = parseClineSessionJson({
+    taskId: "cline-1",
+    cwd: "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
+    ts: "2026-06-03T12:00:00.000Z",
+    messages: [{ type: "tool_use", tool: "editedExistingFile" }],
+    changedFiles: ["packages/cli/src/index.js"],
+  });
+
+  const opencode = discoverOpenCodeSessions({
+    repoPath: "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
+    records: [opencodeRecord],
+  });
+  const cline = discoverClineSessions({
+    repoPath: "C:\\Users\\You\\Documents\\GitHub\\devflow-demo",
+    records: [clineRecord],
+  });
+
+  assert.equal(opencode.sessions[0].agent, "OpenCode");
+  assert.equal(opencode.sessions[0].signals.hasToolCalls, true);
+  assert.deepEqual(opencode.sessions[0].events[1].changedFiles, ["packages/mcp/src/index.js"]);
+  assert.equal(cline.sessions[0].agent, "Cline");
+  assert.equal(cline.sessions[0].signals.hasFileEdits, true);
+  assert.deepEqual(cline.sessions[0].events[1].changedFiles, ["packages/cli/src/index.js"]);
+});
+
+test("generic agent discovery rejects unsupported session adapters explicitly", () => {
+  assert.throws(
+    () =>
+      discoverAgentSessions("cursor", {
+        repoPath: "C:\\repo",
+        records: [],
+      }),
+    /Unsupported session adapter/,
+  );
 });

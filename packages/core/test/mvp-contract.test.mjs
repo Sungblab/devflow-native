@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -9,6 +9,7 @@ import {
   createFinishSummary,
   createHealthSummary,
   createHarnessInspectSummary,
+  createInterruptedResumptionFixture,
   createHarnessPlanSummary,
   createDoctorSummary,
   createInitPlan,
@@ -379,6 +380,80 @@ test("prompt rewrite turns vague intent into agent-ready requirements", () => {
   assert.match(rewrite.agentReadyPrompt, /Phase 7/);
   assert.ok(rewrite.requirements.some((item) => item.includes("Infer")));
   assert.ok(rewrite.missingDetails.includes("target repository or feature area"));
+});
+
+test("interrupted resumption fixture describes comparable no-note summary and devflow-state conditions", () => {
+  const fixture = createInterruptedResumptionFixture({
+    fixtureId: "interrupt-login-flow",
+    repo: {
+      absolutePath: "C:\\Users\\You\\Documents\\GitHub\\demo-app",
+    },
+    workItem: {
+      id: "login-flow",
+      title: "Repair login redirect flow",
+    },
+    interruption: {
+      stoppedAt: "2026-06-03T09:30:00.000Z",
+      reason: "context-window-reset",
+    },
+    changedFiles: [
+      { path: "apps/web/src/login.tsx", status: "modified" },
+      { path: "apps/web/test/login.test.ts", status: "added" },
+    ],
+    gates: [{ id: "unit", command: "npm test", status: "failed" }],
+    nextTask: "Fix the redirect assertion and rerun the unit gate.",
+  });
+
+  assert.equal(fixture.schemaVersion, "0.1");
+  assert.equal(fixture.command, "research_interrupted_resumption_fixture");
+  assert.equal(fixture.fixtureId, "interrupt-login-flow");
+  assert.deepEqual(
+    fixture.conditions.map((condition) => condition.id),
+    ["no-note", "chat-summary", "devflow-state"],
+  );
+  assert.equal(fixture.conditions[2].materials.eventLog[0].type, "work.created");
+  assert.equal(fixture.conditions[2].materials.eventLog.at(-1).type, "handoff.generated");
+  assert.match(fixture.conditions[2].materials.nextPrompt, /Fix the redirect assertion/);
+  assert.ok(fixture.metrics.some((metric) => metric.id === "time_to_first_correct_action"));
+  assert.ok(fixture.metrics.some((metric) => metric.id === "false_done_claim"));
+  assert.match(fixture.publicBoundary, /synthetic/);
+});
+
+test("interrupted resumption public fixture can seed status and latest handoff readers", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-interrupted-fixture-"));
+  const fixtureRoot = join(
+    process.cwd(),
+    "packages",
+    "core",
+    "test",
+    "fixtures",
+    "interrupted-task-resumption",
+    "minimal",
+  );
+  await mkdir(join(repoPath, ".devflow", "state"), { recursive: true });
+  await copyFile(join(fixtureRoot, "config.json"), join(repoPath, ".devflow", "config.json"));
+  await copyFile(join(fixtureRoot, "state", "events.jsonl"), join(repoPath, ".devflow", "state", "events.jsonl"));
+  await copyFile(join(fixtureRoot, "next-prompt.md"), join(repoPath, ".devflow", "next-prompt.md"));
+
+  const config = await readDevflowConfig(repoPath);
+  const state = await readDevflowState(repoPath);
+  const status = createStatusSummary({
+    repo: { absolutePath: repoPath },
+    state,
+    gates: config.gates,
+    workItemId: "interrupted-resumption-fixture",
+    reviewRequired: Boolean(config.review?.required),
+  });
+  const latest = await readLatestHandoff(repoPath);
+  const expectedStatus = JSON.parse(await readFile(join(fixtureRoot, "expected", "status.json"), "utf8"));
+  const expectedHandoff = JSON.parse(await readFile(join(fixtureRoot, "expected", "handoff-latest.json"), "utf8"));
+
+  assert.equal(status.sessions.attached[0].sessionId, expectedStatus.latestSessionId);
+  assert.equal(status.gates[0].lastRun.id, expectedStatus.failedGateId);
+  assert.match(latest.prompt, new RegExp(expectedStatus.nextTask.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.equal(latest.command, expectedHandoff.command);
+  assert.equal(latest.path, expectedHandoff.path);
+  assert.equal(latest.handoff.workItemId, expectedHandoff.workItemId);
 });
 
 test("init plan describes a local project scaffold without writing files", async () => {

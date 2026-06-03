@@ -6,9 +6,16 @@ import { join } from "node:path";
 import { cwd, exit } from "node:process";
 
 import {
+  discoverClaudeSessions,
   discoverCodexSessions,
+  discoverClineSessions,
+  findAgentSessionFiles,
   findCodexSessionFiles,
+  discoverOpenCodeSessions,
+  parseClineSessionJson,
   parseCodexSessionJsonl,
+  parseClaudeSessionJsonl,
+  parseOpenCodeSessionRecord,
 } from "../../adapters/src/index.js";
 import {
   createFinishSummary,
@@ -104,6 +111,8 @@ try {
     renderPromptRewrite(args.slice(2));
   } else if (command === "sessions" && args[1] === "codex") {
     await renderCodexSessions(args.slice(2));
+  } else if (command === "sessions" && ["claude", "opencode", "cline"].includes(args[1])) {
+    await renderAgentSessions(args[1], args.slice(2));
   } else if (command === "sessions" && args[1] === "attach-plan") {
     await renderSessionAttachPlan(args.slice(2));
   } else if (command === "sessions" && args[1] === "attach") {
@@ -494,6 +503,118 @@ async function renderCodexSessions(argsForCommand) {
   render(summary, options.json);
 }
 
+async function renderAgentSessions(adapter, argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  if (!options.input && !options.history) {
+    throw new Error(`sessions ${adapter} requires --input <json-file> or --history <path>.`);
+  }
+
+  const { records, files, warnings } = await readAgentSessionRecords(adapter, {
+    inputPath: options.input,
+    historyPath: options.history,
+  });
+  const discovery = discoverSessionAdapterRecords(adapter, {
+    repoPath,
+    records,
+  });
+  const summary = {
+    schemaVersion: "0.1",
+    command: `sessions_${adapter}`,
+    repo: {
+      absolutePath: repoPath,
+    },
+    files,
+    discovery,
+    warnings,
+  };
+
+  render(summary, options.json);
+}
+
+async function readAgentSessionRecords(adapter, input) {
+  const records = [];
+  const warnings = [];
+  const files = [];
+
+  if (input.inputPath) {
+    const raw = await readFile(input.inputPath, "utf8");
+    const parsed = JSON.parse(raw);
+    records.push(...(parsed.records ?? []).map((record) => parseSessionAdapterRecord(adapter, record)));
+  }
+
+  if (input.historyPath) {
+    const candidates = await findAgentSessionFiles(adapter, {
+      historyPath: input.historyPath,
+    });
+    files.push(...candidates.files);
+    warnings.push(...candidates.warnings);
+
+    for (const file of candidates.files) {
+      try {
+        const content = await readFile(file.path, "utf8");
+        records.push(...parseSessionAdapterFile(adapter, file, content));
+      } catch (error) {
+        warnings.push(`Failed to read ${adapter} session candidate ${file.path}: ${error.message}`);
+      }
+    }
+  }
+
+  return { records, files, warnings };
+}
+
+function parseSessionAdapterFile(adapter, file, content) {
+  if (adapter === "claude" && file.kind === "session-jsonl") {
+    return [
+      parseClaudeSessionJsonl(content, {
+        sourcePath: file.path,
+      }),
+    ];
+  }
+
+  if (file.kind === "session-jsonl") {
+    return String(content ?? "")
+      .split(/\r?\n/u)
+      .filter((line) => line.trim().length > 0)
+      .map((line) => parseSessionAdapterRecord(adapter, JSON.parse(line), { sourcePath: file.path }));
+  }
+
+  const parsed = JSON.parse(content);
+  const records = Array.isArray(parsed) ? parsed : parsed.records ?? [parsed];
+  return records.map((record) => parseSessionAdapterRecord(adapter, record, { sourcePath: file.path }));
+}
+
+function parseSessionAdapterRecord(adapter, record, input = {}) {
+  if (adapter === "opencode") {
+    return parseOpenCodeSessionRecord(record, input);
+  }
+
+  if (adapter === "cline") {
+    return parseClineSessionJson(record, input);
+  }
+
+  return {
+    ...record,
+    sourcePath: input.sourcePath ?? record.sourcePath,
+  };
+}
+
+function discoverSessionAdapterRecords(adapter, input) {
+  if (adapter === "claude") {
+    return discoverClaudeSessions(input);
+  }
+
+  if (adapter === "opencode") {
+    return discoverOpenCodeSessions(input);
+  }
+
+  if (adapter === "cline") {
+    return discoverClineSessions(input);
+  }
+
+  throw new Error(`Unsupported session adapter: ${adapter}`);
+}
+
 async function renderSessionAttachPlan(argsForCommand) {
   const options = parseOptions(argsForCommand);
   if (!options.input) {
@@ -839,6 +960,9 @@ function renderHelp(group) {
       "devflow sessions note --work <id> --summary <text> [--json]",
       "devflow sessions list [--work <id>] [--agent <name>] [--json]",
       "devflow sessions codex --codex-home <path> [--json]",
+      "devflow sessions claude --input <json-file>|--history <path> [--json]",
+      "devflow sessions opencode --input <json-file>|--history <path> [--json]",
+      "devflow sessions cline --input <json-file>|--history <path> [--json]",
     ],
     mcp: [
       "devflow mcp stdio",

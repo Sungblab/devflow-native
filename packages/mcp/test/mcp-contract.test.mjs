@@ -27,6 +27,9 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.explain_term"));
   assert.ok(names.includes("devflow.rewrite_prompt"));
   assert.ok(names.includes("devflow.sessions_codex"));
+  assert.ok(names.includes("devflow.sessions_claude"));
+  assert.ok(names.includes("devflow.sessions_opencode"));
+  assert.ok(names.includes("devflow.sessions_cline"));
   assert.ok(names.includes("devflow.sessions_attach_plan"));
   assert.ok(names.includes("devflow.sessions_attach"));
   assert.ok(names.includes("devflow.sessions_list"));
@@ -959,6 +962,78 @@ test("MCP sessions_codex renders explicit read-only Codex discovery JSON", async
   assert.equal(result.structuredContent.discovery.sessions[0].project.confidence, "high");
   assert.equal(result.structuredContent.discovery.sessions[0].signals.hasFileEdits, true);
   assert.match(result.content[0].text, /sessions_codex/);
+});
+
+test("MCP session adapter tools normalize explicit Claude OpenCode and Cline records", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-agent-records-"));
+  const claude = await callTool("devflow.sessions_claude", {
+    repo: repoPath,
+    records: [
+      {
+        id: "claude-mcp-1",
+        cwd: repoPath,
+        hasToolCalls: true,
+        changedFiles: ["packages/adapters/src/index.js"],
+      },
+    ],
+  });
+  const opencode = await callTool("devflow.sessions_opencode", {
+    repo: repoPath,
+    records: [
+      {
+        id: "opencode-mcp-1",
+        workspace: repoPath,
+        toolCalls: [{ name: "edit" }],
+        files: ["packages/mcp/src/index.js"],
+      },
+    ],
+  });
+  const cline = await callTool("devflow.sessions_cline", {
+    repo: repoPath,
+    records: [
+      {
+        taskId: "cline-mcp-1",
+        cwd: repoPath,
+        messages: [{ type: "tool_use", tool: "editedExistingFile" }],
+        changedFiles: ["packages/cli/src/index.js"],
+      },
+    ],
+  });
+
+  assert.equal(claude.structuredContent.command, "sessions_claude");
+  assert.equal(claude.structuredContent.discovery.sessions[0].agent, "Claude Code");
+  assert.equal(claude.structuredContent.discovery.sessions[0].project.confidence, "high");
+  assert.equal(opencode.structuredContent.discovery.sessions[0].agent, "OpenCode");
+  assert.equal(opencode.structuredContent.discovery.sessions[0].signals.hasFileEdits, true);
+  assert.equal(cline.structuredContent.discovery.sessions[0].agent, "Cline");
+  assert.equal(cline.structuredContent.discovery.sessions[0].sessionId, "cline-mcp-1");
+});
+
+test("MCP session adapter tools can read explicit Claude history paths", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-claude-history-repo-"));
+  const historyRoot = await mkdtemp(join(tmpdir(), "devflow-mcp-claude-history-"));
+  await writeFile(
+    join(historyRoot, "project.jsonl"),
+    `${JSON.stringify({
+      sessionId: "claude-history-mcp-1",
+      cwd: repoPath,
+      timestamp: "2026-06-03T13:30:00.000Z",
+      type: "tool_use",
+      name: "Edit",
+      changedFiles: ["packages/mcp/src/index.js"],
+    })}\n`,
+  );
+
+  const result = await callTool("devflow.sessions_claude", {
+    repo: repoPath,
+    historyPath: historyRoot,
+  });
+
+  assert.equal(result.structuredContent.command, "sessions_claude");
+  assert.equal(result.structuredContent.files.length, 1);
+  assert.equal(result.structuredContent.discovery.sessions[0].sessionId, "claude-history-mcp-1");
+  assert.equal(result.structuredContent.discovery.sessions[0].project.confidence, "high");
+  assert.equal(result.structuredContent.discovery.sessions[0].signals.hasFileEdits, true);
 });
 
 test("MCP sessions_attach_plan renders dry-run attach proposals", async () => {

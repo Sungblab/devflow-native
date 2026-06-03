@@ -33,7 +33,7 @@ packages/adapters/
     fixtures/
 ```
 
-Current implementation starts with `src/index.js` and read-only Codex helpers:
+Current implementation starts with `src/index.js` and read-only session helpers:
 
 - `findCodexSessionFiles` locates `.jsonl` candidates under an explicit
   `codexHome/sessions` directory and returns file metadata only.
@@ -43,9 +43,20 @@ Current implementation starts with `src/index.js` and read-only Codex helpers:
 - `discoverCodexSessions` maps Codex-like session metadata supplied by callers
   into normalized `session.discovered` events, confidence levels, source paths,
   and warnings.
+- `findAgentSessionFiles` locates Claude Code, OpenCode, and Cline candidates
+  under an explicit caller-provided history path. It does not guess default
+  host directories.
+- `parseClaudeSessionJsonl` and `discoverClaudeSessions` apply the same safe
+  metadata contract to explicit Claude Code project history JSONL.
+- `parseOpenCodeSessionRecord`, `parseClineSessionJson`,
+  `discoverOpenCodeSessions`, and `discoverClineSessions` normalize explicit
+  OpenCode and Cline records supplied by callers.
+- `discoverAgentSessions` dispatches supported adapters into the shared
+  normalized discovery shape.
 
 These helpers do not read private history contents by default or write Devflow
-state yet.
+state. Hosts must provide explicit history paths, files, or records, then use the shared
+attach-plan and confirmed attach contracts to persist links.
 
 ## Agent Adapter Rules
 

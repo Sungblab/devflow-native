@@ -1,0 +1,6 @@
+{
+  "command": "handoff_latest",
+  "path": ".devflow/next-prompt.md",
+  "workItemId": "interrupted-resumption-fixture"
+}
+

@@ -76,6 +76,9 @@ packages/cli/
 - `devflow prompt next`
 - `devflow prompt rewrite`
 - `devflow sessions codex`
+- `devflow sessions claude`
+- `devflow sessions opencode`
+- `devflow sessions cline`
 - `devflow sessions attach-plan`
 - `devflow sessions attach`
 - `devflow sessions list`
@@ -124,6 +127,12 @@ idempotent by id, returning the existing event instead of appending duplicates.
 without manual re-entry. The
 `devflow sessions codex` is read-only and requires an explicit
 `--codex-home <path>` before it reads local Codex session candidates.
+`devflow sessions claude`, `devflow sessions opencode`, and
+`devflow sessions cline` are also read-only; they accept either `--input
+<json-file>` with caller-provided `records` or `--history <path>` pointing to
+an explicit exported file/directory. They normalize those records into the
+same discovery contract without guessing or probing private host history
+directories.
 `devflow sessions attach-plan` is a dry-run planner over an explicit JSON input
 file and does not write `.devflow` state. `devflow sessions attach` consumes a
 selected proposal from a plan file and writes a `session.attached` event only

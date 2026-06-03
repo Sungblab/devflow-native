@@ -17,6 +17,9 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.explain_term`
 - `devflow.rewrite_prompt`
 - `devflow.sessions_codex`
+- `devflow.sessions_claude`
+- `devflow.sessions_opencode`
+- `devflow.sessions_cline`
 - `devflow.sessions_attach_plan`
 - `devflow.sessions_attach`
 - `devflow.sessions_list`
@@ -68,7 +71,12 @@ is the confirmed write step for MCP hosts; it requires `confirm: true` before
 repairing built-in harness files or mergeable required-review config.
 
 `devflow.sessions_codex` is read-only and requires an explicit `codexHome`
-argument before it reads local Codex session candidates.
+argument before it reads local Codex session candidates. The adjacent
+`devflow.sessions_claude`, `devflow.sessions_opencode`, and
+`devflow.sessions_cline` tools are also read-only. They accept caller-provided
+`records` or an explicit `historyPath`; they do not guess private host history
+locations. All four tools return the same normalized discovery shape so hosts
+can feed the result into `devflow.sessions_attach_plan`.
 
 `devflow.sessions_attach_plan` is also read-only. It accepts explicit
 `workItems`, `sessions`, and optional `warnings` JSON arguments, then returns a
