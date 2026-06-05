@@ -2,23 +2,25 @@
 
 [한국어 문서](README.ko.md)
 
-Devflow Native is a local-first workflow harness for AI coding agents such as
-Codex and Claude Code.
+Stop AI coding agents from saying "done" when your repo has no evidence.
 
-It does not write code for you. Instead, it helps the repository remember what
-the agents did, what they verified, what still looks risky, and what the next
-session should pick up.
+Devflow Native is a repo-local evidence gate and handoff layer for Codex,
+Claude Code, and shell sessions. It does not write code for you. It records what
+agents changed, what they actually verified, what still looks risky, and what
+the next session should pick up.
 
 ## Why This Exists
 
 AI coding agents are getting better at generating code. The next bottleneck is
-often continuity:
+often trust and continuity:
 
 - What changed in the last session?
 - Which tests, typechecks, builds, or reviews actually ran?
 - What failed or was skipped?
 - Which repo docs and project rules should the next agent trust?
 - Is it really safe to say the task is done?
+- Did a short maintainer command such as `ㄱㄱ` or `끝내` mean continue,
+  finish, review, or hand off?
 
 Long context, chat history, and session compaction help, but they are not the
 same as project-local workflow state. Devflow keeps that state in the repo so a
@@ -29,15 +31,17 @@ rediscovering everything from scratch.
 
 Devflow is not trying to replace the tools around it.
 
-```text
-Superpowers: agent development habits and workflow skills
-CodeGraph:   codebase structure and context navigation
-Codex/Claude: execution hosts for coding agents
-Devflow:    work state, verification records, review state, and next-session prompts
-```
+| Tool layer | What it owns |
+| --- | --- |
+| Codex / Claude Code | Run coding agents inside the repo. |
+| Claude hooks / Codex skills | Add host-specific automation and instructions. |
+| Superpowers | Teach workflow habits such as TDD, debugging, planning, and review. |
+| TaskMaster-style tools | Track tasks and agent work queues. |
+| Devflow Native | Record repo-local evidence, block unsafe finish claims, and generate next-session handoffs. |
 
-In plain terms: Devflow asks the repo to remember enough that the next agent
-does not have to guess where the previous one stopped.
+In plain terms: Devflow asks the repo to remember enough evidence that the next
+agent does not have to guess where the previous one stopped, and the current
+agent cannot honestly claim "done" without proof.
 
 ## What It Does
 
@@ -197,8 +201,8 @@ docs              product, architecture, roadmap, examples, and public notes
 
 ## Status
 
-The current MVP includes the npm package, CLI, MCP handler, repo-local
-Codex/Claude plugin drafts, hooks, and finish guard. Hosted sync, richer
+The current v0.1 foundation release includes the npm package, CLI, MCP handler,
+repo-local Codex/Claude plugin drafts, hooks, and finish guard. Hosted sync, richer
 artifact generation, and broader adapter coverage are later work.
 
 Research notes, paper drafts, evaluation fixtures, and non-public data live in

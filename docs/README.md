@@ -6,7 +6,7 @@ This is the documentation router for Devflow Native.
 
 | Need | Document |
 | --- | --- |
-| Try the source-first MVP | [quickstart.md](./quickstart.md) |
+| Try the source-first release | [quickstart.md](./quickstart.md) |
 | Release and npm publish checklist | [release.md](./release.md) |
 | Product thesis and user problem | [product-plan.md](./product-plan.md) |
 | Native harness direction for Codex, Claude Code, Superpowers, and CodeGraph | [harness.md](./harness.md) |

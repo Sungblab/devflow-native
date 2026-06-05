@@ -10,17 +10,18 @@ verification records, and next-session handoffs.
 Devflow Native should be introduced as:
 
 ```text
-Devflow Native is a local-first workflow recorder for AI coding sessions.
-It helps Codex, Claude Code, and shell sessions resume from verified repo state
-instead of scattered chat history.
+Stop AI coding agents from saying "done" when your repo has no evidence.
+Devflow Native is a repo-local evidence gate and handoff layer for Codex,
+Claude Code, and shell sessions.
 ```
 
 The first block of every public surface should answer three questions quickly:
 
-- **What is it?** A local-first workflow continuity harness for AI coding
-  agents.
+- **What is it?** A repo-local evidence gate and handoff layer for AI coding
+  sessions.
 - **Why use it?** It records work state, gates, review evidence, and handoff
-  prompts so the next session does not restart from memory.
+  prompts so agents cannot claim done without proof and the next session does
+  not restart from memory.
 - **How is it different?** It is not another coding agent or dashboard; it is
   the repo-local truth layer below Codex, Claude Code, Superpowers, and future
   agent hosts.

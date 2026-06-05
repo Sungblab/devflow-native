@@ -2,16 +2,16 @@
 
 [English README](README.md)
 
-Devflow Native는 Codex, Claude Code 같은 AI 코딩 에이전트 주변에 붙는
-local-first workflow harness입니다.
+AI 코딩 에이전트가 증거 없이 "완료"라고 말하지 못하게 만듭니다.
 
-코드를 대신 짜는 도구가 아닙니다. 대신 repo가 에이전트가 무엇을 했고, 무엇을
-검증했고, 무엇이 아직 위험하고, 다음 세션이 어디서 이어가야 하는지 기억하게
-만듭니다.
+Devflow Native는 Codex, Claude Code, shell session 주변에 붙는 repo-local
+evidence gate와 handoff layer입니다. 코드를 대신 짜는 도구가 아닙니다. 대신
+repo가 에이전트가 무엇을 바꿨고, 무엇을 실제로 검증했고, 무엇이 아직
+위험하고, 다음 세션이 어디서 이어가야 하는지 기억하게 만듭니다.
 
 ## 왜 필요한가
 
-AI 코딩 에이전트는 점점 코드를 잘 생성합니다. 하지만 실제 병목은 종종
+AI 코딩 에이전트는 점점 코드를 잘 생성합니다. 하지만 실제 병목은 종종 신뢰와
 continuity입니다.
 
 - 지난 세션에서 무엇이 바뀌었는가?
@@ -19,6 +19,8 @@ continuity입니다.
 - 무엇이 실패했고 무엇은 아직 안 했는가?
 - 다음 에이전트가 어떤 repo 문서와 규칙을 믿어야 하는가?
 - 정말 완료됐다고 말해도 되는가?
+- `ㄱㄱ`나 `끝내` 같은 짧은 지시가 continue, finish, review, handoff 중
+  무엇을 뜻했는가?
 
 긴 context, chat history, session compaction은 도움이 됩니다. 하지만 이것들은
 프로젝트 안에 남는 작업 상태 기록과 같지 않습니다. Devflow는 다음 Codex,
@@ -29,14 +31,16 @@ Claude Code, shell, 사람 리뷰 세션이 처음부터 다시 추측하지 않
 
 Devflow는 주변 도구를 대체하려는 제품이 아닙니다.
 
-```text
-Superpowers: agent가 따라야 할 개발 습관과 workflow skill
-CodeGraph:   codebase 구조와 context 탐색
-Codex/Claude: coding agent 실행 host
-Devflow:    작업 상태, 검증 기록, 리뷰 상태, 다음 세션 prompt
-```
+| 도구 층위 | 맡는 일 |
+| --- | --- |
+| Codex / Claude Code | repo 안에서 coding agent 실행 |
+| Claude hooks / Codex skills | host별 자동화와 지시문 제공 |
+| Superpowers | TDD, 디버깅, 계획, 리뷰 같은 작업 습관 제공 |
+| TaskMaster류 도구 | task와 agent 작업 queue 관리 |
+| Devflow Native | repo-local evidence 기록, 안전하지 않은 완료 선언 차단, 다음 세션 handoff 생성 |
 
-쉽게 말하면, 이전 세션이 어디서 멈췄는지 다음 에이전트가 추측하지 않게 만드는
+쉽게 말하면, Devflow는 이전 세션이 어디서 멈췄는지 다음 에이전트가 추측하지
+않게 만들고, 현재 에이전트가 증거 없이 "완료"라고 말하지 못하게 만드는
 쪽입니다.
 
 ## Devflow가 하는 일
@@ -194,9 +198,9 @@ docs              product, architecture, roadmap, examples, and public notes
 
 ## 현재 상태
 
-현재 MVP는 npm package, CLI, MCP handler, repo-local Codex/Claude plugin draft,
-hook, finish guard를 포함합니다. Hosted sync, richer artifact generation,
-broader adapter coverage는 이후 작업입니다.
+현재 v0.1 foundation release는 npm package, CLI, MCP handler, repo-local
+Codex/Claude plugin draft, hook, finish guard를 포함합니다. Hosted sync,
+richer artifact generation, broader adapter coverage는 이후 작업입니다.
 
 연구 노트, 논문 초안, 평가 fixture, 비공개 데이터는 별도 private repository에
 둡니다. 이 공개 저장소에는 제품 구현과 공개 문서만 둡니다.

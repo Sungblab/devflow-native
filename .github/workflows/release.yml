@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish npm package and GitHub Release
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+
+      - name: Verify tag matches package version
+        shell: bash
+        run: |
+          package_version="$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")"
+          expected_tag="v${package_version}"
+          if [ "${GITHUB_REF_NAME}" != "${expected_tag}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match package version ${package_version}."
+            exit 1
+          fi
+          echo "PACKAGE_VERSION=${package_version}" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run publish checks
+        run: npm run publish:check
+
+      - name: Publish to npm
+        shell: bash
+        run: |
+          if npm view "devflow-native@${PACKAGE_VERSION}" version >/dev/null 2>&1; then
+            echo "devflow-native@${PACKAGE_VERSION} is already published; skipping npm publish."
+          else
+            npm publish --access public
+          fi
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          notes_file="docs/releases/${GITHUB_REF_NAME}.md"
+          title="Devflow Native ${GITHUB_REF_NAME}"
+
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            if [ -f "${notes_file}" ]; then
+              gh release edit "${GITHUB_REF_NAME}" --title "${title}" --notes-file "${notes_file}"
+            else
+              gh release edit "${GITHUB_REF_NAME}" --title "${title}"
+            fi
+          else
+            if [ -f "${notes_file}" ]; then
+              gh release create "${GITHUB_REF_NAME}" --title "${title}" --notes-file "${notes_file}"
+            else
+              gh release create "${GITHUB_REF_NAME}" --title "${title}" --generate-notes
+            fi
+          fi

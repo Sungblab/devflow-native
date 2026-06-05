@@ -12,7 +12,7 @@ Claude Code, Codex, shell sessions, and manual review.
 - Node.js 20 or newer
 - PowerShell on Windows, or a POSIX shell on macOS/Linux
 
-No hosted service is required for the MVP loop.
+No hosted service is required for the v0.1 foundation loop.
 
 ## Recommended: Ask Your Agent To Install It
 
@@ -165,7 +165,7 @@ docs.
 
 ## Current Limits
 
-- The MVP package is published to npm as `devflow-native`.
+- The v0.1 foundation package is published to npm as `devflow-native`.
 - Plugin installation still depends on the host tool's local plugin support.
 - Devflow records and verifies workflow state; it does not run autonomous
   coding work by itself.
