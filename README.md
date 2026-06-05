@@ -1,6 +1,8 @@
 # Devflow Native
-<img width="2048" height="768" alt="ChatGPT Image Jun 6, 2026, 01_03_46 AM" src="https://github.com/user-attachments/assets/96578d16-e1a4-4d1f-8444-f6bfe3c9519d" />
-[한국어 문서](README.ko.md)
+
+<img width="2048" height="768" alt="Devflow Native README banner" src="https://github.com/user-attachments/assets/96578d16-e1a4-4d1f-8444-f6bfe3c9519d" />
+
+[한국어 문서](./README.ko.md)
 
 Stop AI coding agents from saying "done" when your repo has no evidence.
 
