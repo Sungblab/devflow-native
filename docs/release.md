@@ -8,7 +8,7 @@ use the tag-driven GitHub Actions workflow in `.github/workflows/release.yml`.
 The release source of truth is a git tag that matches the package version:
 
 ```text
-package.json version 0.1.3 -> git tag v0.1.3
+package.json version 0.1.4 -> git tag v0.1.4
 ```
 
 When a `v*` tag is pushed, the release workflow:
@@ -61,13 +61,13 @@ This command verifies:
 After the release commit is on `main`:
 
 ```powershell
-git tag v0.1.3
+git tag v0.1.4
 git push origin main
-git push origin v0.1.3
+git push origin v0.1.4
 ```
 
 The workflow should publish to npm and create or update the GitHub Release from
-`docs/releases/v0.1.3.md` when that notes file exists. If the notes file is
+`docs/releases/<tag>.md` when that notes file exists. If the notes file is
 missing, it falls back to generated GitHub notes.
 
 ## Manual Fallback
@@ -78,7 +78,7 @@ release from a local terminal session:
 ```powershell
 npm run publish:check
 npm publish --access public
-gh release create v0.1.3 --title "Devflow Native v0.1.3" --notes-file docs/releases/v0.1.3.md
+gh release create v0.1.4 --title "Devflow Native v0.1.4" --notes-file docs/releases/v0.1.4.md
 ```
 
 After publishing, verify from the registry:

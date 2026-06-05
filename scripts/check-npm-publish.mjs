@@ -24,6 +24,15 @@ function runNpm(args, options = {}) {
   return execFileSync("npm", args, merged);
 }
 
+function isPublishedPackageVersion(name, version) {
+  try {
+    runNpm(["view", `${name}@${version}`, "version", "--json"]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 const requiredFields = ["name", "version", "description", "license", "bin", "files", "repository"];
 const missing = requiredFields.filter((field) => manifest[field] === undefined);
@@ -44,14 +53,15 @@ if (manifest.bin?.devflow !== "packages/cli/src/index.js") {
   throw new Error("Package must expose the devflow CLI binary.");
 }
 
-const output = runNpm(["publish", "--dry-run", "--json"]);
-const dryRun = JSON.parse(output);
+const packOutput = runNpm(["pack", "--dry-run", "--json"]);
+const packRuns = JSON.parse(packOutput);
+const pack = Array.isArray(packRuns) ? packRuns[0] : packRuns;
 
-if (dryRun.id !== `${manifest.name}@${manifest.version}`) {
-  throw new Error(`Unexpected dry-run package id: ${dryRun.id}`);
+if (pack.name !== manifest.name || pack.version !== manifest.version) {
+  throw new Error(`Unexpected pack target: ${pack.name}@${pack.version}`);
 }
 
-const files = dryRun.files?.map((file) => file.path) ?? [];
+const files = pack.files?.map((file) => file.path) ?? [];
 const requiredPackageFiles = [
   "LICENSE",
   "README.md",
@@ -80,4 +90,19 @@ if (forbiddenFiles.length > 0) {
   throw new Error(`Dry-run package includes forbidden files: ${forbiddenFiles.join(", ")}`);
 }
 
-process.stdout.write(`npm publish dry-run passed for ${dryRun.id} with ${files.length} files.\n`);
+const alreadyPublished = isPublishedPackageVersion(manifest.name, manifest.version);
+
+if (!alreadyPublished) {
+  const output = runNpm(["publish", "--dry-run", "--json"]);
+  const dryRun = JSON.parse(output);
+
+  if (dryRun.id !== `${manifest.name}@${manifest.version}`) {
+    throw new Error(`Unexpected dry-run package id: ${dryRun.id}`);
+  }
+
+  process.stdout.write(`npm publish dry-run passed for ${dryRun.id} with ${files.length} files.\n`);
+} else {
+  process.stdout.write(
+    `npm pack dry-run passed for already-published ${manifest.name}@${manifest.version} with ${files.length} files.\n`,
+  );
+}
