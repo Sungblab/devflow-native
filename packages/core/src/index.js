@@ -1,6 +1,7 @@
-import { mkdir, readFile, appendFile, writeFile, stat } from "node:fs/promises";
+import { mkdir, readFile, appendFile, writeFile, stat, mkdtemp, rm } from "node:fs/promises";
 import { execFile, spawn } from "node:child_process";
 import { dirname, join } from "node:path";
+import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
@@ -870,6 +871,121 @@ export async function readHarnessHealth(repoPath, options = {}) {
   };
 }
 
+export async function readHarnessSmoke(repoPath, options = {}) {
+  const checks = [];
+  const skipHostCommands = Boolean(options.skipHostCommands);
+  const sessionSmoke = Boolean(options.sessionSmoke);
+
+  if (skipHostCommands) {
+    checks.push(
+      createHarnessSmokeCheck("codex-version", "skipped", "Host command checks skipped by option."),
+      createHarnessSmokeCheck("claude-version", "skipped", "Host command checks skipped by option."),
+      createHarnessSmokeCheck("codex-plugin-list", "skipped", "Host command checks skipped by option."),
+      createHarnessSmokeCheck("codex-local-marketplace-add", "skipped", "Host command checks skipped by option."),
+      createHarnessSmokeCheck("codex-local-plugin-add", "skipped", "Host command checks skipped by option."),
+      createHarnessSmokeCheck("codex-local-plugin-enabled", "skipped", "Host command checks skipped by option."),
+      createHarnessSmokeCheck("claude-plugin-validate", "skipped", "Host command checks skipped by option."),
+    );
+  } else {
+    checks.push(await runHarnessSmokeCommand("codex-version", "codex", ["--version"], repoPath));
+    checks.push(await runHarnessSmokeCommand("claude-version", "claude", ["--version"], repoPath));
+    checks.push(await runHarnessSmokeCommand("codex-plugin-list", "codex", ["plugin", "list"], repoPath));
+    checks.push(...await readCodexLocalInstallSmokeChecks(repoPath));
+    checks.push(await runHarnessSmokeCommand(
+      "claude-plugin-validate",
+      "claude",
+      ["plugin", "validate", join(repoPath, "plugins", "devflow")],
+      repoPath,
+    ));
+  }
+
+  for (const file of [
+    "plugins/devflow/.codex-plugin/plugin.json",
+    "plugins/devflow/.claude-plugin/plugin.json",
+    "plugins/devflow/hooks/hooks.json",
+    "plugins/devflow/hooks/claude-hooks.json",
+    "plugins/devflow/.mcp.json",
+  ]) {
+    checks.push(await readHarnessSmokeJson(repoPath, file));
+  }
+
+  for (const skill of [
+    "start",
+    "status",
+    "doctor",
+    "harness",
+    "work",
+    "gates",
+    "review",
+    "finish",
+    "next",
+    "rewrite",
+    "sessions",
+    "split",
+  ]) {
+    checks.push(await readHarnessSmokePath(repoPath, `plugins/devflow/skills/${skill}/SKILL.md`));
+  }
+
+  for (const command of [
+    "start",
+    "status",
+    "doctor",
+    "harness",
+    "work",
+    "gates",
+    "review",
+    "finish",
+    "next",
+    "explain",
+    "rewrite",
+    "sessions",
+    "split",
+  ]) {
+    checks.push(await readHarnessSmokePath(repoPath, `plugins/devflow/commands/${command}.md`));
+  }
+
+  checks.push(await readHarnessSmokeManifestField(
+    repoPath,
+    "codex-hooks-path",
+    "plugins/devflow/.codex-plugin/plugin.json",
+    "hooks",
+    "./hooks/hooks.json",
+  ));
+  checks.push(await readHarnessSmokeManifestField(
+    repoPath,
+    "claude-hooks-path",
+    "plugins/devflow/.claude-plugin/plugin.json",
+    "hooks",
+    "./hooks/claude-hooks.json",
+  ));
+
+  const health = await readHarnessHealth(repoPath, options);
+  checks.push(createHarnessSmokeCheck(
+    "devflow-harness-health",
+    health.status === "ok" ? "passed" : "failed",
+    health.status,
+  ));
+
+  if (sessionSmoke) {
+    checks.push(...await readClaudeSessionSmokeChecks(repoPath));
+  }
+
+  const failed = checks.some((check) => check.status === "failed");
+  const skipped = checks.some((check) => check.status === "skipped");
+
+  return {
+    schemaVersion: "0.1",
+    command: "harness_smoke",
+    repo: {
+      absolutePath: repoPath,
+    },
+    status: failed ? "failed" : skipped ? "partial" : "passed",
+    checks,
+    health,
+    warnings: health.warnings ?? [],
+  };
+}
+
 export function createHarnessHealthNextAction(summary) {
   const failedChecks = summary.checks?.filter((check) => check.status === "failed") ?? [];
   if (failedChecks.length === 0) {
@@ -893,6 +1009,277 @@ export function createHarnessHealthNextAction(summary) {
   }
 
   return null;
+}
+
+async function runHarnessSmokeCommand(name, command, args, cwd) {
+  try {
+    const result = await execFileAsync(command, args, {
+      cwd,
+      encoding: "utf8",
+      timeout: 30000,
+      shell: process.platform === "win32",
+    });
+    return createHarnessSmokeCheck(name, "passed", firstNonEmptyLine(`${result.stdout}\n${result.stderr}`));
+  } catch (error) {
+    return createHarnessSmokeCheck(
+      name,
+      "failed",
+      firstNonEmptyLine(`${error.stderr ?? ""}\n${error.stdout ?? ""}`) || error.message,
+    );
+  }
+}
+
+async function readHarnessSmokeJson(repoPath, relativePath) {
+  try {
+    JSON.parse(await readFile(join(repoPath, relativePath), "utf8"));
+    return createHarnessSmokeCheck(`json:${relativePath}`, "passed");
+  } catch (error) {
+    return createHarnessSmokeCheck(`json:${relativePath}`, "failed", error.message);
+  }
+}
+
+async function readHarnessSmokePath(repoPath, relativePath) {
+  const exists = await pathExists(join(repoPath, relativePath));
+  return createHarnessSmokeCheck(
+    `path:${relativePath}`,
+    exists ? "passed" : "failed",
+    exists ? "" : "missing",
+  );
+}
+
+async function readHarnessSmokeManifestField(repoPath, name, relativePath, field, expected) {
+  try {
+    const parsed = JSON.parse(await readFile(join(repoPath, relativePath), "utf8"));
+    const actual = parsed[field];
+    return createHarnessSmokeCheck(
+      name,
+      actual === expected ? "passed" : "failed",
+      actual === expected ? "" : `${field} expected ${expected}, got ${actual ?? "undefined"}`,
+    );
+  } catch (error) {
+    return createHarnessSmokeCheck(name, "failed", error.message);
+  }
+}
+
+function createHarnessSmokeCheck(name, status, message = "") {
+  return { name, status, message };
+}
+
+function firstNonEmptyLine(value) {
+  return String(value ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find(Boolean) ?? "";
+}
+
+async function readCodexLocalInstallSmokeChecks(repoPath) {
+  const checks = [];
+  const codexHome = await mkdtemp(join(tmpdir(), "devflow-codex-smoke-"));
+  const env = { ...process.env, CODEX_HOME: codexHome };
+
+  try {
+    const marketplace = await execFileAsync("codex", ["plugin", "marketplace", "add", repoPath], {
+      cwd: repoPath,
+      env,
+      encoding: "utf8",
+      timeout: 30000,
+      shell: process.platform === "win32",
+    });
+    const marketplaceOutput = `${marketplace.stdout ?? ""}\n${marketplace.stderr ?? ""}`;
+    const marketplacePassed = marketplaceOutput.includes("devflow-native-local");
+    checks.push(createHarnessSmokeCheck(
+      "codex-local-marketplace-add",
+      marketplacePassed ? "passed" : "failed",
+      marketplacePassed ? "" : firstNonEmptyLine(marketplaceOutput) || "Expected devflow-native-local marketplace.",
+    ));
+  } catch (error) {
+    checks.push(createHarnessSmokeCheck(
+      "codex-local-marketplace-add",
+      "failed",
+      firstNonEmptyLine(`${error.stderr ?? ""}\n${error.stdout ?? ""}`) || error.message,
+    ));
+    checks.push(createHarnessSmokeCheck("codex-local-plugin-add", "skipped", "Marketplace add failed."));
+    checks.push(createHarnessSmokeCheck("codex-local-plugin-enabled", "skipped", "Marketplace add failed."));
+    await rm(codexHome, { recursive: true, force: true });
+    return checks;
+  }
+
+  try {
+    const plugin = await execFileAsync("codex", ["plugin", "add", "devflow@devflow-native-local"], {
+      cwd: repoPath,
+      env,
+      encoding: "utf8",
+      timeout: 30000,
+      shell: process.platform === "win32",
+    });
+    const pluginOutput = `${plugin.stdout ?? ""}\n${plugin.stderr ?? ""}`;
+    const pluginPassed = pluginOutput.includes("Added plugin `devflow`");
+    checks.push(createHarnessSmokeCheck(
+      "codex-local-plugin-add",
+      pluginPassed ? "passed" : "failed",
+      pluginPassed ? "" : firstNonEmptyLine(pluginOutput) || "Expected Codex to add devflow plugin.",
+    ));
+  } catch (error) {
+    checks.push(createHarnessSmokeCheck(
+      "codex-local-plugin-add",
+      "failed",
+      firstNonEmptyLine(`${error.stderr ?? ""}\n${error.stdout ?? ""}`) || error.message,
+    ));
+    checks.push(createHarnessSmokeCheck("codex-local-plugin-enabled", "skipped", "Plugin add failed."));
+    await rm(codexHome, { recursive: true, force: true });
+    return checks;
+  }
+
+  try {
+    const list = await execFileAsync("codex", ["plugin", "list"], {
+      cwd: repoPath,
+      env,
+      encoding: "utf8",
+      timeout: 30000,
+      shell: process.platform === "win32",
+    });
+    const listOutput = `${list.stdout ?? ""}\n${list.stderr ?? ""}`;
+    const enabled = listOutput.includes("devflow@devflow-native-local") && listOutput.includes("installed, enabled");
+    checks.push(createHarnessSmokeCheck(
+      "codex-local-plugin-enabled",
+      enabled ? "passed" : "failed",
+      enabled ? "" : firstNonEmptyLine(listOutput) || "Expected devflow plugin to be installed and enabled.",
+    ));
+  } catch (error) {
+    checks.push(createHarnessSmokeCheck(
+      "codex-local-plugin-enabled",
+      "failed",
+      firstNonEmptyLine(`${error.stderr ?? ""}\n${error.stdout ?? ""}`) || error.message,
+    ));
+  } finally {
+    await rm(codexHome, { recursive: true, force: true });
+  }
+
+  return checks;
+}
+
+async function readClaudeSessionSmokeChecks(repoPath) {
+  const pluginPath = join(repoPath, "plugins", "devflow");
+  const prompt = "Do not use tools. Reply exactly: DEVFLOW_NATIVE_SMOKE_OK";
+  let output = "";
+  let commandFailed = null;
+
+  try {
+    const result = await execFileAsync("claude", [
+      "--plugin-dir",
+      pluginPath,
+      "--include-hook-events",
+      "--output-format",
+      "stream-json",
+      "--tools",
+      "",
+      "--max-budget-usd",
+      "0.02",
+      "-p",
+      prompt,
+    ], {
+      cwd: repoPath,
+      encoding: "utf8",
+      timeout: 60000,
+      maxBuffer: 20 * 1024 * 1024,
+      shell: process.platform === "win32",
+    });
+    output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
+  } catch (error) {
+    commandFailed = error;
+    output = `${error.stdout ?? ""}\n${error.stderr ?? ""}`;
+  }
+
+  const events = parseJsonLines(output);
+  const init = events.find((event) => event?.type === "system" && event?.subtype === "init") ?? null;
+  const sessionStartResponse = events.find((event) => (
+    event?.type === "system"
+    && event?.subtype === "hook_response"
+    && event?.hook_event === "SessionStart"
+    && String(event?.output ?? "").includes("Devflow start context")
+  ));
+  const userPromptResponse = events.find((event) => (
+    event?.type === "system"
+    && event?.subtype === "hook_response"
+    && event?.hook_event === "UserPromptSubmit"
+    && String(event?.output ?? "").includes("Devflow prompt interpretation context")
+  ));
+  const resultEvent = events.find((event) => event?.type === "result") ?? null;
+
+  const hasDevflowSlashCommands = ["devflow:start", "devflow:status", "devflow:finish", "devflow:harness", "devflow:explain"].every((command) => (
+    init?.slash_commands?.includes(command)
+  ));
+  const hasDevflowSkills = ["devflow:start", "devflow:status", "devflow:finish", "devflow:harness", "devflow:explain"].every((skill) => (
+    init?.skills?.includes(skill)
+  ));
+  const hasDevflowMcp = init?.mcp_servers?.some((server) => (
+    String(server?.name ?? "").includes("plugin:devflow:devflow")
+  ));
+  const checks = [
+    createHarnessSmokeCheck(
+      "claude-session-devflow-plugin",
+      init?.plugins?.some((plugin) => plugin?.name === "devflow") ? "passed" : "failed",
+      init ? "" : "Claude stream did not include an init event.",
+    ),
+    createHarnessSmokeCheck(
+      "claude-session-devflow-slash-commands",
+      hasDevflowSlashCommands ? "passed" : "failed",
+      hasDevflowSlashCommands ? "" : "Expected devflow:start, devflow:status, devflow:finish, devflow:harness, and devflow:explain slash commands.",
+    ),
+    createHarnessSmokeCheck(
+      "claude-session-devflow-skills",
+      hasDevflowSkills ? "passed" : "failed",
+      hasDevflowSkills ? "" : "Expected devflow:start, devflow:status, devflow:finish, devflow:harness, and devflow:explain skills.",
+    ),
+    createHarnessSmokeCheck(
+      "claude-session-devflow-mcp",
+      hasDevflowMcp ? "passed" : "failed",
+      hasDevflowMcp ? "" : "Expected plugin:devflow:devflow MCP server in Claude init event.",
+    ),
+    createHarnessSmokeCheck(
+      "claude-session-start-hook",
+      sessionStartResponse ? "passed" : "failed",
+      sessionStartResponse ? "" : "Expected Devflow SessionStart hook context in Claude hook stream.",
+    ),
+    createHarnessSmokeCheck(
+      "claude-session-prompt-hook",
+      userPromptResponse ? "passed" : resultEvent?.is_error || commandFailed ? "skipped" : "failed",
+      userPromptResponse
+        ? ""
+        : "Expected Devflow UserPromptSubmit hook context; skipped when Claude auth fails before prompt processing.",
+    ),
+  ];
+
+  if (resultEvent?.is_error || commandFailed) {
+    checks.push(createHarnessSmokeCheck(
+      "claude-session-model-response",
+      "skipped",
+      firstNonEmptyLine(resultEvent?.result ?? commandFailed?.message ?? "Claude model response was unavailable after plugin init."),
+    ));
+  } else {
+    checks.push(createHarnessSmokeCheck(
+      "claude-session-model-response",
+      String(output).includes("DEVFLOW_NATIVE_SMOKE_OK") ? "passed" : "skipped",
+      "Claude session loaded; exact model response was not observed.",
+    ));
+  }
+
+  return checks;
+}
+
+function parseJsonLines(output) {
+  const events = [];
+  for (const line of String(output ?? "").split(/\r?\n/)) {
+    if (!line.trim()) {
+      continue;
+    }
+    try {
+      events.push(JSON.parse(line));
+    } catch {
+      // Ignore non-JSON diagnostics from host CLIs.
+    }
+  }
+  return events;
 }
 
 export async function readProjectHealth(repoPath, config = {}) {
@@ -1644,6 +2031,22 @@ export function createMistakeDetection(input = {}) {
     );
   }
 
+  if (detectPowerShellBashHeredoc({ platform, commandText, combined })) {
+    candidates.push(
+      createMistakeRecord({
+        id: "powershell-bash-heredoc-redirection",
+        category: "shell-file-io-friction",
+        scope: "project",
+        symptom: "Agent used Bash heredoc redirection in Windows PowerShell.",
+        correction:
+          "Use a PowerShell here-string piped to stdin, for example @'... '@ | node script.mjs, or use a repo-supported file/API input path.",
+        appliesTo: ["windows-powershell"],
+        confidence: "high",
+        evidence: createMistakeEvidence({ commandText, stderr, stdout }),
+      }),
+    );
+  }
+
   if (detectPlaywrightModuleUnavailable(combined)) {
     candidates.push(
       createMistakeRecord({
@@ -2135,12 +2538,39 @@ function harnessProbePaths() {
     "plugins/devflow/.codex-plugin/plugin.json",
     "plugins/devflow/.claude-plugin/plugin.json",
     "plugins/devflow/hooks/hooks.json",
+    "plugins/devflow/hooks/claude-hooks.json",
     "plugins/devflow/hooks/session-start.mjs",
     "plugins/devflow/hooks/user-prompt-submit.mjs",
+    "plugins/devflow/hooks/pre-tool-use.mjs",
+    "plugins/devflow/hooks/tool-result.mjs",
     "plugins/devflow/hooks/stop.mjs",
     "plugins/devflow/.mcp.json",
     "plugins/devflow/skills/start/SKILL.md",
+    "plugins/devflow/skills/status/SKILL.md",
+    "plugins/devflow/skills/doctor/SKILL.md",
+    "plugins/devflow/skills/harness/SKILL.md",
+    "plugins/devflow/skills/work/SKILL.md",
+    "plugins/devflow/skills/gates/SKILL.md",
+    "plugins/devflow/skills/review/SKILL.md",
+    "plugins/devflow/skills/split/SKILL.md",
+    "plugins/devflow/skills/next/SKILL.md",
+    "plugins/devflow/skills/rewrite/SKILL.md",
+    "plugins/devflow/skills/sessions/SKILL.md",
+    "plugins/devflow/skills/explain/SKILL.md",
     "plugins/devflow/skills/finish/SKILL.md",
+    "plugins/devflow/commands/start.md",
+    "plugins/devflow/commands/status.md",
+    "plugins/devflow/commands/doctor.md",
+    "plugins/devflow/commands/harness.md",
+    "plugins/devflow/commands/work.md",
+    "plugins/devflow/commands/gates.md",
+    "plugins/devflow/commands/review.md",
+    "plugins/devflow/commands/finish.md",
+    "plugins/devflow/commands/next.md",
+    "plugins/devflow/commands/explain.md",
+    "plugins/devflow/commands/rewrite.md",
+    "plugins/devflow/commands/sessions.md",
+    "plugins/devflow/commands/split.md",
     "docs/superpowers/specs",
     "docs/superpowers/plans",
     ".superpowers",
@@ -2173,9 +2603,22 @@ function createHarnessTargetSummary(target, existingPaths) {
       { path: "plugins/devflow/hooks/hooks.json", kind: "hooks" },
       { path: "plugins/devflow/hooks/session-start.mjs", kind: "hook-script" },
       { path: "plugins/devflow/hooks/user-prompt-submit.mjs", kind: "hook-script" },
+      { path: "plugins/devflow/hooks/pre-tool-use.mjs", kind: "hook-script" },
+      { path: "plugins/devflow/hooks/tool-result.mjs", kind: "hook-script" },
       { path: "plugins/devflow/hooks/stop.mjs", kind: "hook-script" },
       { path: "plugins/devflow/.mcp.json", kind: "mcp-config" },
       { path: "plugins/devflow/skills/start/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/status/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/doctor/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/harness/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/work/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/gates/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/review/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/split/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/next/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/rewrite/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/sessions/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/explain/SKILL.md", kind: "skill" },
       { path: "plugins/devflow/skills/finish/SKILL.md", kind: "skill" },
     ]);
   }
@@ -2184,13 +2627,39 @@ function createHarnessTargetSummary(target, existingPaths) {
     return createRequiredPathTarget("claude", existingPaths, [
       { path: "AGENTS.md", kind: "shared-instruction" },
       { path: "plugins/devflow/.claude-plugin/plugin.json", kind: "plugin-manifest" },
-      { path: "plugins/devflow/hooks/hooks.json", kind: "hooks" },
+      { path: "plugins/devflow/hooks/claude-hooks.json", kind: "hooks" },
       { path: "plugins/devflow/hooks/session-start.mjs", kind: "hook-script" },
       { path: "plugins/devflow/hooks/user-prompt-submit.mjs", kind: "hook-script" },
+      { path: "plugins/devflow/hooks/pre-tool-use.mjs", kind: "hook-script" },
+      { path: "plugins/devflow/hooks/tool-result.mjs", kind: "hook-script" },
       { path: "plugins/devflow/hooks/stop.mjs", kind: "hook-script" },
       { path: "plugins/devflow/.mcp.json", kind: "mcp-config" },
       { path: "plugins/devflow/skills/start/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/status/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/doctor/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/harness/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/work/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/gates/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/review/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/split/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/next/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/rewrite/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/sessions/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/skills/explain/SKILL.md", kind: "skill" },
       { path: "plugins/devflow/skills/finish/SKILL.md", kind: "skill" },
+      { path: "plugins/devflow/commands/start.md", kind: "command" },
+      { path: "plugins/devflow/commands/status.md", kind: "command" },
+      { path: "plugins/devflow/commands/doctor.md", kind: "command" },
+      { path: "plugins/devflow/commands/harness.md", kind: "command" },
+      { path: "plugins/devflow/commands/work.md", kind: "command" },
+      { path: "plugins/devflow/commands/gates.md", kind: "command" },
+      { path: "plugins/devflow/commands/review.md", kind: "command" },
+      { path: "plugins/devflow/commands/finish.md", kind: "command" },
+      { path: "plugins/devflow/commands/next.md", kind: "command" },
+      { path: "plugins/devflow/commands/explain.md", kind: "command" },
+      { path: "plugins/devflow/commands/rewrite.md", kind: "command" },
+      { path: "plugins/devflow/commands/sessions.md", kind: "command" },
+      { path: "plugins/devflow/commands/split.md", kind: "command" },
     ]);
   }
 
@@ -2428,7 +2897,7 @@ function harnessFileContent(path) {
         version: "0.0.0",
         description: "Repo-local workflow continuity for Claude Code.",
         skills: "./skills/",
-        hooks: "./hooks/hooks.json",
+        hooks: "./hooks/claude-hooks.json",
         mcpServers: "./.mcp.json",
         keywords: ["handoff", "review", "gates", "continuity"],
       },
@@ -2441,17 +2910,77 @@ function harnessFileContent(path) {
           SessionStart: [
             {
               matcher: "startup|resume",
-              hooks: [{ type: "command", command: "node \"$PLUGIN_ROOT/hooks/session-start.mjs\"" }],
+              hooks: [{ type: "command", command: "node \"\${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs\"" }],
             },
           ],
           UserPromptSubmit: [
             {
-              hooks: [{ type: "command", command: "node \"$PLUGIN_ROOT/hooks/user-prompt-submit.mjs\"" }],
+              hooks: [{ type: "command", command: "node \"\${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit.mjs\"" }],
+            },
+          ],
+          PreToolUse: [
+            {
+              matcher: "Bash|PowerShell|Shell",
+              hooks: [{ type: "command", command: "node \"\${CLAUDE_PLUGIN_ROOT}/hooks/pre-tool-use.mjs\"" }],
+            },
+          ],
+          PostToolUse: [
+            {
+              matcher: "Bash|PowerShell|Shell",
+              hooks: [{ type: "command", command: "node \"\${CLAUDE_PLUGIN_ROOT}/hooks/tool-result.mjs\"" }],
             },
           ],
           Stop: [
             {
-              hooks: [{ type: "command", command: "node \"$PLUGIN_ROOT/hooks/stop.mjs\"" }],
+              hooks: [{ type: "command", command: "node \"\${CLAUDE_PLUGIN_ROOT}/hooks/stop.mjs\"" }],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "plugins/devflow/hooks/claude-hooks.json": `${JSON.stringify(
+      {
+        hooks: {
+          SessionStart: [
+            {
+              matcher: "startup|resume",
+              hooks: [{ type: "command", command: "node \"\${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs\"" }],
+            },
+          ],
+          UserPromptSubmit: [
+            {
+              hooks: [{ type: "command", command: "node \"\${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit.mjs\"" }],
+            },
+          ],
+          UserPromptExpansion: [
+            {
+              matcher: "start|finish|next|rewrite|sessions|split|explain",
+              hooks: [{ type: "command", command: "node \"\${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit.mjs\"" }],
+            },
+          ],
+          PreToolUse: [
+            {
+              matcher: "Bash|PowerShell|Shell",
+              hooks: [{ type: "command", command: "node \"\${CLAUDE_PLUGIN_ROOT}/hooks/pre-tool-use.mjs\"" }],
+            },
+          ],
+          PostToolUse: [
+            {
+              matcher: "Bash|PowerShell|Shell",
+              hooks: [{ type: "command", command: "node \"\${CLAUDE_PLUGIN_ROOT}/hooks/tool-result.mjs\"" }],
+            },
+          ],
+          PostToolUseFailure: [
+            {
+              matcher: "Bash|PowerShell|Shell",
+              hooks: [{ type: "command", command: "node \"\${CLAUDE_PLUGIN_ROOT}/hooks/tool-result.mjs\"" }],
+            },
+          ],
+          Stop: [
+            {
+              hooks: [{ type: "command", command: "node \"\${CLAUDE_PLUGIN_ROOT}/hooks/stop.mjs\"" }],
             },
           ],
         },
@@ -2473,7 +3002,9 @@ function harnessFileContent(path) {
       2,
     )}\n`,
     "plugins/devflow/hooks/session-start.mjs": createHarnessHookScript("SessionStart"),
-    "plugins/devflow/hooks/user-prompt-submit.mjs": createHarnessHookScript("UserPromptSubmit"),
+    "plugins/devflow/hooks/user-prompt-submit.mjs": createHarnessUserPromptSubmitScript(),
+    "plugins/devflow/hooks/pre-tool-use.mjs": createHarnessPreToolUseScript(),
+    "plugins/devflow/hooks/tool-result.mjs": createHarnessToolResultScript(),
     "plugins/devflow/hooks/stop.mjs": createHarnessHookScript("Stop"),
     "plugins/devflow/skills/start/SKILL.md": [
       "---",
@@ -2486,6 +3017,61 @@ function harnessFileContent(path) {
       "Run `devflow doctor --json` and `devflow status --json` before command-heavy work.",
       "",
     ].join("\n"),
+    "plugins/devflow/skills/status/SKILL.md": createHarnessSkillFile(
+      "status",
+      "Inspect Devflow Native project truth, work state, sessions, gates, review requirements, and handoffs.",
+      "Run `devflow status --json`; use `devflow status --simple` only for compact human output.",
+    ),
+    "plugins/devflow/skills/doctor/SKILL.md": createHarnessSkillFile(
+      "doctor",
+      "Load local execution rules and repeated-mistake memory before command-heavy work.",
+      "Run `devflow doctor --json` and apply the returned execution contract before shell, browser, MCP, or test commands.",
+    ),
+    "plugins/devflow/skills/harness/SKILL.md": createHarnessSkillFile(
+      "harness",
+      "Inspect, install, verify, or repair native Codex and Claude Devflow harness files.",
+      "Run `devflow harness inspect --targets codex,claude --json`, plan writes before install, and verify with `devflow harness health --json`.",
+    ),
+    "plugins/devflow/skills/work/SKILL.md": createHarnessSkillFile(
+      "work",
+      "Create, start, update, ready, block, unblock, rename, or list Devflow work items.",
+      "Run `devflow status --json` and `devflow work list --json` before mutating work state.",
+    ),
+    "plugins/devflow/skills/gates/SKILL.md": createHarnessSkillFile(
+      "gates",
+      "Run configured verification gates and record pass or fail evidence.",
+      "Run `devflow gates run <gate-id> --work <id> --json` and treat failed commands as evidence.",
+    ),
+    "plugins/devflow/skills/review/SKILL.md": createHarnessSkillFile(
+      "review",
+      "Request or record review evidence before a task can be claimed done.",
+      "Run `devflow review request --work <id>` and record the outcome with `devflow review record --work <id> --json`.",
+    ),
+    "plugins/devflow/skills/split/SKILL.md": createHarnessSkillFile(
+      "split",
+      "Plan safe parallel Devflow work sessions with owned paths and verification gates.",
+      "Run `devflow split --json` and check owned paths, avoid paths, worktree commands, and merge order before launching parallel work.",
+    ),
+    "plugins/devflow/skills/next/SKILL.md": createHarnessSkillFile(
+      "next",
+      "Generate or read the next-session Devflow handoff prompt.",
+      "Run `devflow prompt next` or `devflow prompt latest` and include changed files, evidence, risks, and next task.",
+    ),
+    "plugins/devflow/skills/rewrite/SKILL.md": createHarnessSkillFile(
+      "rewrite",
+      "Rewrite a vague maintainer request into an agent-ready Devflow prompt.",
+      "Run `devflow prompt rewrite --request <text> --context <compact context> --json` and treat the rewrite as an interpretation aid.",
+    ),
+    "plugins/devflow/skills/sessions/SKILL.md": createHarnessSkillFile(
+      "sessions",
+      "Discover, attach, note, or list agent and manual session evidence.",
+      "Prefer read-only discovery first; attach sessions only with explicit confirmation.",
+    ),
+    "plugins/devflow/skills/explain/SKILL.md": createHarnessSkillFile(
+      "explain",
+      "Explain development, UI, git, testing, deployment, or agent terms in project context.",
+      "Run `devflow explain <term> --json` when the maintainer needs plain-language context.",
+    ),
     "plugins/devflow/skills/finish/SKILL.md": [
       "---",
       "name: devflow-finish",
@@ -2499,6 +3085,71 @@ function harnessFileContent(path) {
       "If `devflow finish` returns `review.nextAction.command` or `review.nextAction.recordCommand`, follow both commands before claiming completion.",
       "",
     ].join("\n"),
+    "plugins/devflow/commands/start.md": createHarnessCommandFile(
+      "Load Devflow start context before command-heavy work.",
+      "[--work <id>] [--agent <name>]",
+      "Run `devflow doctor --json`, then `devflow status --json $ARGUMENTS`; apply the execution contract and summarize active work, gates, review, handoff, and the first safe next action.",
+    ),
+    "plugins/devflow/commands/status.md": createHarnessCommandFile(
+      "Inspect Devflow project truth and current next action.",
+      "[--simple] [--work <id>]",
+      "Run `devflow status --json` or `devflow status --simple` when requested, then summarize branch, dirty files, work, sessions, gates, review, handoff, and one next action.",
+    ),
+    "plugins/devflow/commands/doctor.md": createHarnessCommandFile(
+      "Load local execution rules and repeated mistake memory.",
+      "[--platform windows-powershell|linux|macos]",
+      "Run `devflow doctor --json $ARGUMENTS` and apply the execution contract before command-heavy work.",
+    ),
+    "plugins/devflow/commands/harness.md": createHarnessCommandFile(
+      "Inspect, install, verify, or repair Codex and Claude Devflow harness files.",
+      "inspect|plan|install|health|repair [extra args]",
+      "Default to `devflow harness inspect --targets codex,claude --json`; explain writes before install or repair and verify with `devflow harness health --json`.",
+    ),
+    "plugins/devflow/commands/work.md": createHarnessCommandFile(
+      "Manage Devflow work items.",
+      "list|create|start|ready|block|unblock [extra args]",
+      "Run `devflow status --json` and the relevant `devflow work ... --json` command, then report work status and next verification or review action.",
+    ),
+    "plugins/devflow/commands/gates.md": createHarnessCommandFile(
+      "Run configured verification gates and record evidence.",
+      "run <gate-id> --work <id>",
+      "Run `devflow gates $ARGUMENTS --json`; treat failed commands as evidence and surface the failure directly.",
+    ),
+    "plugins/devflow/commands/review.md": createHarnessCommandFile(
+      "Request or record Devflow review evidence.",
+      "request|record --work <id> [extra args]",
+      "Run `devflow review $ARGUMENTS`; re-check finish blockers after recording review evidence.",
+    ),
+    "plugins/devflow/commands/finish.md": createHarnessCommandFile(
+      "Finish work only after gate, review, risk, and handoff evidence.",
+      "--work <id> [--guided]",
+      "Run `devflow status --json`, satisfy required review and gate evidence, then run `devflow finish $ARGUMENTS`.",
+    ),
+    "plugins/devflow/commands/next.md": createHarnessCommandFile(
+      "Generate or read the next-session Devflow prompt.",
+      "[--objective <text>] [--latest]",
+      "Run `devflow prompt latest` for `--latest`; otherwise run `devflow prompt next $ARGUMENTS`.",
+    ),
+    "plugins/devflow/commands/explain.md": createHarnessCommandFile(
+      "Explain a development, UI, web, git, testing, deployment, or agent term.",
+      "<term> [--context <text>]",
+      "Run `devflow explain $ARGUMENTS --json`; include surrounding agent output or project context when available.",
+    ),
+    "plugins/devflow/commands/rewrite.md": createHarnessCommandFile(
+      "Rewrite a vague maintainer request into an agent-ready Devflow prompt.",
+      "<raw request>",
+      "Run `devflow status --json`, then `devflow prompt rewrite --request \"$ARGUMENTS\" --context <compact status/context> --json`.",
+    ),
+    "plugins/devflow/commands/sessions.md": createHarnessCommandFile(
+      "Discover, attach, note, or list Devflow session evidence.",
+      "list|note|attach-plan|attach|codex|claude [extra args]",
+      "Run the relevant `devflow sessions $ARGUMENTS --json` command; only attach sessions with explicit confirmation.",
+    ),
+    "plugins/devflow/commands/split.md": createHarnessCommandFile(
+      "Plan safe parallel Devflow work sessions.",
+      "[--goal <text>] [--sessions <n>]",
+      "Run `devflow doctor --json`, then `devflow split $ARGUMENTS --json` and report owned paths, avoid paths, gates, and prompts.",
+    ),
   };
 
   return contents[path] ?? null;
@@ -2555,7 +3206,7 @@ async function validateHarnessJsonFiles(repoPath, inspect) {
 
   for (const target of Object.values(inspect.targets ?? {})) {
     for (const check of target.checks ?? []) {
-      if (check.present && (check.kind === "plugin-manifest" || check.kind === "mcp-config")) {
+      if (check.present && (check.kind === "plugin-manifest" || check.kind === "mcp-config" || check.kind === "hooks")) {
         jsonPaths.push(check.path);
       }
     }
@@ -2566,13 +3217,13 @@ async function validateHarnessJsonFiles(repoPath, inspect) {
       const raw = await readFile(join(repoPath, path), "utf8");
       JSON.parse(raw);
       checks.push({
-        kind: path.endsWith(".mcp.json") ? "mcp-config" : "manifest-json",
+        kind: path.endsWith(".mcp.json") ? "mcp-config" : path.endsWith("hooks.json") ? "hooks-json" : "manifest-json",
         path,
         status: "passed",
       });
     } catch (error) {
       checks.push({
-        kind: path.endsWith(".mcp.json") ? "mcp-config" : "manifest-json",
+        kind: path.endsWith(".mcp.json") ? "mcp-config" : path.endsWith("hooks.json") ? "hooks-json" : "manifest-json",
         path,
         status: "failed",
         message: error.message,
@@ -2678,6 +3329,40 @@ function validateHarnessHookOutput(path, parsed) {
   return { ok: true, message: "Hook script executed and returned structured output." };
 }
 
+function createHarnessSkillFile(name, description, body) {
+  return [
+    "---",
+    `name: ${name}`,
+    `description: ${description}`,
+    "---",
+    "",
+    `# Devflow ${toTitleCase(name)}`,
+    "",
+    body,
+    "",
+  ].join("\n");
+}
+
+function createHarnessCommandFile(description, argumentHint, body) {
+  return [
+    "---",
+    `description: ${description}`,
+    `argument-hint: ${JSON.stringify(String(argumentHint))}`,
+    "---",
+    "",
+    body,
+    "",
+  ].join("\n");
+}
+
+function toTitleCase(value) {
+  return String(value)
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
 function createHarnessGateHealth(gates) {
   const normalized = normalizeGates(gates);
   const invalid = validateGates(normalized);
@@ -2736,6 +3421,285 @@ function createHarnessHookScript(defaultEventName) {
     "  } catch {",
     "    return '';",
     "  }",
+    "}",
+  ].join("\n");
+}
+
+function createHarnessUserPromptSubmitScript() {
+  return [
+    "#!/usr/bin/env node",
+    "",
+    "const { execFileSync } = await import('node:child_process');",
+    "const { existsSync } = await import('node:fs');",
+    "const { join } = await import('node:path');",
+    "",
+    "const chunks = [];",
+    "for await (const chunk of process.stdin) {",
+    "  chunks.push(chunk);",
+    "}",
+    "",
+    "let payload = {};",
+    "try {",
+    "  const raw = Buffer.concat(chunks).toString('utf8').trim();",
+    "  payload = raw ? JSON.parse(raw) : {};",
+    "} catch {",
+    "  payload = {};",
+    "}",
+    "",
+    "const eventName = payload.hook_event_name ?? 'UserPromptSubmit';",
+    "const repoPath = payload.cwd ?? process.cwd();",
+    "const prompt = payload.prompt ?? payload.user_prompt ?? payload.message ?? payload.command ?? payload.expanded_prompt ?? payload.expansion ?? '';",
+    "const intent = detectIntent(prompt);",
+    "const status = runDevflow(repoPath, ['status', '--json']);",
+    "",
+    "if (!intent && shouldRewritePrompt(prompt)) {",
+    "  const rewriteOutput = runDevflow(repoPath, ['prompt', 'rewrite', '--request', prompt, '--context', compact(status, 1800), '--json']);",
+    "  let rewrite = null;",
+    "  try { rewrite = rewriteOutput ? JSON.parse(rewriteOutput) : null; } catch { rewrite = null; }",
+    "  const context = [",
+    "    'Devflow prompt interpretation context:',",
+    "    '- Treat this as an interpretation aid, not a replacement for the user request.',",
+    "    '- Resolve missing details from repo docs, git state, gates, and recent handoffs before asking questions.',",
+    "    '- Keep the implementation to the next safe slice unless the maintainer explicitly asks for broader scope.',",
+    "    '',",
+    "    'Agent-ready prompt:',",
+    "    rewrite?.agentReadyPrompt?.trim() ?? compact(rewriteOutput, 2200),",
+    "    '',",
+    "    'Current compact status:',",
+    "    compact(status, 1800),",
+    "  ].join('\\n');",
+    "  writeContext(eventName, context, 'Devflow prompt rewrite');",
+    "  process.exit(0);",
+    "}",
+    "",
+    "if (!intent) {",
+    "  writeContext(eventName, 'Devflow: no workflow intent detected.');",
+    "  process.exit(0);",
+    "}",
+    "",
+    "const context = [",
+    "  `Devflow detected intent: ${intent}`,",
+    "  '- Resolve fast maintainer wording from repo state before asking questions.',",
+    "  '- Prefer plugin/MCP state restoration over manual CLI instructions.',",
+    "  '- On finish/review intent, verify gates, run devflow review request when review is required, record devflow review record evidence, and record finish evidence before claiming completion.',",
+    "  '',",
+    "  'Recommended Devflow next actions:',",
+    "  ...intentNextActions(intent).map((action) => `- ${action}`),",
+    "  '',",
+    "  'Current compact status:',",
+    "  compact(status, 3000),",
+    "].join('\\n');",
+    "",
+    "writeContext(eventName, context, intent === 'continue_or_start' ? 'Devflow continue' : `Devflow ${intent}`);",
+    "",
+    "function runDevflow(repoPath, args) {",
+    "  const localCli = join(repoPath, 'packages', 'cli', 'src', 'index.js');",
+    "  const command = existsSync(localCli) ? process.execPath : 'devflow';",
+    "  const commandArgs = existsSync(localCli) ? [localCli, ...args] : args;",
+    "  try {",
+    "    return execFileSync(command, commandArgs, { cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 }).trim();",
+    "  } catch {",
+    "    return '';",
+    "  }",
+    "}",
+    "",
+    "function writeContext(eventName, additionalContext, sessionTitle) {",
+    "  process.stdout.write(`${JSON.stringify({",
+    "    hookSpecificOutput: {",
+    "      hookEventName: eventName,",
+    "      additionalContext,",
+    "      ...(sessionTitle ? { sessionTitle } : {}),",
+    "    },",
+    "  })}\\n`);",
+    "}",
+    "",
+    "function compact(value, maxLength) {",
+    "  const text = typeof value === 'string' ? value : JSON.stringify(value, null, 2);",
+    "  return text.length > maxLength ? `${text.slice(0, maxLength)}\\n...truncated...` : text;",
+    "}",
+    "",
+    "function detectIntent(prompt = '') {",
+    "  const normalized = String(prompt).trim().toLowerCase();",
+    "  if (!normalized) return null;",
+    "  const finish = ['끝내', '마무리', 'finish', 'done', '완료', '릴리즈', 'release'];",
+    "  if (finish.some((token) => normalized.includes(token))) return 'finish';",
+    "  const handoff = ['다음 세션', 'handoff', 'next prompt', '이어받'];",
+    "  if (handoff.some((token) => normalized.includes(token))) return 'handoff';",
+    "  const review = ['리뷰', 'review', 'pr ', 'pull request'];",
+    "  if (review.some((token) => normalized.includes(token))) return 'review_or_pr';",
+    "  const artifact = ['html', 'dashboard', '리포트', 'artifact'];",
+    "  if (artifact.some((token) => normalized.includes(token))) return 'artifact_requested';",
+    "  const proceed = ['ㄱㄱ', '진행', '계속', 'continue', 'go on'];",
+    "  if (proceed.some((token) => normalized.includes(token))) return 'continue_or_start';",
+    "  return null;",
+    "}",
+    "",
+    "function shouldRewritePrompt(prompt = '') {",
+    "  const trimmed = String(prompt).trim();",
+    "  if (!trimmed) return false;",
+    "  if (trimmed.length >= 12) return true;",
+    "  return /[가-힣]/.test(trimmed) && /(해|줘|봐|ㄱㄱ|어케|계속)/.test(trimmed);",
+    "}",
+    "",
+    "function intentNextActions(intent) {",
+    "  switch (intent) {",
+    "    case 'finish': return ['devflow status --json', 'devflow review request --work <id> --target reviewer --persona strict-reviewer', 'devflow finish --work <id> --json'];",
+    "    case 'handoff': return ['devflow prompt next --json', 'read .devflow/next-prompt.md if present'];",
+    "    case 'review_or_pr': return ['devflow status --json', 'devflow review request --work <id> --target reviewer --persona strict-reviewer', 'use gh for PR operations when relevant'];",
+    "    case 'artifact_requested': return ['devflow status --json', 'generate an artifact only from structured state and only when it helps inspect dense state'];",
+    "    default: return ['devflow doctor --json', 'devflow status --json', 'choose the next concrete implementation slice'];",
+    "  }",
+    "}",
+  ].join("\n");
+}
+
+function createHarnessPreToolUseScript() {
+  return [
+    "#!/usr/bin/env node",
+    "",
+    "const chunks = [];",
+    "for await (const chunk of process.stdin) {",
+    "  chunks.push(chunk);",
+    "}",
+    "",
+    "let payload = {};",
+    "try {",
+    "  const raw = Buffer.concat(chunks).toString('utf8').trim();",
+    "  payload = raw ? JSON.parse(raw) : {};",
+    "} catch {",
+    "  payload = {};",
+    "}",
+    "",
+    "const eventName = payload.hook_event_name ?? 'PreToolUse';",
+    "const command = payload.tool_input?.command ?? payload.tool_input?.script ?? payload.tool_input?.cmd ?? payload.command ?? '';",
+    "const platform = inferPlatform(payload);",
+    "const issue = detectIssue(command, platform);",
+    "",
+    "if (issue) {",
+    "  process.stdout.write(`${JSON.stringify({",
+    "    hookSpecificOutput: {",
+    "      hookEventName: eventName,",
+    "      permissionDecision: 'deny',",
+    "      permissionDecisionReason: `Devflow command guard: ${issue.reason} Correction: ${issue.correction} Mistake id: ${issue.id}`,",
+    "    },",
+    "  })}\\n`);",
+    "  process.exit(0);",
+    "}",
+    "",
+    "if (eventName === 'HarnessHealth') {",
+    "  process.stdout.write(`${JSON.stringify({",
+    "    hookSpecificOutput: {",
+    "      hookEventName: eventName,",
+    "      additionalContext: 'Devflow pre-tool guard is active.',",
+    "    },",
+    "  })}\\n`);",
+    "  process.exit(0);",
+    "}",
+    "",
+    "process.stdout.write('{}\\n');",
+    "",
+    "function inferPlatform(input) {",
+    "  const explicit = input.platform?.name ?? input.platform ?? input.os ?? '';",
+    "  if (/windows|powershell|pwsh/i.test(explicit) || process.platform === 'win32') {",
+    "    return 'windows-powershell';",
+    "  }",
+    "  return 'posix';",
+    "}",
+    "",
+    "function detectIssue(command, platform) {",
+    "  if (!command || platform !== 'windows-powershell') {",
+    "    return null;",
+    "  }",
+    "  if (/<<-?\\s*['\"]?[A-Za-z_][A-Za-z0-9_]*/.test(command)) {",
+    "    return {",
+    "      id: 'powershell-bash-heredoc-redirection',",
+    "      reason: 'Bash heredoc redirection is not valid in Windows PowerShell.',",
+    "      correction: \"Use a PowerShell here-string piped to the command, for example @'... '@ | node script.mjs.\",",
+    "    };",
+    "  }",
+    "  if (/Select-Object\\s+-Index\\s+\\d+\\.\\.\\d+/i.test(command)) {",
+    "    return {",
+    "      id: 'powershell-select-object-range-syntax',",
+    "      reason: 'PowerShell parses an unparenthesized range as a string for Select-Object -Index.',",
+    "      correction: 'Wrap the range in parentheses, for example Select-Object -Index (108..156).',",
+    "    };",
+    "  }",
+    "  return null;",
+    "}",
+  ].join("\n");
+}
+
+function createHarnessToolResultScript() {
+  return [
+    "#!/usr/bin/env node",
+    "",
+    "const { execFileSync } = await import('node:child_process');",
+    "const { existsSync } = await import('node:fs');",
+    "const { join } = await import('node:path');",
+    "",
+    "const chunks = [];",
+    "for await (const chunk of process.stdin) {",
+    "  chunks.push(chunk);",
+    "}",
+    "",
+    "let payload = {};",
+    "try {",
+    "  const raw = Buffer.concat(chunks).toString('utf8').trim();",
+    "  payload = raw ? JSON.parse(raw) : {};",
+    "} catch {",
+    "  payload = {};",
+    "}",
+    "",
+    "const eventName = payload.hook_event_name ?? 'PostToolUse';",
+    "const repoPath = payload.cwd ?? process.cwd();",
+    "const command = payload.tool_input?.command ?? payload.tool_input?.script ?? payload.tool_input?.cmd ?? payload.command ?? '';",
+    "const stderr = [payload.error, payload.stderr, payload.tool_output?.stderr, payload.tool_response?.stderr, payload.output?.stderr, payload.result?.stderr].filter(Boolean).join('\\n');",
+    "const stdout = [payload.stdout, payload.tool_output?.stdout, payload.tool_response?.stdout, payload.output?.stdout, payload.result?.stdout].filter(Boolean).join('\\n');",
+    "",
+    "if (!command && !stderr && !stdout) {",
+    "  if (eventName === 'HarnessHealth') {",
+    "    process.stdout.write(`${JSON.stringify({ hookSpecificOutput: { hookEventName: eventName, additionalContext: 'Devflow tool-result hook is active.' } })}\\n`);",
+    "  } else {",
+    "    process.stdout.write('{}\\n');",
+    "  }",
+    "  process.exit(0);",
+    "}",
+    "",
+    "const args = ['mistakes', 'detect', '--json', '--record'];",
+    "if (command) args.push('--command', command);",
+    "if (stderr) args.push('--stderr', stderr);",
+    "if (stdout) args.push('--stdout', stdout);",
+    "const detectionOutput = runDevflow(repoPath, args);",
+    "let detection = null;",
+    "try { detection = detectionOutput ? JSON.parse(detectionOutput) : null; } catch { detection = null; }",
+    "const count = detection?.candidates?.length ?? 0;",
+    "",
+    "if (count === 0 && eventName !== 'HarnessHealth') {",
+    "  process.stdout.write('{}\\n');",
+    "  process.exit(0);",
+    "}",
+    "",
+    "process.stdout.write(`${JSON.stringify({",
+    "  hookSpecificOutput: {",
+    "    hookEventName: eventName,",
+    "    additionalContext: [`Devflow detected and recorded ${count} repeated-mistake candidate(s).`, compact(detection ?? detectionOutput, 2200)].join('\\n'),",
+    "  },",
+    "})}\\n`);",
+    "",
+    "function runDevflow(repoPath, args) {",
+    "  const localCli = join(repoPath, 'packages', 'cli', 'src', 'index.js');",
+    "  const command = existsSync(localCli) ? process.execPath : 'devflow';",
+    "  const commandArgs = existsSync(localCli) ? [localCli, ...args] : args;",
+    "  try {",
+    "    return execFileSync(command, commandArgs, { cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 }).trim();",
+    "  } catch {",
+    "    return '';",
+    "  }",
+    "}",
+    "",
+    "function compact(value, maxLength) {",
+    "  const text = typeof value === 'string' ? value : JSON.stringify(value, null, 2);",
+    "  return text.length > maxLength ? `${text.slice(0, maxLength)}\\n...truncated...` : text;",
     "}",
   ].join("\n");
 }
@@ -2880,6 +3844,17 @@ function detectPowerShellSelectObjectRange({ platform, commandText, combined }) 
     /Select-Object\s+-Index\s+\d+\.\.\d+/i.test(commandText) ||
     (/Cannot bind parameter 'Index'/i.test(combined) &&
       /Cannot convert value "\d+\.\.\d+" to type "System\.Int32"/i.test(combined))
+  );
+}
+
+function detectPowerShellBashHeredoc({ platform, commandText, combined }) {
+  if (platform !== "windows-powershell" && !/powershell|pwsh/i.test(combined)) {
+    return false;
+  }
+
+  return (
+    /<<-?\s*['"]?[A-Za-z_][A-Za-z0-9_]*/.test(commandText) ||
+    (/Missing file specification after redirection operator/i.test(combined) && /<<-?/.test(combined))
   );
 }
 

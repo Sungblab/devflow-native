@@ -1,6 +1,6 @@
 {
   "name": "devflow-native",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Repo-local evidence gates and handoffs for AI coding agents.",
   "license": "MIT",
   "type": "module",
@@ -26,6 +26,7 @@
   },
   "scripts": {
     "docs:check": "node scripts/check-doc-links.mjs",
+    "host:smoke": "node packages/cli/src/index.js harness smoke --json",
     "mcp:stdio": "node packages/mcp/src/stdio.js",
     "pack:check": "node scripts/check-package-install.mjs",
     "publish:check": "npm run docs:check && npm test && npm run pack:check && node scripts/check-npm-publish.mjs",

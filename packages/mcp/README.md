@@ -12,6 +12,7 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.harness_inspect`
 - `devflow.harness_plan`
 - `devflow.harness_health`
+- `devflow.harness_smoke`
 - `devflow.harness_repair`
 - `devflow.split`
 - `devflow.explain_term`
@@ -61,17 +62,28 @@ missing files, configured gates, invalid gate definitions, and recommendations
 without reading private agent history. A gate is invalid when its id is missing,
 its command is missing, or its id duplicates another configured gate.
 
-`devflow.harness_inspect`, `devflow.harness_plan`, and
-`devflow.harness_health` expose the native harness read path to MCP-capable
+`devflow.harness_inspect`, `devflow.harness_plan`, `devflow.harness_health`,
+and `devflow.harness_smoke` expose the native harness read path to MCP-capable
 hosts. They accept `repo` plus optional `targets` as an array or comma-separated
 string. The inspect and plan tools are read-only, and health validates installed
 plugin manifests, MCP config, hook scripts, `review.required`, and configured
-gates without running install or repair writes. When health finds a repairable
-failure such as a missing required-review setting, the structured result and
-text include a `nextAction.command` such as `devflow harness repair --confirm`;
-the health tool still does not perform the write itself. `devflow.harness_repair`
-is the confirmed write step for MCP hosts; it requires `confirm: true` before
-repairing built-in harness files or mergeable required-review config.
+gates without running install or repair writes. Smoke builds on health by also
+checking Codex/Claude host CLI availability, temporary Codex local marketplace
+installation for `devflow@devflow-native-local`, Claude plugin validation,
+expected skills, Claude command shortcuts, manifest hook paths, hook JSON, and
+MCP config. Pass `skipHostCommands: true` when the MCP host should avoid
+launching Codex or Claude and only validate repo-local packaging. Pass
+`sessionSmoke: true` to launch a minimal Claude Code `--plugin-dir`
+stream-json session and parse actual Devflow plugin, slash-command, skill, MCP,
+`SessionStart`, and `UserPromptSubmit` hook evidence. If model authentication
+fails after the init stream, the model response check is skipped while the
+plugin evidence remains visible. When health finds a repairable failure such as
+a missing required-review setting, the structured result and text include a
+`nextAction.command` such as
+`devflow harness repair --confirm`; the health tool still does not perform the
+write itself. `devflow.harness_repair` is the confirmed write step for MCP
+hosts; it requires `confirm: true` before repairing built-in harness files or
+mergeable required-review config.
 
 `devflow.sessions_codex` is read-only and requires an explicit `codexHome`
 argument before it reads local Codex session candidates. The adjacent
@@ -135,11 +147,12 @@ the review itself.
 `devflow.mistakes_add`, `devflow.mistakes_list`, and
 `devflow.mistakes_detect` expose the repeated-mistake repair loop to MCP
 hosts. `mistakes_detect` accepts command text plus stdout/stderr and returns
-known mistake candidates such as PowerShell range syntax and unavailable
-Playwright runtime errors. With `record: true`, it upserts the candidates into
-`.devflow/mistakes.json`; `devflow.doctor` then injects those corrections into
-future session context. These tools do not edit `AGENTS.md` or skill files;
-promotion to durable instructions remains a confirmation-gated follow-up.
+known mistake candidates such as PowerShell range syntax, Bash heredoc
+redirection in Windows PowerShell, and unavailable Playwright runtime errors.
+With `record: true`, it upserts the candidates into `.devflow/mistakes.json`;
+`devflow.doctor` then injects those corrections into future session context.
+These tools do not edit `AGENTS.md` or skill files; promotion to durable
+instructions remains a confirmation-gated follow-up.
 
 `devflow.finish` returns the same false-completion guard contract as the CLI.
 It reads configured gates, recorded `gate.finished` events, and configured

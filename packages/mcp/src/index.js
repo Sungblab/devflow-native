@@ -32,6 +32,7 @@ import {
   readHarnessHealth,
   readHarnessInspect,
   readHarnessPlan,
+  readHarnessSmoke,
   readProjectHealth,
   readDevflowConfig,
   readDevflowState,
@@ -75,6 +76,10 @@ const tools = [
   {
     name: "devflow.harness_health",
     description: "Validate installed native harness manifests, MCP config, hook scripts, and gates.",
+  },
+  {
+    name: "devflow.harness_smoke",
+    description: "Smoke-test native Codex and Claude plugin packaging, skills, commands, hooks, and harness health.",
   },
   {
     name: "devflow.harness_repair",
@@ -225,6 +230,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.harness_health") {
     return callHarnessHealth(args);
+  }
+
+  if (name === "devflow.harness_smoke") {
+    return callHarnessSmoke(args);
   }
 
   if (name === "devflow.harness_repair") {
@@ -423,6 +432,17 @@ async function callHarnessHealth(args) {
     : `devflow harness_health: ${summary.status}`;
 
   return toolResult(summary, text);
+}
+
+async function callHarnessSmoke(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const summary = await readHarnessSmoke(repoPath, {
+    targets: parseHarnessTargets(args.targets),
+    skipHostCommands: Boolean(args.skipHostCommands ?? args.skipHost),
+    sessionSmoke: Boolean(args.sessionSmoke ?? args.session),
+  });
+
+  return toolResult(summary, `devflow harness_smoke: ${summary.status}`);
 }
 
 async function callHarnessRepair(args) {

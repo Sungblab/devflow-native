@@ -16,5 +16,5 @@
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
-  "hooks": "./hooks/hooks.json"
+  "hooks": "./hooks/claude-hooks.json"
 }

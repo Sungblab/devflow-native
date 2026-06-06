@@ -16,14 +16,26 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
     await readFile(".agents/plugins/marketplace.json", "utf8"),
   );
   const hooks = JSON.parse(await readFile("plugins/devflow/hooks/hooks.json", "utf8"));
+  const claudeHooks = JSON.parse(await readFile("plugins/devflow/hooks/claude-hooks.json", "utf8"));
   const mcpConfig = JSON.parse(await readFile("plugins/devflow/.mcp.json", "utf8"));
   const startSkill = await readFile("plugins/devflow/skills/start/SKILL.md", "utf8");
+  const statusSkill = await readFile("plugins/devflow/skills/status/SKILL.md", "utf8");
+  const doctorSkill = await readFile("plugins/devflow/skills/doctor/SKILL.md", "utf8");
+  const harnessSkill = await readFile("plugins/devflow/skills/harness/SKILL.md", "utf8");
+  const workSkill = await readFile("plugins/devflow/skills/work/SKILL.md", "utf8");
+  const gatesSkill = await readFile("plugins/devflow/skills/gates/SKILL.md", "utf8");
+  const reviewSkill = await readFile("plugins/devflow/skills/review/SKILL.md", "utf8");
   const splitSkill = await readFile("plugins/devflow/skills/split/SKILL.md", "utf8");
   const nextSkill = await readFile("plugins/devflow/skills/next/SKILL.md", "utf8");
   const explainSkill = await readFile("plugins/devflow/skills/explain/SKILL.md", "utf8");
   const rewriteSkill = await readFile("plugins/devflow/skills/rewrite/SKILL.md", "utf8");
   const sessionsSkill = await readFile("plugins/devflow/skills/sessions/SKILL.md", "utf8");
   const finishSkill = await readFile("plugins/devflow/skills/finish/SKILL.md", "utf8");
+  const startCommand = await readFile("plugins/devflow/commands/start.md", "utf8");
+  const statusCommand = await readFile("plugins/devflow/commands/status.md", "utf8");
+  const explainCommand = await readFile("plugins/devflow/commands/explain.md", "utf8");
+  const reviewCommand = await readFile("plugins/devflow/commands/review.md", "utf8");
+  const finishCommand = await readFile("plugins/devflow/commands/finish.md", "utf8");
 
   assert.equal(manifest.name, "devflow");
   assert.equal(manifest.skills, "./skills/");
@@ -31,13 +43,18 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.equal(manifest.hooks, "./hooks/hooks.json");
   assert.match(manifest.interface.shortDescription, /project truth/i);
   assert.equal(claudeManifest.name, "devflow");
-  assert.equal(claudeManifest.hooks, "./hooks/hooks.json");
+  assert.equal(claudeManifest.hooks, "./hooks/claude-hooks.json");
   assert.match(claudeManifest.description, /continuity/i);
   assert.ok(claudeManifest.keywords.includes("handoff"));
   assert.equal(hooks.hooks.SessionStart[0].matcher, "startup|resume");
   assert.match(hooks.hooks.SessionStart[0].hooks[0].command, /session-start\.mjs/);
   assert.match(hooks.hooks.UserPromptSubmit[0].hooks[0].command, /user-prompt-submit\.mjs/);
+  assert.match(hooks.hooks.PreToolUse[0].hooks[0].command, /pre-tool-use\.mjs/);
+  assert.match(hooks.hooks.PostToolUse[0].hooks[0].command, /tool-result\.mjs/);
   assert.match(hooks.hooks.Stop[0].hooks[0].command, /stop\.mjs/);
+  assert.match(hooks.hooks.Stop[0].hooks[0].command, /CLAUDE_PLUGIN_ROOT/);
+  assert.match(claudeHooks.hooks.UserPromptExpansion[0].hooks[0].command, /user-prompt-submit\.mjs/);
+  assert.match(claudeHooks.hooks.PostToolUseFailure[0].hooks[0].command, /tool-result\.mjs/);
   assert.deepEqual(mcpConfig.mcpServers.devflow.command, "npx");
   assert.deepEqual(mcpConfig.mcpServers.devflow.args, ["--yes", "devflow-native@latest", "mcp", "stdio"]);
 
@@ -57,6 +74,14 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.match(startSkill, /devflow doctor --json/);
   assert.match(startSkill, /not dependent on any one profile/);
   assert.match(startSkill, /Get-Content -LiteralPath/);
+
+  assert.match(statusSkill, /devflow status --json/);
+  assert.match(doctorSkill, /devflow doctor --json/);
+  assert.match(harnessSkill, /devflow harness inspect/);
+  assert.match(workSkill, /devflow work list --json/);
+  assert.match(gatesSkill, /devflow gates run/);
+  assert.match(reviewSkill, /devflow review request/);
+  assert.match(reviewSkill, /devflow review record/);
 
   assert.match(splitSkill, /devflow split --json/);
   assert.match(splitSkill, /owned paths/);
@@ -95,6 +120,13 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.match(finishSkill, /Codex goal/);
   assert.match(finishSkill, /gh CLI/);
   assert.match(finishSkill, /commit, PR, continue, or next-session prompt/);
+  assert.match(startCommand, /devflow doctor --json/);
+  assert.match(startCommand, /devflow status --json/);
+  assert.match(statusCommand, /devflow status --json/);
+  assert.match(explainCommand, /devflow explain/);
+  assert.match(explainCommand, /plain-language/);
+  assert.match(reviewCommand, /devflow review/);
+  assert.match(finishCommand, /devflow finish/);
 });
 
 test("repo-local plugin hooks emit compact context for agent sessions", async () => {
@@ -126,6 +158,46 @@ test("repo-local plugin hooks emit compact context for agent sessions", async ()
   assert.match(stop.hookSpecificOutput.additionalContext, /devflow review request/);
   assert.match(stop.hookSpecificOutput.additionalContext, /devflow review record/);
   assert.match(stop.hookSpecificOutput.additionalContext, /Current compact status/);
+});
+
+test("repo-local tool hooks block shell mismatch and record mistake candidates", async () => {
+  const blocked = await runHook("plugins/devflow/hooks/pre-tool-use.mjs", {
+    hook_event_name: "PreToolUse",
+    cwd: process.cwd(),
+    platform: { name: "windows-powershell" },
+    tool_name: "Bash",
+    tool_input: {
+      command: "Get-Content -LiteralPath packages/core/src/index.js | Select-Object -Index 108..156",
+    },
+  });
+  const heredocBlocked = await runHook("plugins/devflow/hooks/pre-tool-use.mjs", {
+    hook_event_name: "PreToolUse",
+    cwd: process.cwd(),
+    platform: { name: "windows-powershell" },
+    tool_name: "Bash",
+    tool_input: {
+      command: "node packages/mcp/src/stdio.js << 'EOF'",
+    },
+  });
+  const toolResult = await runHook("plugins/devflow/hooks/tool-result.mjs", {
+    hook_event_name: "PostToolUseFailure",
+    cwd: process.cwd(),
+    platform: { name: "windows-powershell" },
+    tool_name: "Bash",
+    tool_input: {
+      command: "node packages/mcp/src/stdio.js << 'EOF'",
+    },
+    error: "ParserError: Missing file specification after redirection operator.",
+    record: false,
+  });
+
+  assert.equal(blocked.hookSpecificOutput.hookEventName, "PreToolUse");
+  assert.equal(blocked.hookSpecificOutput.permissionDecision, "deny");
+  assert.match(blocked.hookSpecificOutput.permissionDecisionReason, /Select-Object -Index/);
+  assert.equal(heredocBlocked.hookSpecificOutput.permissionDecision, "deny");
+  assert.match(heredocBlocked.hookSpecificOutput.permissionDecisionReason, /Bash heredoc/);
+  assert.equal(toolResult.hookSpecificOutput.hookEventName, "PostToolUseFailure");
+  assert.match(toolResult.hookSpecificOutput.additionalContext, /powershell-bash-heredoc-redirection/);
 });
 
 test("repo-local prompt hook understands terse Korean maintainer commands", async () => {
@@ -173,6 +245,20 @@ test("repo-local prompt hook applies workflow intent priority and next actions",
   assert.match(prPrompt.hookSpecificOutput.additionalContext, /devflow review request/);
   assert.match(artifactPrompt.hookSpecificOutput.additionalContext, /artifact_requested/);
   assert.match(artifactPrompt.hookSpecificOutput.additionalContext, /devflow status --json/);
+});
+
+test("repo-local prompt hook rewrites vague maintainer requests into agent context", async () => {
+  const prompt = await runHook("plugins/devflow/hooks/user-prompt-submit.mjs", {
+    hook_event_name: "UserPromptSubmit",
+    cwd: process.cwd(),
+    prompt: "클코랑 코덱스에서 내 기능 전부 더 네이티브 하게 만들어줘",
+  });
+
+  assert.equal(prompt.hookSpecificOutput.hookEventName, "UserPromptSubmit");
+  assert.equal(prompt.hookSpecificOutput.sessionTitle, "Devflow prompt rewrite");
+  assert.match(prompt.hookSpecificOutput.additionalContext, /Devflow prompt interpretation context/);
+  assert.match(prompt.hookSpecificOutput.additionalContext, /Agent-ready prompt/);
+  assert.match(prompt.hookSpecificOutput.additionalContext, /Objective:/);
 });
 
 test("repo-local session start hook surfaces the latest persisted handoff", async () => {

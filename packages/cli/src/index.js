@@ -24,6 +24,7 @@ import {
   readHarnessInspect,
   readHarnessHealth,
   readHarnessPlan,
+  readHarnessSmoke,
   createDoctorSummary,
   createInitPlan,
   createNextPrompt,
@@ -86,6 +87,8 @@ try {
     await renderHarnessInstall(args.slice(2));
   } else if (command === "harness" && args[1] === "health") {
     await renderHarnessHealth(args.slice(2));
+  } else if (command === "harness" && args[1] === "smoke") {
+    await renderHarnessSmoke(args.slice(2));
   } else if (command === "harness" && args[1] === "repair") {
     await renderHarnessRepair(args.slice(2));
   } else if (command === "mcp" && args[1] === "stdio") {
@@ -225,6 +228,23 @@ async function renderHarnessHealth(argsForCommand) {
   }
 
   renderHarnessHealthText(summary);
+}
+
+async function renderHarnessSmoke(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const summary = await readHarnessSmoke(repoPath, {
+    targets: parseTargetList(options.targets),
+    skipHostCommands: Boolean(options["skip-host"]),
+    sessionSmoke: Boolean(options["session-smoke"]),
+  });
+
+  if (options.json) {
+    render(summary, true);
+    return;
+  }
+
+  renderHarnessSmokeText(summary);
 }
 
 async function renderHarnessRepair(argsForCommand) {
@@ -996,6 +1016,7 @@ function renderHelp(group) {
       "devflow harness install --confirm [--json]",
       "devflow harness install --confirm --repo-visible [--json]",
       "devflow harness health [--json]",
+      "devflow harness smoke [--skip-host] [--session-smoke] [--json]",
       "devflow harness repair --confirm [--json]",
     ],
     work: [
@@ -1106,6 +1127,24 @@ function renderHarnessHealthText(summary) {
       `Next action: ${summary.nextAction.command}`,
       `Reason: ${summary.nextAction.reason}`,
     );
+  }
+
+  process.stdout.write(`${lines.join("\n")}\n`);
+}
+
+function renderHarnessSmokeText(summary) {
+  const failed = summary.checks.filter((check) => check.status === "failed");
+  const skipped = summary.checks.filter((check) => check.status === "skipped");
+  const lines = [
+    `harness_smoke: ${summary.status}`,
+    `Repo: ${summary.repo.absolutePath}`,
+    `Checks: ${summary.checks.length}`,
+    `Failed: ${failed.length}`,
+    `Skipped: ${skipped.length}`,
+  ];
+
+  for (const check of failed) {
+    lines.push(`Failed ${check.name}: ${check.message}`);
   }
 
   process.stdout.write(`${lines.join("\n")}\n`);
@@ -1261,7 +1300,9 @@ function parseOptionsAndPositionals(rawArgs) {
       key === "dry-run" ||
       key === "check" ||
       key === "repo-visible" ||
-      key === "record"
+      key === "record" ||
+      key === "skip-host" ||
+      key === "session-smoke"
     ) {
       options[key] = true;
       continue;

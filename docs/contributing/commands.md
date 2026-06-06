@@ -19,6 +19,7 @@ devflow harness inspect
 devflow harness plan
 devflow harness install
 devflow harness health
+devflow harness smoke
 devflow harness repair
 devflow gates run
 devflow work create
@@ -80,7 +81,7 @@ evidence.
 local work item registry.
 `doctor` is included early because plugin/skill-first workflows need a cheap
 way to avoid repeated local-environment mistakes.
-`devflow harness inspect/plan/install/health/repair` is the native adoption
+`devflow harness inspect/plan/install/health/smoke/repair` is the native adoption
 surface for existing repos using Codex, Claude Code, Superpowers, optional
 CodeGraph-style context providers, and git/finish guards.
 `devflow sessions codex` is included as a read-only adapter probe. It requires
@@ -249,15 +250,19 @@ devflow harness plan --targets codex,claude --json
 devflow harness install --targets codex,claude,git-hooks --confirm --json
 devflow harness install --targets codex,claude --confirm --repo-visible --json
 devflow harness health --json
+devflow harness smoke --json
+devflow harness smoke --skip-host --json
+devflow harness smoke --session-smoke --json
 devflow harness repair --json
 ```
 
 Targets:
 
-- `codex`: `.codex-plugin`, skills, hooks, optional `.mcp.json`, repo-local
-  `.codex/config.toml`, and `AGENTS.md` readiness
-- `claude`: `.claude-plugin`, skills, hooks, optional `.mcp.json`, project
-  `.claude/` files, and `CLAUDE.md` compatibility
+- `codex`: `.codex-plugin`, Devflow workflow skills, hooks, optional
+  `.mcp.json`, repo-local `.codex/config.toml`, and `AGENTS.md` readiness
+- `claude`: `.claude-plugin`, Devflow workflow skills, Claude command
+  shortcuts, hooks, optional `.mcp.json`, project `.claude/` files, and
+  `CLAUDE.md` compatibility
 - `superpowers`: installed/enabled methodology profile and visible skill usage
   that can count as workflow evidence
 - `codegraph`: optional graph context provider availability and freshness
@@ -276,11 +281,22 @@ Responsibilities:
 - `install`: write only confirmed missing harness pieces and avoid overwriting
   rich project instructions; it also enables `review.required` in
   `.devflow/config.json` while preserving existing gate definitions
-- `health`: verify hook paths, MCP launchers, plugin manifests, gates, and the
-  status/review/finish/next-prompt loop. It fails when `review.required` is not
-  enabled because finish-time review is part of the native harness contract.
-  Repairable failures include `nextAction.command` in JSON output and print a
-  text next action such as `devflow harness repair --confirm`.
+- `health`: verify hook config JSON, hook scripts, MCP launchers, plugin
+  manifests, gates, and the status/review/finish/next-prompt loop. It fails
+  when `review.required` is not enabled because finish-time review is part of
+  the native harness contract. Repairable failures include `nextAction.command`
+  in JSON output and print a text next action such as
+  `devflow harness repair --confirm`.
+- `smoke`: run the non-interactive native host packaging check. It verifies
+  Codex/Claude CLI availability, a temporary Codex local marketplace install
+  for `devflow@devflow-native-local`, Claude plugin validation, manifests, hook
+  JSON, expected skills, Claude command shortcuts, manifest hook paths, MCP
+  config, and `harness health`. Use `--skip-host` when CI or an MCP host should
+  avoid launching Codex or Claude and only validate repo-local packaging. Use
+  `--session-smoke` to launch a minimal Claude Code `--plugin-dir` stream and verify
+  actual Devflow plugin, slash-command, skill, MCP, `SessionStart`, and
+  `UserPromptSubmit` hook evidence. Model-auth failure after init is reported
+  as a skipped model-response check, not as missing plugin evidence.
 - `repair`: restore confirmed broken installed files that have built-in
   canonical content, such as malformed plugin manifests, malformed MCP config,
   hook scripts that fail the health contract, or missing `review.required`
@@ -294,6 +310,12 @@ Installed session-start hooks include the latest `.devflow/next-prompt.md`
 projection when present. This gives Codex or Claude Code the latest handoff at
 startup while keeping `.devflow/state/events.jsonl` as the canonical event
 source.
+
+Installed tool hooks add a narrow native guardrail around common agent-host
+failures. `PreToolUse` blocks high-confidence shell mismatch commands before
+execution. `PostToolUse` and Claude Code's `PostToolUseFailure` pass command
+failure text through `devflow mistakes detect --record`, so the next doctor or
+session-start context can remind the agent of the correction.
 
 ## `devflow gates run`
 
@@ -1043,6 +1065,8 @@ Outputs:
 Current detection signatures cover:
 
 - PowerShell `Select-Object -Index 108..156` range syntax mistakes
+- Bash heredoc redirection in Windows PowerShell, such as
+  `node script.mjs << 'EOF'`
 - Playwright package/runtime unavailable errors
 
 Detection records a candidate; it does not automatically edit `AGENTS.md` or

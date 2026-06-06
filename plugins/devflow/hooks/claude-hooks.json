@@ -25,6 +25,19 @@
         ]
       }
     ],
+    "UserPromptExpansion": [
+      {
+        "matcher": "start|finish|next|rewrite|sessions|split|explain",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit.mjs\"",
+            "statusMessage": "Adding Devflow prompt expansion context",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash|PowerShell|Shell",
@@ -46,6 +59,19 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/tool-result.mjs\"",
             "statusMessage": "Checking Devflow mistake memory",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash|PowerShell|Shell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/tool-result.mjs\"",
+            "statusMessage": "Recording Devflow mistake memory",
             "timeout": 10
           }
         ]

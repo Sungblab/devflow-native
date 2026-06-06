@@ -26,7 +26,8 @@ Build:
 - `devflow mistakes add/list/detect`
 - `devflow prompt next`
 - `devflow prompt latest`
-- repo-local Codex/Claude plugin hooks for start, prompt intent, and finish
+- repo-local Codex/Claude plugin hooks for start, prompt intent, prompt
+  rewrite context, tool preflight, tool result mistake detection, and finish
   guard context
 - local `.devflow/` state files
 - git dirty-file capture
@@ -34,13 +35,18 @@ Build:
 - platform execution contract and repeated-mistake memory capture/detection
 - repo-local Codex plugin wrappers for the start/status/doctor and finish
   evidence loops
+- repo-local Codex/Claude skills for status, doctor, harness, work, gates,
+  review, split, next, rewrite, sessions, explain, and finish workflows
+- Claude-compatible command shortcuts for explicit slash-command access to the
+  same workflows
 - Markdown next-session handoff output and latest prompt projection
 
 Exit criteria:
 
 - the maintainer can see the current repo/work/gate state before starting work
 - the maintainer can inspect Windows/PowerShell, WSL/Linux, or macOS execution
-  rules before asking an agent to run commands
+  rules before asking an agent to run commands, and native hooks can block or
+  record known high-confidence shell/tool mistakes when available
 - a completed task can record changed files, commands run, skipped checks,
   risks, and a next-session prompt
 - the product's first daily loop works from plugin skills, CLI, or future MCP
@@ -59,6 +65,7 @@ Build:
 - `devflow init`
 - `devflow harness inspect`
 - `devflow harness plan`
+- `devflow harness smoke`
 - template installer
 - `.devflow/config.json`
 - docs/maps/testing/workflow templates
@@ -97,6 +104,34 @@ content and mergeable required-review config, limited to malformed plugin
 manifests, malformed MCP config, hook scripts that fail the health contract,
 and missing `review.required`. Gate command repair remains a reported issue
 rather than an automatic rewrite.
+`devflow harness smoke` now wraps non-interactive native host packaging checks:
+Codex/Claude CLI availability, temporary Codex local marketplace installation
+of `devflow@devflow-native-local`, Claude plugin validation, manifests, hook
+JSON, skills, Claude command shortcuts, and `harness health`. The same contract
+is available through MCP as `devflow.harness_smoke`, with `skipHostCommands`
+for CI or hosts that cannot launch Codex/Claude.
+`devflow harness smoke --session-smoke`
+can also launch a minimal Claude Code `--plugin-dir` stream and verify actual
+Devflow plugin, slash-command, skill, MCP, `SessionStart`, and
+`UserPromptSubmit` hook evidence before any model-auth result is considered.
+
+Current implementation note: repo-local Codex and Claude plugin harnesses now
+include `SessionStart`, `UserPromptSubmit`, `PreToolUse`, post-tool result, and
+`Stop` coverage over the same local CLI/MCP contracts. The prompt hook can add
+compact `devflow prompt rewrite` context for vague maintainer requests so the
+agent receives an agent-ready interpretation without replacing the original
+prompt. The Codex-compatible hook file stays at
+`plugins/devflow/hooks/hooks.json`; the Claude-specific
+`plugins/devflow/hooks/claude-hooks.json` adds Claude-only
+`UserPromptExpansion` and `PostToolUseFailure` coverage. `PreToolUse` can deny
+known high-confidence Windows PowerShell shell mismatches before execution, and
+post-tool result hooks can call `devflow mistakes detect --record` so repeated
+failures become future `devflow doctor` context.
+The repo-local plugin now exposes the main Devflow feature set as skills for
+Codex and Claude, plus Claude-compatible flat Markdown command shortcuts for
+start, status, doctor, harness, work, gates, review, finish, next, explain,
+rewrite, sessions, and split. These command shortcuts are host UX only; they still route agents
+back to the same CLI/MCP contracts and `.devflow` state.
 
 ## Phase 3: Split Planning
 
@@ -161,6 +196,7 @@ Build:
 - `devflow.harness_inspect` MCP tool
 - `devflow.harness_plan` MCP tool
 - `devflow.harness_health` MCP tool
+- `devflow.harness_smoke` MCP tool
 - `devflow.harness_repair` MCP tool
 - `devflow.split` MCP tool
 - `devflow.finish` MCP tool
@@ -199,8 +235,8 @@ Exit criteria:
 
 Current implementation note: `packages/mcp` has testable handler functions for
 `devflow.status`, `devflow.harness_inspect`, `devflow.harness_plan`,
-`devflow.harness_health`, confirmed-write `devflow.harness_repair`,
-`devflow.split`, `devflow.explain_term`,
+`devflow.harness_health`, `devflow.harness_smoke`, confirmed-write
+`devflow.harness_repair`, `devflow.split`, `devflow.explain_term`,
 `devflow.doctor`, `devflow.finish`, `devflow.record_gate`, `devflow.gates_run`,
 `devflow.next_prompt`, `devflow.handoff_latest`, and `devflow.rewrite_prompt`,
 plus adapter-backed `devflow.sessions_codex` and

@@ -46,8 +46,11 @@ AGENTS.md
 
 The Codex plugin should provide daily workflow skills for status, split, next,
 finish, sessions, prompt rewrite, and explanation. Lifecycle hooks should feed
-Devflow cheap continuity signals at session start, user prompt submit, and stop.
-Future hook slices can cover pre-tool or permission-request decisions.
+Devflow cheap continuity signals at session start, user prompt submit, pre-tool
+command checks, post-tool result checks, and stop.
+When a maintainer submits a vague natural-language request, `UserPromptSubmit`
+should add compact `devflow prompt rewrite` context instead of trying to replace
+the user's prompt.
 On session start, the hook should include the latest persisted
 `.devflow/next-prompt.md` projection when it exists so a resumed Codex session
 sees the prior handoff without an extra manual lookup.
@@ -63,15 +66,22 @@ native plugin surface:
 ```text
 .claude-plugin/plugin.json
 skills/
-hooks/hooks.json
+hooks/claude-hooks.json
 bundled .mcp.json
 project .claude/ files when appropriate
 AGENTS.md and CLAUDE.md compatibility
 ```
 
 Claude Code hooks should capture the same continuity moments as Codex where
-possible: session start, user prompt submit, and stop. Slash-command or skill
-UX should call Devflow CLI or MCP tools over the shared core.
+possible: session start, user prompt submit, slash-command prompt expansion,
+pre-tool command checks, post-tool checks, post-tool failure repair context, and
+stop. Slash-command or skill UX should call Devflow CLI or MCP tools over the
+shared core.
+Claude also receives flat `commands/` Markdown shortcuts for explicit slash
+command workflows such as start, status, doctor, harness, work, gates, review,
+finish, next, explain, rewrite, sessions, and split. These commands are a
+convenience layer over
+the same skills, CLI, and MCP contracts, not a separate state model.
 
 Claude authentication remains owned by Claude Code.
 
@@ -79,15 +89,19 @@ Claude authentication remains owned by Claude Code.
 
 The repo-local plugin currently uses hook commands under `plugins/devflow`.
 Hook wrappers should tolerate host-specific plugin environment variable names.
-Codex plugin docs refer to names such as `PLUGIN_ROOT` and `PLUGIN_DATA`, while
-Claude Code uses names such as `CLAUDE_PLUGIN_ROOT` and `CLAUDE_PLUGIN_DATA`.
-
-Hook scripts should resolve both styles before failing:
+Codex plugin docs expose `PLUGIN_ROOT` and `PLUGIN_DATA` and also set
+`CLAUDE_PLUGIN_ROOT` and `CLAUDE_PLUGIN_DATA` for compatibility. Claude Code
+uses `CLAUDE_PLUGIN_ROOT` and `CLAUDE_PLUGIN_DATA`. Devflow hook commands use
+the Claude-compatible names so the same scripts work across both hosts:
 
 ```text
-PLUGIN_ROOT or CLAUDE_PLUGIN_ROOT
-PLUGIN_DATA or CLAUDE_PLUGIN_DATA
+CLAUDE_PLUGIN_ROOT
+CLAUDE_PLUGIN_DATA
 ```
+
+`hooks/hooks.json` is the Codex-compatible hook file. `hooks/claude-hooks.json`
+adds Claude-only lifecycle coverage such as `PostToolUseFailure` without
+requiring Codex to parse unsupported events.
 
 The hook command should stay thin. It should locate the repo, call the local
 Devflow command or MCP contract, record compact evidence, and avoid expensive
@@ -109,6 +123,7 @@ devflow harness inspect --targets codex,claude,superpowers,codegraph
 devflow harness plan --targets codex,claude
 devflow harness install --targets codex,claude,git-hooks
 devflow harness health
+devflow harness smoke
 devflow harness repair
 ```
 
@@ -146,6 +161,24 @@ are valid, required review is enabled, and the finish/review/next-prompt loop
 is reachable. When a failed check is repairable, health should surface the
 repair command directly in JSON as `nextAction.command` and in text output as a
 next action.
+
+`devflow harness smoke` is the non-interactive native host packaging smoke
+test. It checks local Codex and Claude CLI availability, validates the Claude
+plugin with `claude plugin validate`, reads plugin manifests and hook JSON,
+verifies expected skills and Claude command shortcuts, and runs
+`devflow harness health`. It also creates a temporary `CODEX_HOME`, adds this
+repository as the local `devflow-native-local` marketplace, installs
+`devflow@devflow-native-local`, and verifies that Codex reports it as
+installed and enabled. It accepts `--skip-host` for CI or MCP contexts that
+should validate packaging without requiring Codex or Claude to be installed;
+that skips the temporary Codex marketplace install smoke too.
+It accepts `--session-smoke` to launch a minimal Claude Code `--plugin-dir` session
+with hook events enabled and parse whether Devflow loaded as a real plugin with
+slash commands, skills, MCP, `SessionStart`, and `UserPromptSubmit` hook
+context. A later model-auth failure is reported separately as a skipped model
+response when the plugin init evidence is already present.
+It is intentionally non-interactive; final slash command visibility still needs
+a real Codex or Claude session.
 
 `devflow harness repair` should handle narrow confirmed fixes. The current
 implemented repair scope is intentionally conservative: it restores broken
@@ -192,6 +225,41 @@ to continue.
 
 Devflow should stay useful when Superpowers is absent.
 
+## Plugin Ecosystem Patterns
+
+Devflow should learn from well-known plugin shapes without copying their center
+of gravity:
+
+- Methodology plugins such as Superpowers mostly distribute skills and workflow
+  rules. They improve agent behavior but do not own repo-local finish evidence.
+- Platform plugins such as Cloudflare bundle skills with MCP servers so an
+  agent can call authenticated platform tools. They are strongest when the
+  product is an external service surface.
+- Work-app plugins such as data, creative, design, and sales plugins combine
+  skills, optional MCP servers, and optional app/artifact views. They are
+  strongest when the user needs a domain-specific deliverable.
+- Hook/rule plugins such as Hookify turn repeated unwanted behavior into
+  pre-tool, post-tool, prompt, or stop hooks. Devflow should adopt this pattern
+  for repeated-mistake memory, but the rule should be tied back to repo-local
+  evidence and finish gates rather than becoming a generic hook manager.
+- Review plugins and PR toolkits often use commands plus specialized agents.
+  Devflow can route review workflows through host-specific agents later, but
+  review completion remains a local evidence record.
+- Claude Code ecosystem plugins can additionally ship agents, hooks, LSP
+  servers, and monitors. These are useful references for native lifecycle
+  control, but Devflow should keep the shared state model host-neutral.
+
+The detailed comparison is in
+[`architecture/plugin-native-comparison.md`](./architecture/plugin-native-comparison.md).
+
+Devflow's plugin-native value is narrower: lifecycle hooks and skills should
+force the same repo-local contracts the CLI and MCP server expose. Use hooks
+for lifecycle authority such as session start, prompt intent, prompt expansion,
+tool command preflight, tool result mistake detection, and finish blocking. Use
+MCP for structured state access. Use skills for human-facing workflow entry
+points. Use Claude `commands/` only as explicit slash-command shortcuts over
+the same workflows.
+
 ## CodeGraph
 
 CodeGraph-style tools are optional context providers, not the product center.
@@ -236,6 +304,12 @@ is visible inside Codex or Claude Code before a session closes. The repo-local
 Stop hook returns compact status plus the same review loop reminder instead of
 silently returning `{}` on ordinary session stops, and it blocks completion
 claims when `devflow status` still recommends a required review.
+
+Tool lifecycle hooks are intentionally narrower than full automation. The
+pre-tool hook blocks high-confidence shell mismatch commands, such as Bash
+heredoc redirection in Windows PowerShell or unparenthesized PowerShell range
+arguments. The post-tool hooks call `devflow mistakes detect --record` for known
+failure signatures so future session-start context can carry the correction.
 
 Reviewer profiles can help break self-review bias:
 

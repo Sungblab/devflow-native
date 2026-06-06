@@ -12,6 +12,7 @@ This is the documentation router for Devflow Native.
 | Native harness direction for Codex, Claude Code, Superpowers, and CodeGraph | [harness.md](./harness.md) |
 | System structure and technical boundaries | [architecture.md](./architecture.md) |
 | Agent and platform adapter strategy | [architecture/adapters.md](./architecture/adapters.md) |
+| Native plugin comparison and boundaries | [architecture/plugin-native-comparison.md](./architecture/plugin-native-comparison.md) |
 | MCP handler package | [../packages/mcp/README.md](../packages/mcp/README.md) |
 | Research boundary | [research/README.md](./research/README.md) |
 | Open-source promotion plan | [marketing/open-source-promotion.md](./marketing/open-source-promotion.md) |
@@ -25,12 +26,20 @@ This is the documentation router for Devflow Native.
 | Simple status output example | [examples/simple-status-output.md](./examples/simple-status-output.md) |
 | Session list filter examples | [examples/session-list-filters.md](./examples/session-list-filters.md) |
 | Repo-local Codex plugin start skill | [../plugins/devflow/skills/start/SKILL.md](../plugins/devflow/skills/start/SKILL.md) |
+| Repo-local Codex/Claude plugin status skill | [../plugins/devflow/skills/status/SKILL.md](../plugins/devflow/skills/status/SKILL.md) |
+| Repo-local Codex/Claude plugin doctor skill | [../plugins/devflow/skills/doctor/SKILL.md](../plugins/devflow/skills/doctor/SKILL.md) |
+| Repo-local Codex/Claude plugin harness skill | [../plugins/devflow/skills/harness/SKILL.md](../plugins/devflow/skills/harness/SKILL.md) |
+| Repo-local Codex/Claude plugin work skill | [../plugins/devflow/skills/work/SKILL.md](../plugins/devflow/skills/work/SKILL.md) |
+| Repo-local Codex/Claude plugin gates skill | [../plugins/devflow/skills/gates/SKILL.md](../plugins/devflow/skills/gates/SKILL.md) |
+| Repo-local Codex/Claude plugin review skill | [../plugins/devflow/skills/review/SKILL.md](../plugins/devflow/skills/review/SKILL.md) |
 | Repo-local Codex/Claude plugin split skill | [../plugins/devflow/skills/split/SKILL.md](../plugins/devflow/skills/split/SKILL.md) |
 | Repo-local Codex/Claude plugin next skill | [../plugins/devflow/skills/next/SKILL.md](../plugins/devflow/skills/next/SKILL.md) |
 | Repo-local Codex/Claude plugin explain skill | [../plugins/devflow/skills/explain/SKILL.md](../plugins/devflow/skills/explain/SKILL.md) |
 | Repo-local Codex/Claude plugin rewrite skill | [../plugins/devflow/skills/rewrite/SKILL.md](../plugins/devflow/skills/rewrite/SKILL.md) |
 | Repo-local Codex/Claude plugin sessions skill | [../plugins/devflow/skills/sessions/SKILL.md](../plugins/devflow/skills/sessions/SKILL.md) |
 | Repo-local Codex plugin finish skill | [../plugins/devflow/skills/finish/SKILL.md](../plugins/devflow/skills/finish/SKILL.md) |
+| Repo-local Claude command shortcuts | [../plugins/devflow/commands/start.md](../plugins/devflow/commands/start.md) |
+| Repo-local Claude explain shortcut | [../plugins/devflow/commands/explain.md](../plugins/devflow/commands/explain.md) |
 
 ## Core Terms
 

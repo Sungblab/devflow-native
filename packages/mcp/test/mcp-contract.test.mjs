@@ -17,6 +17,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.harness_inspect"));
   assert.ok(names.includes("devflow.harness_plan"));
   assert.ok(names.includes("devflow.harness_health"));
+  assert.ok(names.includes("devflow.harness_smoke"));
   assert.ok(names.includes("devflow.harness_repair"));
   assert.ok(names.includes("devflow.finish"));
   assert.ok(names.includes("devflow.next_prompt"));
@@ -82,6 +83,27 @@ test("MCP harness tools inspect, plan, and health-check native setup", async () 
   assert.equal(health.structuredContent.status, "ok");
   assert.ok(health.structuredContent.checks.some((check) => check.kind === "hook-script" && check.status === "passed"));
   assert.match(health.content[0].text, /harness_health: ok/);
+});
+
+test("MCP harness smoke validates native packaging with skipped host commands", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-harness-smoke-"));
+  await writeHarnessInstall(repoPath, {
+    targets: ["codex", "claude"],
+    confirmed: true,
+  });
+
+  const smoke = await callTool("devflow.harness_smoke", {
+    repo: repoPath,
+    targets: ["codex", "claude"],
+    skipHostCommands: true,
+  });
+
+  assert.equal(smoke.structuredContent.command, "harness_smoke");
+  assert.equal(smoke.structuredContent.status, "partial");
+  assert.ok(smoke.structuredContent.checks.some((check) => check.name === "codex-plugin-list" && check.status === "skipped"));
+  assert.ok(smoke.structuredContent.checks.some((check) => check.name === "codex-local-plugin-add" && check.status === "skipped"));
+  assert.ok(smoke.structuredContent.checks.some((check) => check.name === "path:plugins/devflow/commands/status.md" && check.status === "passed"));
+  assert.match(smoke.content[0].text, /harness_smoke: partial/);
 });
 
 test("MCP harness health surfaces repair command for missing required review", async () => {

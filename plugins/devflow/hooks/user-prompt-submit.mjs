@@ -2,22 +2,59 @@
 import {
   compactJson,
   detectIntent,
+  extractUserPrompt,
   intentNextActions,
+  parseJson,
   readHookInput,
   runDevflow,
+  shouldRewritePrompt,
   writeHookContext,
 } from "./devflow-hook-lib.mjs";
 
 const input = await readHookInput();
 const repoPath = input.cwd ?? process.cwd();
-const intent = detectIntent(input.prompt ?? "");
+const eventName = input.hook_event_name ?? "UserPromptSubmit";
+const prompt = extractUserPrompt(input);
+const intent = detectIntent(prompt);
+const status = runDevflow(repoPath, ["status", "--json"]);
 
-if (!intent) {
-  writeHookContext(input.hook_event_name ?? "UserPromptSubmit", "Devflow: no workflow intent detected.");
+if (!intent && shouldRewritePrompt(prompt, intent)) {
+  const rewriteOutput = runDevflow(repoPath, [
+    "prompt",
+    "rewrite",
+    "--request",
+    prompt,
+    "--context",
+    compactJson(status, 1800),
+    "--json",
+  ]);
+  const rewrite = parseJson(rewriteOutput);
+  const context = [
+    "Devflow prompt interpretation context:",
+    "- Treat this as an interpretation aid, not a replacement for the user's request.",
+    "- Resolve missing details from repo docs, git state, gates, and recent handoffs before asking questions.",
+    "- Keep the implementation to the next safe slice unless the maintainer explicitly asks for broader scope.",
+    "",
+    "Agent-ready prompt:",
+    rewrite?.agentReadyPrompt?.trim() ?? compactJson(rewriteOutput, 2200),
+    "",
+    "Current compact status:",
+    compactJson(status, 1800),
+  ].join("\n");
+
+  writeHookContext(eventName, context, {
+    hookSpecificOutput: {
+      sessionTitle: "Devflow prompt rewrite",
+    },
+  });
   process.exit(0);
 }
 
-const status = runDevflow(repoPath, ["status", "--json"]);
+if (!intent) {
+  writeHookContext(eventName, "Devflow: no workflow intent detected.");
+  process.exit(0);
+}
+
 const nextActions = intentNextActions(intent);
 const context = [
   `Devflow detected intent: ${intent}`,
@@ -34,7 +71,7 @@ const context = [
   compactJson(status, 3000),
 ].join("\n");
 
-writeHookContext(input.hook_event_name ?? "UserPromptSubmit", context, {
+writeHookContext(eventName, context, {
   hookSpecificOutput: {
     sessionTitle: intent === "continue_or_start" ? "Devflow continue" : `Devflow ${intent}`,
   },

@@ -25,6 +25,7 @@ test("CLI renders help and group help", async () => {
   const group = await execFileAsync("node", ["packages/cli/src/index.js", "harness", "--help"]);
   assert.match(group.stdout, /^Devflow Native harness commands$/m);
   assert.match(group.stdout, /devflow harness health/);
+  assert.match(group.stdout, /devflow harness smoke/);
 });
 
 test("CLI help flags after options do not execute write commands", async () => {
@@ -794,14 +795,24 @@ test("CLI harness inspect renders target readiness JSON", async () => {
   await mkdir(join(repoPath, "plugins", "devflow", "hooks"), { recursive: true });
   await mkdir(join(repoPath, "plugins", "devflow", "skills", "start"), { recursive: true });
   await mkdir(join(repoPath, "plugins", "devflow", "skills", "finish"), { recursive: true });
+  await mkdir(join(repoPath, "plugins", "devflow", "commands"), { recursive: true });
   await writeFile(join(repoPath, "AGENTS.md"), "# Agent Guide\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", ".codex-plugin", "plugin.json"), "{}\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "hooks", "hooks.json"), "{}\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "hooks", "session-start.mjs"), "\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "hooks", "user-prompt-submit.mjs"), "\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "hooks", "pre-tool-use.mjs"), "\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "hooks", "tool-result.mjs"), "\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "hooks", "stop.mjs"), "\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "skills", "start", "SKILL.md"), "# Start\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "skills", "finish", "SKILL.md"), "# Finish\n", "utf8");
+  for (const skill of ["status", "doctor", "harness", "work", "gates", "review", "split", "next", "rewrite", "sessions", "explain"]) {
+    await mkdir(join(repoPath, "plugins", "devflow", "skills", skill), { recursive: true });
+    await writeFile(join(repoPath, "plugins", "devflow", "skills", skill, "SKILL.md"), `# ${skill}\n`, "utf8");
+  }
+  for (const command of ["status", "doctor", "harness", "work", "gates", "review", "finish", "next", "rewrite", "sessions", "split"]) {
+    await writeFile(join(repoPath, "plugins", "devflow", "commands", `${command}.md`), `# ${command}\n`, "utf8");
+  }
   await writeFile(join(repoPath, "plugins", "devflow", ".mcp.json"), "{}\n", "utf8");
 
   const { stdout } = await execFileAsync("node", [
@@ -921,6 +932,40 @@ test("CLI harness health validates installed native harness", async () => {
   assert.ok(parsed.checks.some((check) => check.kind === "manifest-json" && check.status === "passed"));
   assert.ok(parsed.checks.some((check) => check.kind === "hook-script" && check.status === "passed"));
   assert.ok(parsed.checks.some((check) => check.kind === "review-required" && check.status === "passed"));
+});
+
+test("CLI harness smoke validates installed native harness packaging", async () => {
+  const repoPath = await createTempGitRepo();
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "install",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex,claude",
+    "--confirm",
+    "--json",
+  ]);
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "harness",
+    "smoke",
+    "--repo",
+    repoPath,
+    "--targets",
+    "codex,claude",
+    "--skip-host",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "harness_smoke");
+  assert.equal(parsed.status, "partial");
+  assert.ok(parsed.checks.some((check) => check.name === "claude-version" && check.status === "skipped"));
+  assert.ok(parsed.checks.some((check) => check.name === "path:plugins/devflow/skills/status/SKILL.md" && check.status === "passed"));
+  assert.ok(parsed.checks.some((check) => check.name === "devflow-harness-health" && check.status === "passed"));
 });
 
 test("CLI harness health fails when required review is not configured", async () => {

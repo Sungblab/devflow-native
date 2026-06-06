@@ -12,6 +12,7 @@ import {
   createInterruptedResumptionFixture,
   createHarnessPlanSummary,
   createDoctorSummary,
+  createMistakeDetection,
   createInitPlan,
   createSessionAttachPlan,
   createWorkListSummary,
@@ -30,6 +31,7 @@ import {
   readHarnessInspect,
   readHarnessPlan,
   readHarnessHealth,
+  readHarnessSmoke,
   readDevflowConfig,
   readDevflowState,
   readLatestHandoff,
@@ -591,10 +593,34 @@ test("harness inspect summary reports native target readiness and recommendation
       "plugins/devflow/hooks/hooks.json",
       "plugins/devflow/hooks/session-start.mjs",
       "plugins/devflow/hooks/user-prompt-submit.mjs",
+      "plugins/devflow/hooks/pre-tool-use.mjs",
+      "plugins/devflow/hooks/tool-result.mjs",
       "plugins/devflow/hooks/stop.mjs",
       "plugins/devflow/.mcp.json",
       "plugins/devflow/skills/start/SKILL.md",
+      "plugins/devflow/skills/status/SKILL.md",
+      "plugins/devflow/skills/doctor/SKILL.md",
+      "plugins/devflow/skills/harness/SKILL.md",
+      "plugins/devflow/skills/work/SKILL.md",
+      "plugins/devflow/skills/gates/SKILL.md",
+      "plugins/devflow/skills/review/SKILL.md",
+      "plugins/devflow/skills/split/SKILL.md",
+      "plugins/devflow/skills/next/SKILL.md",
+      "plugins/devflow/skills/rewrite/SKILL.md",
+      "plugins/devflow/skills/sessions/SKILL.md",
+      "plugins/devflow/skills/explain/SKILL.md",
       "plugins/devflow/skills/finish/SKILL.md",
+      "plugins/devflow/commands/status.md",
+      "plugins/devflow/commands/doctor.md",
+      "plugins/devflow/commands/harness.md",
+      "plugins/devflow/commands/work.md",
+      "plugins/devflow/commands/gates.md",
+      "plugins/devflow/commands/review.md",
+      "plugins/devflow/commands/finish.md",
+      "plugins/devflow/commands/next.md",
+      "plugins/devflow/commands/rewrite.md",
+      "plugins/devflow/commands/sessions.md",
+      "plugins/devflow/commands/split.md",
       "docs/superpowers/specs",
     ],
     config: {
@@ -619,15 +645,25 @@ test("harness inspector reads repo files without writing", async () => {
   await mkdir(join(repoPath, "plugins", "devflow", "hooks"), { recursive: true });
   await mkdir(join(repoPath, "plugins", "devflow", "skills", "start"), { recursive: true });
   await mkdir(join(repoPath, "plugins", "devflow", "skills", "finish"), { recursive: true });
+  await mkdir(join(repoPath, "plugins", "devflow", "commands"), { recursive: true });
   await mkdir(join(repoPath, ".devflow"), { recursive: true });
   await writeFile(join(repoPath, "AGENTS.md"), "# Agent Guide\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", ".codex-plugin", "plugin.json"), "{}\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "hooks", "hooks.json"), "{}\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "hooks", "session-start.mjs"), "\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "hooks", "user-prompt-submit.mjs"), "\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "hooks", "pre-tool-use.mjs"), "\n", "utf8");
+  await writeFile(join(repoPath, "plugins", "devflow", "hooks", "tool-result.mjs"), "\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "hooks", "stop.mjs"), "\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "skills", "start", "SKILL.md"), "# Start\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "skills", "finish", "SKILL.md"), "# Finish\n", "utf8");
+  for (const skill of ["status", "doctor", "harness", "work", "gates", "review", "split", "next", "rewrite", "sessions", "explain"]) {
+    await mkdir(join(repoPath, "plugins", "devflow", "skills", skill), { recursive: true });
+    await writeFile(join(repoPath, "plugins", "devflow", "skills", skill, "SKILL.md"), `# ${skill}\n`, "utf8");
+  }
+  for (const command of ["start", "status", "doctor", "harness", "work", "gates", "review", "finish", "next", "explain", "rewrite", "sessions", "split"]) {
+    await writeFile(join(repoPath, "plugins", "devflow", "commands", `${command}.md`), `# ${command}\n`, "utf8");
+  }
   await writeFile(join(repoPath, "plugins", "devflow", ".mcp.json"), "{}\n", "utf8");
   await writeFile(
     join(repoPath, ".devflow", "config.json"),
@@ -794,6 +830,34 @@ test("harness health validates manifests, hook scripts, MCP config, and gates", 
   assert.ok(health.checks.some((check) => check.kind === "mcp-config" && check.status === "passed"));
   assert.ok(health.checks.some((check) => check.kind === "review-required" && check.status === "passed"));
   assert.equal(health.gates.status, "configured");
+});
+
+test("harness smoke validates native packaging without host command checks", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-harness-smoke-"));
+  await writeHarnessInstall(repoPath, {
+    targets: ["codex", "claude"],
+    confirmed: true,
+  });
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    `${JSON.stringify({ review: { required: true }, gates: [{ id: "unit", command: "npm test" }] })}\n`,
+    "utf8",
+  );
+
+  const smoke = await readHarnessSmoke(repoPath, {
+    targets: ["codex", "claude"],
+    skipHostCommands: true,
+  });
+
+  assert.equal(smoke.schemaVersion, "0.1");
+  assert.equal(smoke.command, "harness_smoke");
+  assert.equal(smoke.status, "partial");
+  assert.ok(smoke.checks.some((check) => check.name === "codex-version" && check.status === "skipped"));
+  assert.ok(smoke.checks.some((check) => check.name === "codex-local-plugin-add" && check.status === "skipped"));
+  assert.ok(smoke.checks.some((check) => check.name === "json:plugins/devflow/.codex-plugin/plugin.json" && check.status === "passed"));
+  assert.ok(smoke.checks.some((check) => check.name === "path:plugins/devflow/commands/status.md" && check.status === "passed"));
+  assert.ok(smoke.checks.some((check) => check.name === "devflow-harness-health" && check.status === "passed"));
 });
 
 test("harness health fails when required review is not configured", async () => {
@@ -2103,6 +2167,18 @@ test("doctor summary renders platform rules and repeated mistake memory", () => 
   assert.ok(summary.executionContract.avoid.includes("bash-specific syntax"));
   assert.equal(summary.memory.repeatedMistakes[0].id, "powershell-literal-path");
   assert.match(summary.recommendations[0].message, /Use Get-Content -LiteralPath/);
+});
+
+test("mistake detection catches Bash heredoc redirection in PowerShell", () => {
+  const detection = createMistakeDetection({
+    platform: "windows-powershell",
+    command: "node packages/mcp/src/stdio.js << 'EOF'",
+    stderr: "ParserError: Missing file specification after redirection operator.",
+  });
+
+  assert.equal(detection.command, "mistakes_detect");
+  assert.ok(detection.candidates.some((candidate) => candidate.id === "powershell-bash-heredoc-redirection"));
+  assert.match(detection.candidates[0].correction, /PowerShell here-string/);
 });
 
 async function runInstalledHook(repoPath, path, payload) {

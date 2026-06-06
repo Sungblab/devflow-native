@@ -32,6 +32,10 @@ export function writeHookContext(eventName, additionalContext, extra = {}) {
   );
 }
 
+export function writeHookJson(value = {}) {
+  process.stdout.write(`${JSON.stringify(value)}\n`);
+}
+
 export function runDevflow(repoPath, args) {
   const localCli = join(repoPath, "packages", "cli", "src", "index.js");
   const command = existsSync(localCli) ? process.execPath : "devflow";
@@ -52,6 +56,17 @@ export function runDevflow(repoPath, args) {
 export function compactJson(value, maxLength = 4000) {
   const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
   return text.length > maxLength ? `${text.slice(0, maxLength)}\n...truncated...` : text;
+}
+
+export function parseJson(value) {
+  if (!value) {
+    return null;
+  }
+  try {
+    return typeof value === "string" ? JSON.parse(value) : value;
+  } catch {
+    return null;
+  }
 }
 
 export function readLatestHandoffPrompt(repoPath, maxLength = 2200) {
@@ -80,6 +95,106 @@ export function detectIntent(prompt = "") {
   if (/^(continue|next|go|proceed|resume|계속|다음|진행|진행해|가자|ㄱㄱ|고고)/i.test(normalized)) {
     return "continue_or_start";
   }
+  return null;
+}
+
+export function extractToolCommand(input = {}) {
+  return (
+    input.tool_input?.command ??
+    input.tool_input?.script ??
+    input.tool_input?.cmd ??
+    input.command ??
+    ""
+  );
+}
+
+export function extractUserPrompt(input = {}) {
+  return (
+    input.prompt ??
+    input.user_prompt ??
+    input.message ??
+    input.command ??
+    input.expanded_prompt ??
+    input.expansion ??
+    ""
+  );
+}
+
+export function shouldRewritePrompt(prompt = "", intent = null) {
+  const trimmed = String(prompt).trim();
+  if (!trimmed || intent) {
+    return false;
+  }
+
+  if (trimmed.length >= 12) {
+    return true;
+  }
+
+  return /[가-힣]/.test(trimmed) && /(해|줘|봐|ㄱㄱ|어케|계속)/.test(trimmed);
+}
+
+export function extractToolFailureText(input = {}) {
+  return [
+    input.error,
+    input.stderr,
+    input.tool_output?.stderr,
+    input.tool_response?.stderr,
+    input.output?.stderr,
+    input.result?.stderr,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export function extractToolStdout(input = {}) {
+  return [
+    input.stdout,
+    input.tool_output?.stdout,
+    input.tool_response?.stdout,
+    input.output?.stdout,
+    input.result?.stdout,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export function inferHookPlatform(input = {}) {
+  const explicit = input.platform?.name ?? input.platform ?? input.os ?? "";
+  if (/windows|powershell|pwsh/i.test(explicit)) {
+    return "windows-powershell";
+  }
+  if (process.platform === "win32") {
+    return "windows-powershell";
+  }
+  return "posix";
+}
+
+export function detectPreToolIssue(input = {}) {
+  const command = extractToolCommand(input);
+  const platform = inferHookPlatform(input);
+  const windows = platform === "windows-powershell";
+
+  if (!command || !windows) {
+    return null;
+  }
+
+  if (/<<-?\s*['"]?[A-Za-z_][A-Za-z0-9_]*/.test(command)) {
+    return {
+      id: "powershell-bash-heredoc-redirection",
+      reason: "Bash heredoc redirection is not valid in Windows PowerShell.",
+      correction:
+        "Use a PowerShell here-string piped to the command, for example @'... '@ | node script.mjs, or pass input through a file/API that the repo already uses.",
+    };
+  }
+
+  if (/Select-Object\s+-Index\s+\d+\.\.\d+/i.test(command)) {
+    return {
+      id: "powershell-select-object-range-syntax",
+      reason: "PowerShell parses an unparenthesized range as a string for Select-Object -Index.",
+      correction: "Wrap the range in parentheses, for example Select-Object -Index (108..156).",
+    };
+  }
+
   return null;
 }
 
