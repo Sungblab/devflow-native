@@ -114,6 +114,22 @@ npm install -g devflow-native
 devflow harness health
 ```
 
+To update an existing install:
+
+```powershell
+devflow update
+npm install -g devflow-native@latest
+devflow --version
+devflow harness health
+```
+
+For one-off use without changing a global install, run:
+
+```powershell
+npx devflow-native@latest --version
+npx devflow-native@latest update
+```
+
 ## What Devflow Does Not Do
 
 - It is not an autonomous coding agent.
@@ -178,6 +194,7 @@ finish claims in a real repository.
 
 ```powershell
 devflow --help
+devflow update
 devflow doctor --platform windows-powershell --json
 devflow status --simple
 devflow finish --guided

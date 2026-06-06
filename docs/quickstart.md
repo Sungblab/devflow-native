@@ -59,6 +59,18 @@ devflow --help
 devflow --version
 ```
 
+To update an existing global install:
+
+```powershell
+devflow update
+npm install -g devflow-native@latest
+devflow --version
+devflow harness health
+```
+
+Use `npx devflow-native@latest <command>` when you want the latest package for
+one command without changing a global install.
+
 For local source development, use `npm link` from a clone of this repo:
 
 

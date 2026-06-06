@@ -109,6 +109,22 @@ npm install -g devflow-native
 devflow harness health
 ```
 
+이미 설치한 Devflow를 업데이트할 때는:
+
+```powershell
+devflow update
+npm install -g devflow-native@latest
+devflow --version
+devflow harness health
+```
+
+전역 설치를 바꾸지 않고 한 번만 최신 버전을 쓸 때는:
+
+```powershell
+npx devflow-native@latest --version
+npx devflow-native@latest update
+```
+
 ## Devflow가 하지 않는 일
 
 - 자체적으로 코드를 작성하는 autonomous coding agent가 아닙니다.
@@ -174,6 +190,7 @@ devflow finish --json
 
 ```powershell
 devflow --help
+devflow update
 devflow doctor --platform windows-powershell --json
 devflow status --simple
 devflow finish --guided

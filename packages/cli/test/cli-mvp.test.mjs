@@ -52,6 +52,22 @@ test("CLI renders version", async () => {
   assert.match(stdout, /^devflow \d+\.\d+\.\d+$/m);
 });
 
+test("CLI update renders install and upgrade guidance", async () => {
+  const { stdout } = await execFileAsync("node", ["packages/cli/src/index.js", "update", "--json"]);
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.command, "update");
+  assert.equal(parsed.packageName, "devflow-native");
+  assert.match(parsed.currentVersion, /^\d+\.\d+\.\d+$/);
+  assert.ok(parsed.commands.some((item) => item.command === "npm install -g devflow-native@latest"));
+  assert.ok(parsed.commands.some((item) => item.command === "npx devflow-native@latest --version"));
+
+  const text = await execFileAsync("node", ["packages/cli/src/index.js", "update"]);
+  assert.match(text.stdout, /Update Devflow Native/);
+  assert.match(text.stdout, /npm install -g devflow-native@latest/);
+  assert.match(text.stdout, /npx devflow-native@latest --version/);
+});
+
 test("CLI status renders JSON contract", async () => {
   const { stdout } = await execFileAsync("node", [
     "packages/cli/src/index.js",

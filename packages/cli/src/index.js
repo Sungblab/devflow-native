@@ -80,6 +80,8 @@ try {
     renderHelp(command);
   } else if (command === "--version" || command === "-v") {
     process.stdout.write(`devflow ${version}\n`);
+  } else if (command === "update") {
+    renderUpdate(args.slice(1), version);
   } else if (command === "init") {
     await renderInit(args.slice(1));
   } else if (command === "health") {
@@ -1153,6 +1155,64 @@ function render(summary, asJson) {
   process.stdout.write(`${summary.command}: ${summary.schemaVersion}\n`);
 }
 
+function renderUpdate(argsForCommand, currentVersion) {
+  const options = parseOptions(argsForCommand);
+  const summary = {
+    schemaVersion: "0.1",
+    command: "update",
+    packageName: "devflow-native",
+    currentVersion,
+    recommendedVersion: "latest",
+    commands: [
+      {
+        label: "Check current CLI version",
+        command: "devflow --version",
+      },
+      {
+        label: "Check published latest version",
+        command: "npm view devflow-native version dist-tags --json",
+      },
+      {
+        label: "Update global install",
+        command: "npm install -g devflow-native@latest",
+      },
+      {
+        label: "Run without global install",
+        command: "npx devflow-native@latest --version",
+      },
+      {
+        label: "Verify the updated CLI",
+        command: "devflow doctor --platform windows-powershell --json",
+      },
+    ],
+    notes: [
+      "Use npx devflow-native@latest for one-off runs when you do not want a global install.",
+      "Restart Codex or Claude Code after updating if the host loaded Devflow plugin or hook files before the update.",
+      "Run devflow harness health in each equipped repository after updating.",
+    ],
+  };
+
+  if (options.json) {
+    render(summary, true);
+    return;
+  }
+
+  process.stdout.write(
+    [
+      "Update Devflow Native",
+      "",
+      `Current CLI version: ${currentVersion}`,
+      "",
+      "Recommended commands:",
+      ...summary.commands.map((item) => `- ${item.command}`),
+      "",
+      "Notes:",
+      ...summary.notes.map((note) => `- ${note}`),
+      "",
+    ].join("\n"),
+  );
+}
+
 function readPackageVersion() {
   try {
     const raw = readFileSync(new URL("../../../package.json", import.meta.url), "utf8");
@@ -1245,6 +1305,7 @@ function renderHelp(group) {
       "  health               Check the project scaffold",
       "  doctor               Inspect local shell/tooling rules",
       "  mistakes <command>   Record and detect repeated agent mistake memory",
+      "  update               Show install and update guidance",
       "  status               Show repo, work, session, gate, and handoff state",
       "  harness <command>    Inspect/install/verify Codex and Claude harness files",
       "  mcp stdio            Run the Devflow MCP stdio server",
