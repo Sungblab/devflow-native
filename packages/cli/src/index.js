@@ -20,7 +20,10 @@ import {
 import {
   createFinishSummary,
   createMistakeDetection,
+  createMistakeGateState,
   createMistakeListSummary,
+  createMistakePromotion,
+  createMistakeRulesSummary,
   readHarnessInspect,
   readHarnessHealth,
   readHarnessPlan,
@@ -45,6 +48,7 @@ import {
   readDevflowState,
   readLatestHandoff,
   readMistakeMemory,
+  recordMistakePromotionReviewEvent,
   recordFinishEvent,
   recordMistakeMemory,
   recordManualSessionNoteEvent,
@@ -59,6 +63,7 @@ import {
   recordWorkUpdatedEvent,
   recordWorkUnblockedEvent,
   runConfiguredGate,
+  writeMistakePromotion,
   writeHarnessInstall,
   writeHarnessRepair,
   writeInitPlan,
@@ -109,6 +114,12 @@ try {
     await renderMistakeList(args.slice(2));
   } else if (command === "mistakes" && args[1] === "detect") {
     await renderMistakeDetect(args.slice(2));
+  } else if (command === "mistakes" && args[1] === "promote") {
+    await renderMistakePromote(args.slice(2));
+  } else if (command === "mistakes" && args[1] === "review") {
+    await renderMistakeReview(args.slice(2));
+  } else if (command === "mistakes" && args[1] === "rules") {
+    await renderMistakeRules(args.slice(2));
   } else if (command === "gates" && args[1] === "run") {
     await renderGatesRun(args.slice(2));
   } else if (command === "review" && args[1] === "record") {
@@ -263,15 +274,21 @@ async function renderStatus(argsForCommand) {
   const repoPath = options.repo ?? cwd();
   const state = await readDevflowState(repoPath);
   const config = await readDevflowConfig(repoPath);
+  const memory = await readMistakeMemory(repoPath);
+  const mistakes = createMistakeGateState({
+    memory: memory.mistakes,
+    state,
+  });
   const summary = createStatusSummary({
     repo: readGitRepo(repoPath),
     changedFiles: readChangedFiles(repoPath),
     state,
+    mistakes,
     workItemId: options.work,
     agent: options.agent,
     gates: config.gates ?? [{ id: "docs-check", command: "npm run docs:check", recommended: true }],
     reviewRequired: Boolean(config.review?.required),
-    warnings: config.warnings,
+    warnings: [...(config.warnings ?? []), ...memory.warnings],
   });
 
   if (options.simple) {
@@ -322,6 +339,11 @@ async function renderFinish(argsForCommand) {
   const repoPath = options.repo ?? cwd();
   const config = await readDevflowConfig(repoPath);
   const state = await readDevflowState(repoPath);
+  const memory = await readMistakeMemory(repoPath);
+  const mistakes = createMistakeGateState({
+    memory: memory.mistakes,
+    state,
+  });
   const workItemId = options.work ?? "local-work";
   const gates = collectRepeated(options.gate).map(parseGate);
   const recordedGates = Object.values(state.gates.latestByWorkItemId?.[workItemId] ?? {});
@@ -342,6 +364,8 @@ async function renderFinish(argsForCommand) {
     requiredGates: config.gates ?? [],
     reviewRequired: Boolean(config.review?.required),
     reviewEvidence: state.reviews.latestByWorkItemId[workItemId] ?? null,
+    mistakes,
+    blockUnreviewedMistakes: Boolean(config.mistakes?.blockUnreviewedPromotions),
     skipped: collectRepeated(options.skipped).map((reason, index) => ({
       id: `skipped-${index + 1}`,
       reason,
@@ -490,6 +514,136 @@ async function renderMistakeDetect(argsForCommand) {
   }
 
   render({ ...detection, recorded }, options.json);
+}
+
+async function renderMistakePromote(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const memory = await readMistakeMemory(repoPath);
+  const state = await readDevflowState(repoPath);
+  const id = options.id;
+
+  if (!id) {
+    throw new Error("mistakes promote requires --id <id>.");
+  }
+
+  if (options["dry-run"] && options.apply) {
+    throw new Error("mistakes promote accepts either --dry-run or --apply, not both.");
+  }
+
+  if (!options["dry-run"] && !options.apply) {
+    throw new Error("mistakes promote requires --dry-run or --apply.");
+  }
+
+  const mistake = memory.mistakes.find((candidate) => candidate.id === id) ?? createBuiltInMistakeById(id);
+  if (!mistake) {
+    throw new Error(`No mistake found for id: ${id}`);
+  }
+
+  if (options.apply) {
+    const latestReview = state.mistakes?.promotionReviews?.latestByMistakeId?.[id] ?? null;
+    if (!options["confirm-reviewed"] && latestReview?.status !== "approved") {
+      throw new Error(
+        "mistakes promote --apply requires approved promotion review evidence. Run mistakes review --status approved first.",
+      );
+    }
+
+    const promotion = await writeMistakePromotion(repoPath, {
+      mistake,
+      target: options.target ?? "agents",
+      warnings: memory.warnings,
+    });
+    render(promotion, options.json);
+    return;
+  }
+
+  const promotion = createMistakePromotion({
+    mistake,
+    target: options.target ?? "agents",
+    dryRun: true,
+    warnings: memory.warnings,
+  });
+
+  render(promotion, options.json);
+}
+
+async function renderMistakeReview(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+
+  if (!options.id) {
+    throw new Error("mistakes review requires --id <id>.");
+  }
+  if (!options.status) {
+    throw new Error("mistakes review requires --status approved|rejected.");
+  }
+  if (!options.summary) {
+    throw new Error("mistakes review requires --summary <text>.");
+  }
+
+  const event = await recordMistakePromotionReviewEvent(repoPath, {
+    id: options.id,
+    status: options.status,
+    summary: options.summary,
+    reviewer: options.reviewer ?? "maintainer",
+    source: options.source ?? "cli",
+  });
+
+  render(
+    {
+      schemaVersion: "0.1",
+      command: "mistakes_review",
+      review: event.payload,
+      event,
+    },
+    options.json,
+  );
+}
+
+async function renderMistakeRules(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const [state, memory] = await Promise.all([
+    readDevflowState(repoPath),
+    readMistakeMemory(repoPath),
+  ]);
+
+  render(
+    createMistakeRulesSummary({
+      memory: memory.mistakes,
+      state,
+      warnings: memory.warnings,
+    }),
+    options.json,
+  );
+}
+
+function createBuiltInMistakeById(id) {
+  if (id === "powershell-bash-heredoc-redirection") {
+    return {
+      id,
+      category: "shell-file-io-friction",
+      scope: "project",
+      symptom: "Agent used Bash heredoc redirection in Windows PowerShell.",
+      correction:
+        "Use a PowerShell here-string piped to stdin, for example @'... '@ | node script.mjs, or use a repo-supported file/API input path.",
+      appliesTo: ["windows-powershell", "codex", "claude"],
+      confidence: "high",
+      observations: {
+        count: 1,
+        firstObservedAt: new Date().toISOString(),
+        lastObservedAt: new Date().toISOString(),
+      },
+      promotion: {
+        status: "candidate",
+        targets: ["agents", "skill"],
+        reason: "Built-in high-confidence detector selected explicitly by id.",
+      },
+      evidence: [],
+    };
+  }
+
+  return null;
 }
 
 async function renderGatesRun(argsForCommand) {
@@ -1055,6 +1209,9 @@ function renderHelp(group) {
       "devflow mistakes add --id <id> --symptom <text> --correction <text> [--json]",
       "devflow mistakes list [--json]",
       "devflow mistakes detect --stderr <text> [--command <text>] [--record] [--json]",
+      "devflow mistakes promote --id <id> --target agents|skill|hook|config --dry-run|--apply [--json]",
+      "devflow mistakes review --id <id> --status approved|rejected --summary <text> [--json]",
+      "devflow mistakes rules [--json]",
     ],
   };
 
@@ -1298,6 +1455,8 @@ function parseOptionsAndPositionals(rawArgs) {
       key === "start" ||
       key === "once" ||
       key === "dry-run" ||
+      key === "apply" ||
+      key === "confirm-reviewed" ||
       key === "check" ||
       key === "repo-visible" ||
       key === "record" ||

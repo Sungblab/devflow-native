@@ -200,6 +200,48 @@ test("repo-local tool hooks block shell mismatch and record mistake candidates",
   assert.match(toolResult.hookSpecificOutput.additionalContext, /powershell-bash-heredoc-redirection/);
 });
 
+test("repo-local pre-tool hook reads promoted config-backed mistake rules", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-hook-promoted-rule-"));
+  await mkdir(join(repoPath, ".devflow"), { recursive: true });
+  await writeFile(
+    join(repoPath, ".devflow", "config.json"),
+    JSON.stringify(
+      {
+        mistakes: {
+          rules: [
+            {
+              id: "custom-node-eval-rule",
+              target: "hook",
+              status: "active",
+              pattern: "node -e",
+              reason: "This repo routes inline Node scripts through checked-in smoke files.",
+              correction: "Use a checked-in smoke file instead of node -e.",
+              appliesTo: ["windows-powershell"],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+
+  const blocked = await runHook("plugins/devflow/hooks/pre-tool-use.mjs", {
+    hook_event_name: "PreToolUse",
+    cwd: repoPath,
+    platform: { name: "windows-powershell" },
+    tool_name: "Bash",
+    tool_input: {
+      command: "node -e \"console.log('inline')\"",
+    },
+  });
+
+  assert.equal(blocked.hookSpecificOutput.permissionDecision, "deny");
+  assert.match(blocked.hookSpecificOutput.permissionDecisionReason, /custom-node-eval-rule/);
+  assert.match(blocked.hookSpecificOutput.permissionDecisionReason, /checked-in smoke file/);
+});
+
 test("repo-local prompt hook understands terse Korean maintainer commands", async () => {
   const continuePrompt = await runHook("plugins/devflow/hooks/user-prompt-submit.mjs", {
     hook_event_name: "UserPromptSubmit",

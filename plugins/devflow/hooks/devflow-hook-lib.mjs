@@ -174,7 +174,16 @@ export function detectPreToolIssue(input = {}) {
   const platform = inferHookPlatform(input);
   const windows = platform === "windows-powershell";
 
-  if (!command || !windows) {
+  if (!command) {
+    return null;
+  }
+
+  const promotedIssue = detectPromotedMistakeRule(input.cwd ?? process.cwd(), platform, command);
+  if (promotedIssue) {
+    return promotedIssue;
+  }
+
+  if (!windows) {
     return null;
   }
 
@@ -196,6 +205,66 @@ export function detectPreToolIssue(input = {}) {
   }
 
   return null;
+}
+
+function detectPromotedMistakeRule(repoPath, platform, command) {
+  const rules = readPromotedMistakeRules(repoPath);
+
+  for (const rule of rules) {
+    if (rule.status && rule.status !== "active") {
+      continue;
+    }
+    if (!["hook", "config"].includes(rule.target)) {
+      continue;
+    }
+    if (!ruleAppliesToPlatform(rule, platform)) {
+      continue;
+    }
+    if (!matchesMistakeRulePattern(rule.pattern ?? rule.id, command)) {
+      continue;
+    }
+
+    return {
+      id: rule.id,
+      reason: `${rule.id}: ${rule.reason ?? "Promoted repeated mistake rule matched this command."}`,
+      correction: rule.correction ?? "Use the repo-local correction recorded for this repeated mistake.",
+    };
+  }
+
+  return null;
+}
+
+function readPromotedMistakeRules(repoPath) {
+  try {
+    const config = JSON.parse(readFileSync(join(repoPath, ".devflow", "config.json"), "utf8"));
+    return Array.isArray(config.mistakes?.rules) ? config.mistakes.rules : [];
+  } catch {
+    return [];
+  }
+}
+
+function ruleAppliesToPlatform(rule, platform) {
+  if (!Array.isArray(rule.appliesTo) || rule.appliesTo.length === 0) {
+    return true;
+  }
+
+  return rule.appliesTo.some((value) => value === platform);
+}
+
+function matchesMistakeRulePattern(pattern, command) {
+  if (!pattern) {
+    return false;
+  }
+
+  if (command.includes(pattern)) {
+    return true;
+  }
+
+  try {
+    return new RegExp(pattern, "i").test(command);
+  } catch {
+    return false;
+  }
 }
 
 export function intentNextActions(intent) {

@@ -18,8 +18,16 @@ work, or any task likely to hit platform-specific tooling issues.
    command that matches a known failure category.
 4. If a new repeated failure appears, run `devflow mistakes detect --json` and
    record high-confidence candidates only when appropriate.
+5. When the same high-confidence mistake repeats, use
+   `devflow mistakes promote --id <id> --target agents|skill|hook|config --dry-run --json`
+   to inspect patch candidates. Record maintainer evidence with
+   `devflow mistakes review --id <id> --status approved|rejected --summary <text> --json`
+   before applying any durable rule.
+6. Apply durable promotion only with repo-local evidence:
+   `devflow mistakes promote --id <id> --target <target> --apply --json`.
+   Use `devflow mistakes rules --json` to confirm the active promoted rule.
 
 ## Output
 
 State platform assumptions, required command style, available tools, repeated
-mistakes, and any command forms to avoid.
+mistakes, active promoted rules, and any command forms to avoid.

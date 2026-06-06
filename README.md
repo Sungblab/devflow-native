@@ -53,6 +53,8 @@ agent cannot honestly claim "done" without proof.
 - Records review evidence and gate evidence before work is called done.
 - Provides `finish --dry-run` to check whether a task can honestly be claimed complete.
 - Generates the prompt the next agent session should continue from.
+- Captures repeated agent mistakes, aggregates repeated observations, and promotes
+  durable repo-local rules only after review evidence.
 
 ## Quick Try
 
@@ -132,6 +134,12 @@ Maintainer says "continue" or "next"
 Maintainer says "finish" or "review"
   -> Devflow finish flow checks docs impact, gates, risks, and next prompt
   -> completion evidence is recorded in .devflow/state/events.jsonl
+
+An agent repeats a repo-specific mistake
+  -> Devflow detects or records the mistake in .devflow/mistakes.json
+  -> repeated high-confidence observations become promotion candidates
+  -> promote --dry-run shows patch candidates without editing durable files
+  -> review evidence gates promote --apply into AGENTS.md, a Devflow skill, or a hook/config rule
 ```
 
 Runtime state such as `.devflow/state/` and `.devflow/next-prompt.md` is local
@@ -174,6 +182,11 @@ devflow doctor --platform windows-powershell --json
 devflow status --simple
 devflow finish --guided
 devflow prompt latest
+devflow mistakes detect --platform windows-powershell --command "node script.mjs << 'EOF'" --stderr "ParserError: Missing file specification after redirection operator." --record --json
+devflow mistakes promote --id powershell-bash-heredoc-redirection --target agents --dry-run --json
+devflow mistakes review --id powershell-bash-heredoc-redirection --status approved --summary "Repeated PowerShell heredoc correction is repo-relevant." --json
+devflow mistakes promote --id powershell-bash-heredoc-redirection --target skill --apply --json
+devflow mistakes rules --json
 devflow harness health
 devflow mcp stdio
 ```
@@ -184,6 +197,7 @@ devflow mcp stdio
 - [Release Checklist](docs/release.md)
 - [Product Plan](docs/product-plan.md)
 - [Architecture](docs/architecture.md)
+- [Repeated Mistake Loop](docs/architecture/repeated-mistake-loop.md)
 - [Harness](docs/harness.md)
 - [Research Boundary](docs/research/README.md)
 - [Open Source Promotion Plan](docs/marketing/open-source-promotion.md)
@@ -204,8 +218,9 @@ docs              product, architecture, roadmap, examples, and public notes
 ## Status
 
 The current v0.1 foundation release includes the npm package, CLI, MCP handler,
-repo-local Codex/Claude plugin drafts, hooks, and finish guard. Hosted sync, richer
-artifact generation, and broader adapter coverage are later work.
+repo-local Codex/Claude plugin drafts, hooks, finish guard, and the first
+review-gated repeated-mistake promotion loop. Hosted sync, richer artifact
+generation, broader adapter coverage, and more detector families are later work.
 
 Research notes, paper drafts, evaluation fixtures, and non-public data live in
 a separate private repository. This public repository contains product

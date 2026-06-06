@@ -51,6 +51,8 @@ Devflow는 주변 도구를 대체하려는 제품이 아닙니다.
 - 완료 전에 review evidence와 gate evidence 기록
 - `finish --dry-run`으로 정말 완료라고 말해도 되는지 미리 점검
 - 다음 에이전트 세션이 이어받을 prompt 생성
+- 반복되는 agent 실수를 기록하고, 반복 관측을 집계한 뒤 review evidence가
+  있을 때만 repo-local durable rule로 승격
 
 ## 빠르게 써보기
 
@@ -127,6 +129,12 @@ Codex 또는 Claude Code가 저장소를 연다
 사용자가 "finish" 또는 "review"라고 말한다
   -> Devflow finish flow가 docs impact, gates, risks, next prompt를 확인한다
   -> completion evidence가 .devflow/state/events.jsonl에 기록된다
+
+agent가 repo-specific 실수를 반복한다
+  -> Devflow가 .devflow/mistakes.json에 실수를 감지하거나 기록한다
+  -> 반복된 high-confidence 관측이 promotion candidate가 된다
+  -> promote --dry-run은 durable file을 수정하지 않고 patch candidate만 보여준다
+  -> review evidence가 있어야 promote --apply가 AGENTS.md, Devflow skill, hook/config rule로 승격한다
 ```
 
 `.devflow/state/`, `.devflow/next-prompt.md` 같은 runtime state는 기본적으로
@@ -170,6 +178,11 @@ devflow doctor --platform windows-powershell --json
 devflow status --simple
 devflow finish --guided
 devflow prompt latest
+devflow mistakes detect --platform windows-powershell --command "node script.mjs << 'EOF'" --stderr "ParserError: Missing file specification after redirection operator." --record --json
+devflow mistakes promote --id powershell-bash-heredoc-redirection --target agents --dry-run --json
+devflow mistakes review --id powershell-bash-heredoc-redirection --status approved --summary "Repeated PowerShell heredoc correction is repo-relevant." --json
+devflow mistakes promote --id powershell-bash-heredoc-redirection --target skill --apply --json
+devflow mistakes rules --json
 devflow harness health
 devflow mcp stdio
 ```
@@ -180,6 +193,7 @@ devflow mcp stdio
 - [Release Checklist](docs/release.md)
 - [Product Plan](docs/product-plan.md)
 - [Architecture](docs/architecture.md)
+- [Repeated Mistake Loop](docs/architecture/repeated-mistake-loop.md)
 - [Harness](docs/harness.md)
 - [Research Boundary](docs/research/README.md)
 - [Roadmap](docs/roadmap.md)
@@ -199,8 +213,9 @@ docs              product, architecture, roadmap, examples, and public notes
 ## 현재 상태
 
 현재 v0.1 foundation release는 npm package, CLI, MCP handler, repo-local
-Codex/Claude plugin draft, hook, finish guard를 포함합니다. Hosted sync,
-richer artifact generation, broader adapter coverage는 이후 작업입니다.
+Codex/Claude plugin draft, hook, finish guard, review-gated repeated-mistake
+promotion loop를 포함합니다. Hosted sync, richer artifact generation, broader
+adapter coverage, 더 많은 detector family는 이후 작업입니다.
 
 연구 노트, 논문 초안, 평가 fixture, 비공개 데이터는 별도 private repository에
 둡니다. 이 공개 저장소에는 제품 구현과 공개 문서만 둡니다.

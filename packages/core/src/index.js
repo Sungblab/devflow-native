@@ -22,6 +22,7 @@ export function createStatusSummary(input = {}) {
     input.sessions?.attached ?? state.sessions?.attached ?? [],
     { workItemId, agent },
   );
+  const mistakes = input.mistakes ?? state.mistakes ?? emptyMistakeGateState();
 
   return {
     schemaVersion: "0.1",
@@ -61,6 +62,7 @@ export function createStatusSummary(input = {}) {
       latest: input.handoffs?.latest ?? state.handoffs.latest,
       stale: input.handoffs?.stale ?? state.handoffs.stale,
     },
+    mistakes,
     recommendations: createStatusRecommendations({
       gates,
       changedFiles,
@@ -70,6 +72,7 @@ export function createStatusSummary(input = {}) {
       reviewEvidence: reviewWorkItemId
         ? (state.reviews?.latestByWorkItemId?.[reviewWorkItemId] ?? null)
         : null,
+      mistakes,
     }),
     warnings: [...(input.warnings ?? []), ...state.warnings],
   };
@@ -82,6 +85,7 @@ export function createFinishSummary(input) {
   const risks = input.risks ?? [];
   const requiredGates = input.requiredGates ?? [];
   const reviewEvidence = input.reviewEvidence ?? null;
+  const mistakes = input.mistakes ?? emptyMistakeGateState();
   const guard = evaluateFinishGuard({
     requiredGates,
     gateEvidence,
@@ -89,6 +93,8 @@ export function createFinishSummary(input) {
     risks,
     reviewRequired: Boolean(input.reviewRequired),
     reviewEvidence,
+    mistakes,
+    blockUnreviewedMistakes: Boolean(input.blockUnreviewedMistakes),
   });
   const nextTask = input.nextTask ?? "Continue from the recorded handoff.";
   const nextPrompt =
@@ -98,6 +104,8 @@ export function createFinishSummary(input) {
       changedFiles: changedFiles.map((file) => file.path) ?? [],
       commands: gateEvidence.map((gate) => gate.command) ?? [],
       risks: risks.map((risk) => risk.message) ?? [],
+      mistakeRules: mistakes.rules ?? [],
+      mistakeCandidates: mistakes.candidates ?? [],
       nextTask,
     });
   const structuredHandoff = createStructuredHandoff({
@@ -110,6 +118,7 @@ export function createFinishSummary(input) {
     nextTask,
     nextPrompt,
     decisions: input.decisions ?? [],
+    mistakes,
   });
   const reviewNextAction = createReviewNextAction({
     workItemId: input.workItem.id,
@@ -134,6 +143,7 @@ export function createFinishSummary(input) {
       gates: gateEvidence,
       skipped: skippedGates,
       review: reviewEvidence,
+      mistakes,
     },
     changedFiles,
     gateEvidence,
@@ -142,6 +152,7 @@ export function createFinishSummary(input) {
     failedGates: guard.failedGates,
     unknownGates: guard.unknownGates,
     remainingRisks: risks,
+    mistakes,
     canClaimDone: guard.canClaimDone,
     doneBlockers: guard.doneBlockers,
     structuredHandoff,
@@ -202,6 +213,12 @@ export function createNextPrompt(input) {
     "",
     "Risks:",
     ...formatList(input.risks ?? []),
+    "",
+    "Repeated mistake rules:",
+    ...formatList((input.mistakeRules ?? []).map((rule) => `${rule.id}: ${rule.correction}`)),
+    "",
+    "Repeated mistake candidates:",
+    ...formatList((input.mistakeCandidates ?? []).map((mistake) => `${mistake.id}: ${mistake.correction}`)),
     "",
     `Next task: ${input.nextTask ?? "Inspect devflow status and choose the next slice."}`,
   ];
@@ -295,6 +312,8 @@ function evaluateFinishGuard(input) {
   const risks = input.risks ?? [];
   const reviewRequired = Boolean(input.reviewRequired);
   const reviewEvidence = input.reviewEvidence ?? null;
+  const mistakes = input.mistakes ?? emptyMistakeGateState();
+  const blockUnreviewedMistakes = Boolean(input.blockUnreviewedMistakes);
   const evidenceById = new Map(gateEvidence.map((gate) => [gate.id, gate]));
   const skippedById = new Map(skippedGates.map((gate) => [gate.id, gate]));
   const failedGates = [];
@@ -377,6 +396,16 @@ function evaluateFinishGuard(input) {
     });
   }
 
+  if (blockUnreviewedMistakes) {
+    for (const candidate of mistakes.candidates ?? []) {
+      doneBlockers.push({
+        kind: "unreviewed_mistake_candidate",
+        mistakeId: candidate.id,
+        message: `Repeated mistake ${candidate.id} is still a promotion candidate without approved rule evidence.`,
+      });
+    }
+  }
+
   return {
     canClaimDone: doneBlockers.length === 0,
     failedGates,
@@ -386,6 +415,9 @@ function evaluateFinishGuard(input) {
 }
 
 function createStructuredHandoff(input) {
+  const mistakeRules = input.mistakes?.rules ?? [];
+  const mistakeCandidates = input.mistakes?.candidates ?? [];
+
   return {
     version: "devflow.handoff.v1",
     workItemId: input.workItem.id,
@@ -404,13 +436,17 @@ function createStructuredHandoff(input) {
     remainingRisks: [
       ...input.risks.map((risk) => risk.message ?? String(risk)),
       ...input.guard.unknownGates.map((gate) => gate.reason),
+      ...mistakeCandidates.map((mistake) => `Unreviewed repeated mistake candidate: ${mistake.id}`),
     ],
     nextActions: [input.nextTask],
     contextPointers: input.changedFiles.map((file) => ({
       path: file.path,
       reason: "Changed file in the current work item.",
     })),
-    doNotRepeat: input.guard.doneBlockers.map((blocker) => blocker.message),
+    doNotRepeat: [
+      ...input.guard.doneBlockers.map((blocker) => blocker.message),
+      ...mistakeRules.map((rule) => `${rule.id}: ${rule.correction}`),
+    ],
     nextPrompt: input.nextPrompt,
   };
 }
@@ -2008,6 +2044,75 @@ export function createMistakeListSummary(input = {}) {
   };
 }
 
+export function createMistakePromotion(input = {}) {
+  const mistake = createMistakeRecord(input.mistake ?? input);
+  const target = normalizePromotionTarget(input.target ?? "agents");
+  const dryRun = input.dryRun !== false;
+  const patchCandidates = [createPromotionPatchCandidate(mistake, target)];
+
+  return {
+    schemaVersion: "0.1",
+    command: "mistakes_promote",
+    source: input.source ?? ".devflow/mistakes.json",
+    dryRun,
+    applied: Boolean(input.applied),
+    mistake,
+    promotion: {
+      status: "candidate",
+      target,
+      reason: mistake.promotion?.reason ?? createPromotionReason(mistake),
+    },
+    patchCandidates,
+    warnings: input.warnings ?? [],
+  };
+}
+
+export async function writeMistakePromotion(repoPath, input = {}) {
+  const promotion = createMistakePromotion({
+    mistake: input.mistake,
+    target: input.target,
+    dryRun: false,
+    applied: false,
+  });
+  const candidate = promotion.patchCandidates[0];
+
+  if (candidate.kind === "config-rule") {
+    await writePromotionConfigRule(repoPath, candidate.rule);
+  } else {
+    const targetPath = join(repoPath, candidate.path);
+    await mkdir(dirname(targetPath), { recursive: true });
+    let current = "";
+    try {
+      current = await readFile(targetPath, "utf8");
+    } catch (error) {
+      if (error.code !== "ENOENT") {
+        throw error;
+      }
+    }
+
+    if (!current.includes(input.mistake.id)) {
+      await writeFile(targetPath, `${current.trimEnd()}\n${candidate.content}\n`, "utf8");
+    }
+  }
+
+  const event = await recordMistakeRuleEvent(repoPath, {
+    id: promotion.mistake.id,
+    target: promotion.promotion.target,
+    path: candidate.path,
+    status: "active",
+    correction: promotion.mistake.correction,
+    category: promotion.mistake.category,
+    appliesTo: promotion.mistake.appliesTo,
+  });
+
+  return {
+    ...promotion,
+    dryRun: false,
+    applied: true,
+    event,
+  };
+}
+
 export function createMistakeDetection(input = {}) {
   const platform = input.platform ?? "unknown";
   const commandText = input.command ?? "";
@@ -2199,6 +2304,98 @@ export async function recordReviewEvent(repoPath, reviewEvidence, options = {}) 
   await appendDevflowEvent(repoPath, event);
 
   return event;
+}
+
+export async function recordMistakePromotionReviewEvent(repoPath, reviewEvidence, options = {}) {
+  const observedAt = options.observedAt ?? reviewEvidence.observedAt ?? new Date().toISOString();
+  const status = normalizeOptionalText(reviewEvidence.status) ?? "approved";
+  if (status !== "approved" && status !== "rejected") {
+    throw new Error("mistakes review requires --status approved|rejected.");
+  }
+  const event = {
+    schemaVersion: "0.1",
+    type: "mistake.promotion.reviewed",
+    observedAt,
+    payload: {
+      mistakeId: reviewEvidence.id ?? reviewEvidence.mistakeId,
+      status,
+      summary: reviewEvidence.summary ?? null,
+      reviewer: reviewEvidence.reviewer ?? "maintainer",
+      observedAt,
+      source: reviewEvidence.source ?? "local",
+    },
+  };
+
+  if (!event.payload.mistakeId) {
+    throw new Error("mistakes review requires --id <mistake-id>.");
+  }
+
+  await appendDevflowEvent(repoPath, event);
+
+  return event;
+}
+
+export async function recordMistakeRuleEvent(repoPath, ruleEvidence, options = {}) {
+  const observedAt = options.observedAt ?? ruleEvidence.observedAt ?? new Date().toISOString();
+  const event = {
+    schemaVersion: "0.1",
+    type: "mistake.rule.promoted",
+    observedAt,
+    payload: {
+      id: ruleEvidence.id,
+      target: ruleEvidence.target,
+      path: ruleEvidence.path ?? null,
+      status: ruleEvidence.status ?? "active",
+      correction: ruleEvidence.correction,
+      category: ruleEvidence.category ?? null,
+      appliesTo: normalizeStringList(ruleEvidence.appliesTo),
+      observedAt,
+    },
+  };
+
+  if (!event.payload.id) {
+    throw new Error("mistake rule requires id.");
+  }
+
+  await appendDevflowEvent(repoPath, event);
+
+  return event;
+}
+
+export function createMistakeGateState(input = {}) {
+  const memoryMistakes = Array.isArray(input.memory) ? input.memory.map((mistake) => createMistakeRecord(mistake)) : [];
+  const rules = input.state?.mistakes?.rules?.active ?? input.rules ?? [];
+  const reviewed = input.state?.mistakes?.promotionReviews?.latestByMistakeId ?? {};
+  const activeRuleIds = new Set(rules.filter((rule) => rule.status !== "inactive").map((rule) => rule.id));
+  const candidates = memoryMistakes.filter((mistake) => {
+    if (mistake.promotion?.status !== "candidate") {
+      return false;
+    }
+    if (activeRuleIds.has(mistake.id)) {
+      return false;
+    }
+    return reviewed[mistake.id]?.status !== "approved";
+  });
+
+  return {
+    candidates,
+    rules,
+    promotionReviews: reviewed,
+  };
+}
+
+export function createMistakeRulesSummary(input = {}) {
+  const mistakes = createMistakeGateState(input);
+
+  return {
+    schemaVersion: "0.1",
+    command: "mistakes_rules",
+    source: input.source ?? ".devflow/state/events.jsonl",
+    rules: mistakes.rules,
+    promotionReviews: mistakes.promotionReviews,
+    candidates: mistakes.candidates,
+    warnings: input.warnings ?? [],
+  };
 }
 
 export function createWorkListSummary(input = {}) {
@@ -3801,7 +3998,17 @@ function createMistakeRecord(input = {}, options = {}) {
 
   const symptom = normalizeRequiredText(input.symptom, "Mistake symptom is required.");
   const correction = normalizeRequiredText(input.correction, "Mistake correction is required.");
-  const observedAt = options.observedAt ?? input.lastSeenAt ?? input.createdAt ?? new Date().toISOString();
+  const observedAt =
+    options.observedAt ??
+    input.observations?.lastObservedAt ??
+    input.lastSeenAt ??
+    input.createdAt ??
+    new Date().toISOString();
+  const observations = normalizeMistakeObservations(input, observedAt);
+  const promotion = normalizeMistakePromotion(input.promotion, {
+    confidence: normalizeOptionalText(input.confidence) ?? "manual",
+    observations,
+  });
 
   return {
     id,
@@ -3811,9 +4018,11 @@ function createMistakeRecord(input = {}, options = {}) {
     correction,
     appliesTo: normalizeStringList(input.appliesTo),
     confidence: normalizeOptionalText(input.confidence) ?? "manual",
-    occurrences: Number.isFinite(Number(input.occurrences)) ? Number(input.occurrences) : 1,
-    firstSeenAt: input.firstSeenAt ?? input.createdAt ?? observedAt,
-    lastSeenAt: input.lastSeenAt ?? observedAt,
+    observations,
+    promotion,
+    occurrences: observations.count,
+    firstSeenAt: input.firstSeenAt ?? observations.firstObservedAt,
+    lastSeenAt: input.lastSeenAt ?? observations.lastObservedAt,
     evidence: normalizeEvidence(input.evidence),
   };
 }
@@ -3829,10 +4038,25 @@ function upsertMistake(existingMistakes, incoming, observedAt) {
   }
 
   const existing = mistakes[index];
+  const observations = {
+    count: (Number(existing.observations?.count) || Number(existing.occurrences) || 1) + 1,
+    firstObservedAt:
+      existing.observations?.firstObservedAt ??
+      existing.firstSeenAt ??
+      incoming.observations.firstObservedAt,
+    lastObservedAt: observedAt,
+  };
   const merged = {
     ...existing,
     ...incoming,
-    occurrences: (Number(existing.occurrences) || 1) + 1,
+    appliesTo: mergeStringLists(existing.appliesTo, incoming.appliesTo),
+    confidence: mergeConfidence(existing.confidence, incoming.confidence),
+    observations,
+    promotion: normalizeMistakePromotion(incoming.promotion ?? existing.promotion, {
+      confidence: mergeConfidence(existing.confidence, incoming.confidence),
+      observations,
+    }),
+    occurrences: observations.count,
     firstSeenAt: existing.firstSeenAt ?? incoming.firstSeenAt,
     lastSeenAt: observedAt,
     evidence: mergeEvidence(existing.evidence, incoming.evidence),
@@ -3911,6 +4135,185 @@ function normalizeStringList(value) {
     .filter(Boolean);
 }
 
+function mergeStringLists(left, right) {
+  return [...new Set([...normalizeStringList(left), ...normalizeStringList(right)])].sort();
+}
+
+function mergeConfidence(left, right) {
+  const order = new Map([
+    ["manual", 0],
+    ["low", 1],
+    ["medium", 2],
+    ["high", 3],
+  ]);
+  const leftValue = normalizeOptionalText(left) ?? "manual";
+  const rightValue = normalizeOptionalText(right) ?? "manual";
+
+  return (order.get(rightValue) ?? 0) > (order.get(leftValue) ?? 0) ? rightValue : leftValue;
+}
+
+function normalizeMistakeObservations(input, observedAt) {
+  const count =
+    Number(input.observations?.count) ||
+    Number(input.occurrences) ||
+    1;
+  const firstObservedAt =
+    input.observations?.firstObservedAt ??
+    input.firstObservedAt ??
+    input.firstSeenAt ??
+    input.createdAt ??
+    observedAt;
+  const lastObservedAt =
+    input.observations?.lastObservedAt ??
+    input.lastObservedAt ??
+    input.lastSeenAt ??
+    observedAt;
+
+  return {
+    count,
+    firstObservedAt,
+    lastObservedAt,
+  };
+}
+
+function normalizeMistakePromotion(value, input) {
+  const observations = input.observations ?? { count: 1 };
+  const eligibleStatus = observations.count >= 2 && input.confidence === "high" ? "candidate" : "observed";
+  const storedStatus = normalizeOptionalText(value?.status);
+  const status = storedStatus === "observed" && eligibleStatus === "candidate"
+    ? "candidate"
+    : storedStatus ?? eligibleStatus;
+  const targets = normalizeStringList(value?.targets);
+
+  return {
+    status,
+    targets: targets.length > 0 ? targets : defaultPromotionTargets(status),
+    reason: normalizeOptionalText(value?.reason) ?? createPromotionReason({ ...input, observations }),
+  };
+}
+
+function defaultPromotionTargets(status) {
+  return status === "candidate" ? ["agents", "skill"] : [];
+}
+
+function createPromotionReason(mistake) {
+  const count = Number(mistake.observations?.count) || 1;
+  if (count >= 2 && mistake.confidence === "high") {
+    return "Repeated high-confidence failure.";
+  }
+
+  return "Observed mistake candidate; wait for more evidence before durable promotion.";
+}
+
+function normalizePromotionTarget(value) {
+  const target = normalizeOptionalText(value) ?? "agents";
+  if (!["agents", "skill", "hook", "config"].includes(target)) {
+    throw new Error("mistakes promote requires --target agents|skill|hook|config.");
+  }
+
+  return target;
+}
+
+function createPromotionPatchCandidate(mistake, target) {
+  if (target === "hook" || target === "config") {
+    const rule = createConfigMistakeRule(mistake, target);
+    return {
+      target,
+      path: ".devflow/config.json",
+      action: "merge-mistake-rule",
+      kind: "config-rule",
+      reason: mistake.promotion?.reason ?? createPromotionReason(mistake),
+      rule,
+      patch: [
+        `*** Begin Patch`,
+        `*** Update File: .devflow/config.json`,
+        `@@`,
+        `+${JSON.stringify({ mistakes: { rules: [rule] } }, null, 2).replaceAll("\n", "\n+")}`,
+        `*** End Patch`,
+        "",
+      ].join("\n"),
+    };
+  }
+
+  const path = target === "agents" ? "AGENTS.md" : "plugins/devflow/skills/doctor/SKILL.md";
+  const heading = target === "agents" ? "## Repeated Mistake Rules" : "## Promoted Repeated Mistake Rules";
+  const body = [
+    "",
+    `${heading}`,
+    "",
+    `- ${mistake.id}: ${mistake.correction}`,
+    `  - Category: ${mistake.category}`,
+    `  - Applies to: ${mistake.appliesTo.length > 0 ? mistake.appliesTo.join(", ") : "project"}`,
+    `  - Evidence: ${mistake.observations.count} observation(s), last seen ${mistake.observations.lastObservedAt}`,
+  ].join("\n");
+
+  return {
+    target,
+    path,
+    action: "append-section",
+    kind: "file-append",
+    reason: mistake.promotion?.reason ?? createPromotionReason(mistake),
+    content: body,
+    patch: [
+      `*** Begin Patch`,
+      `*** Update File: ${path}`,
+      `@@`,
+      `+${body.replaceAll("\n", "\n+")}`,
+      `*** End Patch`,
+      "",
+    ].join("\n"),
+  };
+}
+
+function createConfigMistakeRule(mistake, target) {
+  return {
+    id: mistake.id,
+    target,
+    status: "active",
+    pattern: defaultMistakeRulePattern(mistake.id),
+    reason: mistake.symptom,
+    correction: mistake.correction,
+    appliesTo: mistake.appliesTo,
+  };
+}
+
+function defaultMistakeRulePattern(id) {
+  if (id === "powershell-bash-heredoc-redirection") {
+    return "<<";
+  }
+
+  if (id === "powershell-select-object-range-syntax") {
+    return "Select-Object\\s+-Index\\s+\\d+\\.\\.\\d+";
+  }
+
+  return id;
+}
+
+async function writePromotionConfigRule(repoPath, rule) {
+  const targetPath = join(repoPath, ".devflow", "config.json");
+  await mkdir(dirname(targetPath), { recursive: true });
+  let config = {};
+  try {
+    config = JSON.parse(await readFile(targetPath, "utf8"));
+  } catch {
+    config = {};
+  }
+
+  const rules = Array.isArray(config.mistakes?.rules) ? config.mistakes.rules : [];
+  const nextRules = rules.some((candidate) => candidate.id === rule.id)
+    ? rules.map((candidate) => candidate.id === rule.id ? { ...candidate, ...rule } : candidate)
+    : [...rules, rule];
+  const nextConfig = {
+    ...config,
+    mistakes: {
+      ...(config.mistakes ?? {}),
+      rules: nextRules,
+    },
+  };
+
+  await writeFile(targetPath, `${JSON.stringify(nextConfig, null, 2)}\n`, "utf8");
+}
+
 function normalizeEvidence(value) {
   if (!Array.isArray(value)) {
     return [];
@@ -3973,11 +4376,63 @@ function deriveStateFromEvents(events, warnings = []) {
     reviews: {
       latestByWorkItemId: createLatestReviewEvidence(events),
     },
+    mistakes: {
+      promotionReviews: {
+        latestByMistakeId: createLatestMistakePromotionReviews(events),
+      },
+      rules: {
+        active: createActiveMistakeRules(events),
+      },
+    },
     sessions: {
       discovered: [],
       attached: createAttachedSessionEvidence(events),
     },
   };
+}
+
+function createLatestMistakePromotionReviews(events) {
+  const latestByMistakeId = {};
+
+  for (const event of events) {
+    if (event.type !== "mistake.promotion.reviewed") {
+      continue;
+    }
+
+    latestByMistakeId[event.payload.mistakeId] = {
+      mistakeId: event.payload.mistakeId,
+      status: event.payload.status,
+      summary: event.payload.summary ?? null,
+      reviewer: event.payload.reviewer ?? "maintainer",
+      observedAt: event.payload.observedAt ?? event.observedAt,
+      source: event.payload.source ?? "local",
+    };
+  }
+
+  return latestByMistakeId;
+}
+
+function createActiveMistakeRules(events) {
+  const latestById = new Map();
+
+  for (const event of events) {
+    if (event.type !== "mistake.rule.promoted") {
+      continue;
+    }
+
+    latestById.set(event.payload.id, {
+      id: event.payload.id,
+      target: event.payload.target,
+      path: event.payload.path ?? null,
+      status: event.payload.status ?? "active",
+      correction: event.payload.correction,
+      category: event.payload.category ?? null,
+      appliesTo: normalizeStringList(event.payload.appliesTo),
+      observedAt: event.payload.observedAt ?? event.observedAt,
+    });
+  }
+
+  return [...latestById.values()].filter((rule) => rule.status === "active");
 }
 
 function createHandoffEvidence(event) {
@@ -4580,6 +5035,14 @@ function emptyDevflowState() {
     reviews: {
       latestByWorkItemId: {},
     },
+    mistakes: {
+      promotionReviews: {
+        latestByMistakeId: {},
+      },
+      rules: {
+        active: [],
+      },
+    },
     sessions: {
       discovered: [],
       attached: [],
@@ -4587,9 +5050,18 @@ function emptyDevflowState() {
   };
 }
 
+function emptyMistakeGateState() {
+  return {
+    candidates: [],
+    rules: [],
+    promotionReviews: {},
+  };
+}
+
 function createStatusRecommendations(input) {
   const gates = input.gates ?? [];
   const changedFiles = input.changedFiles ?? [];
+  const mistakes = input.mistakes ?? emptyMistakeGateState();
   const reviewWorkItemId = input.reviewWorkItemId ?? input.workItemId ?? null;
   if (
     input.reviewRequired &&
@@ -4602,6 +5074,17 @@ function createStatusRecommendations(input) {
         kind: "review",
         command,
         message: `Run ${command} before finishing ${reviewWorkItemId}.`,
+      },
+    ];
+  }
+
+  if ((mistakes.candidates ?? []).length > 0) {
+    const candidate = mistakes.candidates[0];
+    return [
+      {
+        kind: "mistake-promotion",
+        command: `devflow mistakes promote --id ${candidate.id} --target agents --dry-run --json`,
+        message: `Review repeated mistake candidate ${candidate.id} before promoting it into repo-local rules.`,
       },
     ];
   }

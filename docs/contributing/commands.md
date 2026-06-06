@@ -1038,6 +1038,10 @@ Examples:
 devflow mistakes add --repo C:\Projects\devflow-demo --id powershell-select-object-range-syntax --category shell-file-io-friction --symptom "Agent passed a PowerShell range expression as a string to Select-Object -Index." --correction "Wrap PowerShell ranges in parentheses, for example Select-Object -Index (108..156)." --applies-to windows-powershell --json
 devflow mistakes list --repo C:\Projects\devflow-demo --json
 devflow mistakes detect --repo C:\Projects\devflow-demo --platform windows-powershell --command 'Get-Content -LiteralPath docs\product-plan.md | Select-Object -Index 108..156' --stderr 'Cannot bind parameter ''Index''. Cannot convert value "108..156" to type "System.Int32".' --record --json
+devflow mistakes promote --repo C:\Projects\devflow-demo --id powershell-bash-heredoc-redirection --target agents --dry-run --json
+devflow mistakes review --repo C:\Projects\devflow-demo --id powershell-bash-heredoc-redirection --status approved --summary "Repeated PowerShell heredoc correction is repo-relevant." --json
+devflow mistakes promote --repo C:\Projects\devflow-demo --id powershell-bash-heredoc-redirection --target skill --apply --json
+devflow mistakes rules --repo C:\Projects\devflow-demo --json
 ```
 
 Subcommands:
@@ -1046,6 +1050,11 @@ Subcommands:
 - `list`: renders the current project mistake memory
 - `detect`: scans command output for known failure signatures and returns
   candidate corrections
+- `promote`: generates patch candidates with `--dry-run`, or applies a
+  reviewed promotion with `--apply`
+- `review`: records repo-local maintainer review evidence for promotion
+- `rules`: lists active promoted rules, review evidence, and unresolved
+  candidates
 
 Inputs:
 
@@ -1054,6 +1063,9 @@ Inputs:
 - platform, command text, stdout, stderr, and optional exit code for `detect`
 - `--record` on `detect` to upsert detected candidates into
   `.devflow/mistakes.json`
+- `--id <id>`, `--target agents|skill|hook|config`, and either `--dry-run`
+  or `--apply` for `promote`
+- `--status approved|rejected` and `--summary <text>` for `review`
 
 Outputs:
 
@@ -1061,6 +1073,12 @@ Outputs:
 - normalized mistake records with occurrence counts and bounded evidence text
 - local `.devflow/mistakes.json` updates only when `add` or
   `detect --record` is used
+- `mistakes_promote` JSON with patch candidates for `--dry-run`
+- reviewed `--apply` promotions append a compact rule to `AGENTS.md` or
+  `plugins/devflow/skills/doctor/SKILL.md`, or merge a hook/config rule into
+  `.devflow/config.json`
+- `mistakes_review` and `mistakes_rules` JSON for promotion evidence and active
+  promoted rules
 
 Current detection signatures cover:
 
@@ -1071,7 +1089,9 @@ Current detection signatures cover:
 
 Detection records a candidate; it does not automatically edit `AGENTS.md` or
 skill files. Promotion to durable instruction files should remain
-confirmation-gated so project docs do not accumulate noisy one-off errors.
+repo-local evidence-gated so project docs do not accumulate noisy one-off
+errors. `promote --apply` requires an approved `mistakes review` event unless
+the maintainer explicitly passes `--confirm-reviewed`.
 
 ## `devflow doctor`
 

@@ -2163,6 +2163,259 @@ test("CLI mistakes detect records PowerShell and Playwright mistake candidates",
   );
 });
 
+test("CLI mistakes promote dry-run emits patch candidates without editing AGENTS", async () => {
+  const repoPath = await createTempGitRepo();
+  const agentsPath = join(repoPath, "AGENTS.md");
+  await writeFile(agentsPath, "# Agent Guide\n\nKeep commands platform-native.\n", "utf8");
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "detect",
+    "--repo",
+    repoPath,
+    "--platform",
+    "windows-powershell",
+    "--command",
+    "node packages/mcp/src/stdio.js << 'EOF'",
+    "--stderr",
+    "ParserError: Missing file specification after redirection operator.",
+    "--record",
+    "--json",
+  ]);
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "detect",
+    "--repo",
+    repoPath,
+    "--platform",
+    "windows-powershell",
+    "--command",
+    "node packages/mcp/src/stdio.js << 'EOF'",
+    "--stderr",
+    "ParserError: Missing file specification after redirection operator.",
+    "--record",
+    "--json",
+  ]);
+
+  const promoted = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "promote",
+    "--repo",
+    repoPath,
+    "--id",
+    "powershell-bash-heredoc-redirection",
+    "--target",
+    "agents",
+    "--dry-run",
+    "--json",
+  ]);
+  const promotedJson = JSON.parse(promoted.stdout);
+  const agentsAfter = await readFile(agentsPath, "utf8");
+
+  assert.equal(promotedJson.command, "mistakes_promote");
+  assert.equal(promotedJson.applied, false);
+  assert.equal(promotedJson.mistake.id, "powershell-bash-heredoc-redirection");
+  assert.equal(promotedJson.mistake.observations.count, 2);
+  assert.equal(promotedJson.patchCandidates[0].target, "agents");
+  assert.equal(promotedJson.patchCandidates[0].path, "AGENTS.md");
+  assert.match(promotedJson.patchCandidates[0].patch, /PowerShell here-string/);
+  assert.equal(agentsAfter, "# Agent Guide\n\nKeep commands platform-native.\n");
+});
+
+test("CLI mistakes promote dry-run can use built-in detector records by id", async () => {
+  const repoPath = await createTempGitRepo();
+  const promoted = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "promote",
+    "--repo",
+    repoPath,
+    "--id",
+    "powershell-bash-heredoc-redirection",
+    "--target",
+    "agents",
+    "--dry-run",
+    "--json",
+  ]);
+  const promotedJson = JSON.parse(promoted.stdout);
+
+  assert.equal(promotedJson.command, "mistakes_promote");
+  assert.equal(promotedJson.applied, false);
+  assert.equal(promotedJson.mistake.id, "powershell-bash-heredoc-redirection");
+  assert.match(promotedJson.patchCandidates[0].patch, /PowerShell here-string/);
+});
+
+test("CLI mistakes review, apply, and rules close the skill promotion loop", async () => {
+  const repoPath = await createTempGitRepo();
+  const skillPath = join(repoPath, "plugins", "devflow", "skills", "doctor", "SKILL.md");
+  await mkdir(join(repoPath, "plugins", "devflow", "skills", "doctor"), { recursive: true });
+  await writeFile(
+    skillPath,
+    [
+      "---",
+      "name: doctor",
+      "description: Load Devflow Native execution rules.",
+      "---",
+      "",
+      "# Devflow Doctor",
+      "",
+      "Run `devflow doctor --json` before command-heavy work.",
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "detect",
+    "--repo",
+    repoPath,
+    "--platform",
+    "windows-powershell",
+    "--command",
+    "node packages/mcp/src/stdio.js << 'EOF'",
+    "--stderr",
+    "ParserError: Missing file specification after redirection operator.",
+    "--record",
+    "--json",
+  ]);
+
+  await assert.rejects(
+    execFileAsync("node", [
+      "packages/cli/src/index.js",
+      "mistakes",
+      "promote",
+      "--repo",
+      repoPath,
+      "--id",
+      "powershell-bash-heredoc-redirection",
+      "--target",
+      "skill",
+      "--apply",
+      "--json",
+    ]),
+    /approved promotion review/,
+  );
+
+  const review = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "review",
+    "--repo",
+    repoPath,
+    "--id",
+    "powershell-bash-heredoc-redirection",
+    "--status",
+    "approved",
+    "--summary",
+    "Repeated PowerShell heredoc correction should be promoted.",
+    "--json",
+  ]);
+  const reviewJson = JSON.parse(review.stdout);
+
+  assert.equal(reviewJson.command, "mistakes_review");
+  assert.equal(reviewJson.review.status, "approved");
+
+  const applied = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "promote",
+    "--repo",
+    repoPath,
+    "--id",
+    "powershell-bash-heredoc-redirection",
+    "--target",
+    "skill",
+    "--apply",
+    "--json",
+  ]);
+  const appliedJson = JSON.parse(applied.stdout);
+  const skillAfter = await readFile(skillPath, "utf8");
+
+  assert.equal(appliedJson.command, "mistakes_promote");
+  assert.equal(appliedJson.applied, true);
+  assert.match(skillAfter, /powershell-bash-heredoc-redirection/);
+  assert.match(skillAfter, /PowerShell here-string/);
+
+  const rules = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "rules",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const rulesJson = JSON.parse(rules.stdout);
+
+  assert.equal(rulesJson.command, "mistakes_rules");
+  assert.equal(rulesJson.rules[0].id, "powershell-bash-heredoc-redirection");
+  assert.equal(rulesJson.rules[0].target, "skill");
+});
+
+test("CLI status and finish surface repeated mistake candidates and rules", async () => {
+  const repoPath = await createTempGitRepo();
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "detect",
+    "--repo",
+    repoPath,
+    "--platform",
+    "windows-powershell",
+    "--command",
+    "node packages/mcp/src/stdio.js << 'EOF'",
+    "--stderr",
+    "ParserError: Missing file specification after redirection operator.",
+    "--record",
+    "--json",
+  ]);
+  await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "detect",
+    "--repo",
+    repoPath,
+    "--platform",
+    "windows-powershell",
+    "--command",
+    "node packages/mcp/src/stdio.js << 'EOF'",
+    "--stderr",
+    "ParserError: Missing file specification after redirection operator.",
+    "--record",
+    "--json",
+  ]);
+
+  const status = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "status",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const statusJson = JSON.parse(status.stdout);
+
+  assert.equal(statusJson.mistakes.candidates[0].id, "powershell-bash-heredoc-redirection");
+  assert.ok(statusJson.recommendations.some((item) => item.kind === "mistake-promotion"));
+
+  const finish = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "finish",
+    "--repo",
+    repoPath,
+    "--dry-run",
+    "--json",
+  ]);
+  const finishJson = JSON.parse(finish.stdout);
+
+  assert.equal(finishJson.canClaimDone, true);
+  assert.match(finishJson.nextPrompt, /powershell-bash-heredoc-redirection/);
+});
+
 test("CLI sessions codex renders explicit read-only Codex discovery JSON", async () => {
   const repoPath = await createTempGitRepo();
   const codexHome = await mkdtemp(join(tmpdir(), "devflow-cli-codex-home-"));

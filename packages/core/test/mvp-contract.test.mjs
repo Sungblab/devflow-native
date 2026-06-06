@@ -13,6 +13,7 @@ import {
   createHarnessPlanSummary,
   createDoctorSummary,
   createMistakeDetection,
+  createMistakePromotion,
   createInitPlan,
   createSessionAttachPlan,
   createWorkListSummary,
@@ -35,6 +36,9 @@ import {
   readDevflowConfig,
   readDevflowState,
   readLatestHandoff,
+  recordMistakePromotionReviewEvent,
+  recordMistakeRuleEvent,
+  recordMistakeMemory,
   runConfiguredGate,
   writeHarnessInstall,
   writeHarnessRepair,
@@ -2179,6 +2183,146 @@ test("mistake detection catches Bash heredoc redirection in PowerShell", () => {
   assert.equal(detection.command, "mistakes_detect");
   assert.ok(detection.candidates.some((candidate) => candidate.id === "powershell-bash-heredoc-redirection"));
   assert.match(detection.candidates[0].correction, /PowerShell here-string/);
+});
+
+test("mistake memory aggregates repeated observations and promotion candidates", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mistake-repeat-"));
+
+  await recordMistakeMemory(
+    repoPath,
+    {
+      id: "powershell-bash-heredoc-redirection",
+      category: "shell-file-io-friction",
+      symptom: "Agent used Bash heredoc redirection in Windows PowerShell.",
+      correction: "Use a PowerShell here-string piped to stdin.",
+      appliesTo: ["windows-powershell", "codex"],
+      confidence: "high",
+      evidence: [{ kind: "command", text: "node packages/mcp/src/stdio.js << 'EOF'" }],
+    },
+    { observedAt: "2026-06-06T00:00:00.000Z" },
+  );
+
+  const recorded = await recordMistakeMemory(
+    repoPath,
+    {
+      id: "powershell-bash-heredoc-redirection",
+      category: "shell-file-io-friction",
+      symptom: "Agent used Bash heredoc redirection in Windows PowerShell.",
+      correction: "Use a PowerShell here-string piped to stdin.",
+      appliesTo: ["windows-powershell", "claude"],
+      confidence: "high",
+      evidence: [{ kind: "stderr", text: "ParserError: Missing file specification after redirection operator." }],
+    },
+    { observedAt: "2026-06-06T00:01:00.000Z" },
+  );
+
+  assert.equal(recorded.mistake.observations.count, 2);
+  assert.equal(recorded.mistake.observations.firstObservedAt, "2026-06-06T00:00:00.000Z");
+  assert.equal(recorded.mistake.observations.lastObservedAt, "2026-06-06T00:01:00.000Z");
+  assert.deepEqual(recorded.mistake.appliesTo.sort(), ["claude", "codex", "windows-powershell"]);
+  assert.equal(recorded.mistake.confidence, "high");
+  assert.equal(recorded.mistake.promotion.status, "candidate");
+  assert.ok(recorded.mistake.promotion.targets.includes("agents"));
+  assert.equal(recorded.mistake.evidence.length, 2);
+});
+
+test("mistake promotion dry-run returns patch candidates without applying durable edits", () => {
+  const promotion = createMistakePromotion({
+    mistake: {
+      id: "powershell-bash-heredoc-redirection",
+      category: "shell-file-io-friction",
+      scope: "project",
+      symptom: "Agent used Bash heredoc redirection in Windows PowerShell.",
+      correction: "Use a PowerShell here-string piped to stdin.",
+      appliesTo: ["windows-powershell", "codex", "claude"],
+      confidence: "high",
+      observations: {
+        count: 2,
+        firstObservedAt: "2026-06-06T00:00:00.000Z",
+        lastObservedAt: "2026-06-06T00:01:00.000Z",
+      },
+      evidence: [{ kind: "stderr", text: "ParserError: Missing file specification after redirection operator." }],
+    },
+    target: "agents",
+    dryRun: true,
+  });
+
+  assert.equal(promotion.command, "mistakes_promote");
+  assert.equal(promotion.applied, false);
+  assert.equal(promotion.patchCandidates[0].target, "agents");
+  assert.equal(promotion.patchCandidates[0].path, "AGENTS.md");
+  assert.match(promotion.patchCandidates[0].patch, /powershell-bash-heredoc-redirection/);
+  assert.match(promotion.patchCandidates[0].patch, /PowerShell here-string/);
+});
+
+test("mistake promotion review and rules are visible in derived state", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mistake-rules-"));
+
+  await recordMistakePromotionReviewEvent(
+    repoPath,
+    {
+      id: "powershell-bash-heredoc-redirection",
+      status: "approved",
+      summary: "Promote this recurring PowerShell correction.",
+      reviewer: "maintainer",
+    },
+    { observedAt: "2026-06-06T00:02:00.000Z" },
+  );
+  await recordMistakeRuleEvent(
+    repoPath,
+    {
+      id: "powershell-bash-heredoc-redirection",
+      target: "skill",
+      path: "plugins/devflow/skills/doctor/SKILL.md",
+      status: "active",
+      correction: "Use a PowerShell here-string piped to stdin.",
+    },
+    { observedAt: "2026-06-06T00:03:00.000Z" },
+  );
+
+  const state = await readDevflowState(repoPath);
+
+  assert.equal(
+    state.mistakes.promotionReviews.latestByMistakeId["powershell-bash-heredoc-redirection"].status,
+    "approved",
+  );
+  assert.equal(state.mistakes.rules.active[0].target, "skill");
+  assert.equal(state.mistakes.rules.active[0].path, "plugins/devflow/skills/doctor/SKILL.md");
+});
+
+test("status and finish summaries include mistake rules and unresolved candidates", () => {
+  const mistakes = {
+    candidates: [
+      {
+        id: "powershell-bash-heredoc-redirection",
+        correction: "Use a PowerShell here-string piped to stdin.",
+        promotion: { status: "candidate" },
+        observations: { count: 2 },
+      },
+    ],
+    rules: [
+      {
+        id: "powershell-select-object-range-syntax",
+        correction: "Wrap PowerShell ranges in parentheses.",
+        target: "hook",
+        status: "active",
+      },
+    ],
+  };
+  const status = createStatusSummary({ mistakes });
+  const finish = createFinishSummary({
+    workItem: { id: "local-work", title: "Local work" },
+    intent: "Close with mistake context.",
+    mistakes,
+    blockUnreviewedMistakes: true,
+  });
+
+  assert.equal(status.mistakes.candidates[0].id, "powershell-bash-heredoc-redirection");
+  assert.equal(status.mistakes.rules[0].id, "powershell-select-object-range-syntax");
+  assert.ok(status.recommendations.some((item) => item.kind === "mistake-promotion"));
+  assert.equal(finish.canClaimDone, false);
+  assert.ok(finish.doneBlockers.some((item) => item.kind === "unreviewed_mistake_candidate"));
+  assert.match(finish.nextPrompt, /powershell-select-object-range-syntax/);
 });
 
 async function runInstalledHook(repoPath, path, payload) {

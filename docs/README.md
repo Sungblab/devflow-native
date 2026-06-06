@@ -13,6 +13,7 @@ This is the documentation router for Devflow Native.
 | System structure and technical boundaries | [architecture.md](./architecture.md) |
 | Agent and platform adapter strategy | [architecture/adapters.md](./architecture/adapters.md) |
 | Native plugin comparison and boundaries | [architecture/plugin-native-comparison.md](./architecture/plugin-native-comparison.md) |
+| Repeated mistake detection, promotion, and evidence gates | [architecture/repeated-mistake-loop.md](./architecture/repeated-mistake-loop.md) |
 | MCP handler package | [../packages/mcp/README.md](../packages/mcp/README.md) |
 | Research boundary | [research/README.md](./research/README.md) |
 | Open-source promotion plan | [marketing/open-source-promotion.md](./marketing/open-source-promotion.md) |
