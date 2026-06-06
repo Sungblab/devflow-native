@@ -29,6 +29,18 @@
       "symptom": "Agent used configuration or API patterns from an older major version of a framework or tool.",
       "correction": "Before editing framework configuration, inspect installed package versions and current primary docs; do not assume older major-version setup still applies.",
       "appliesTo": ["tooling-version-drift", "framework-config"]
+    },
+    {
+      "id": "powershell-select-object-range-syntax",
+      "symptom": "Agent passed a PowerShell range expression as a string to Select-Object -Index.",
+      "correction": "Wrap PowerShell ranges in parentheses, for example Select-Object -Index (108..156).",
+      "appliesTo": ["windows-powershell", "shell-file-io"]
+    },
+    {
+      "id": "playwright-module-unavailable",
+      "symptom": "Agent tried to run Playwright before the package or workspace runtime was available.",
+      "correction": "Inspect the repo package manager and installed dependencies before loading Playwright; install dependencies or use the bundled runtime path when the project expects it.",
+      "appliesTo": ["playwright", "browser-automation"]
     }
   ]
 }

@@ -113,9 +113,10 @@ beginner profile should translate those concepts into plain language.
    the context of my project.
 9. As a beginner, I can turn vague intent into a better prompt without learning
    all implementation vocabulary upfront.
-10. As a maintainer, I can capture repeated agent mistakes such as shell
-    mismatch, Windows path handling, encoding issues, unsafe commands, and
-    missing setup steps, then feed those lessons into future sessions.
+10. As a maintainer, I can capture and detect repeated agent mistakes such as
+    shell mismatch, Windows path handling, encoding issues, unsafe commands,
+    missing setup steps, and unavailable tools, then feed those lessons into
+    future sessions.
 
 ## Product Shape
 
@@ -151,6 +152,12 @@ Repeated-mistake memory should be layered:
 - project memory records repo-specific corrections
 - private user memory can record maintainer-specific habits, paths, and
   historical failures
+
+The repair loop should be explicit: command output or user correction becomes a
+mistake candidate, confirmed candidates are stored in `.devflow/mistakes.json`,
+`devflow doctor` injects the correction at session start, and repeated
+candidates can be promoted to `AGENTS.md` or skill files only through a
+confirmation-gated patch.
 
 ## Supported Agents
 

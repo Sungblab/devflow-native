@@ -23,6 +23,7 @@ Build:
 - `devflow status`
 - `devflow finish`
 - `devflow doctor`
+- `devflow mistakes add/list/detect`
 - `devflow prompt next`
 - `devflow prompt latest`
 - repo-local Codex/Claude plugin hooks for start, prompt intent, and finish
@@ -30,7 +31,7 @@ Build:
 - local `.devflow/` state files
 - git dirty-file capture
 - gate evidence capture
-- platform execution contract and repeated-mistake memory capture
+- platform execution contract and repeated-mistake memory capture/detection
 - repo-local Codex plugin wrappers for the start/status/doctor and finish
   evidence loops
 - Markdown next-session handoff output and latest prompt projection

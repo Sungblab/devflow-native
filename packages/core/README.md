@@ -46,7 +46,7 @@ packages/core/
 ## Responsibilities
 
 - Define JSON-serializable contracts for `status`, `split`, `finish`,
-  `doctor`, and session attach planning.
+  `doctor`, mistake memory, and session attach planning.
 - Normalize paths to repo-relative POSIX-style paths internally while preserving
   platform metadata for command generation.
 - Store append-only events and rebuild derived status views from those events.
@@ -56,8 +56,8 @@ packages/core/
   research-harness consumers.
 - Propose session-to-work-item links without writing attach state. Low- or
   medium-confidence session matches must stay confirmation-gated.
-- Render local execution contracts and repeated-mistake memory into agent-safe
-  recommendations.
+- Render local execution contracts, repeated-mistake memory, and detected
+  mistake candidates into agent-safe recommendations.
 
 ## Non-Responsibilities
 

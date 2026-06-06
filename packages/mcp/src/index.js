@@ -15,6 +15,8 @@ import {
 import {
   createDoctorSummary,
   createFinishSummary,
+  createMistakeDetection,
+  createMistakeListSummary,
   createNextPrompt,
   createPromptRewrite,
   createReviewRequest,
@@ -37,6 +39,7 @@ import {
   readMistakeMemory,
   recordFinishEvent,
   recordGateEvent,
+  recordMistakeMemory,
   recordManualSessionNoteEvent,
   recordReviewEvent,
   recordSessionAttachedEvent,
@@ -164,6 +167,18 @@ const tools = [
   {
     name: "devflow.doctor",
     description: "Inspect local execution rules and repeated-mistake memory.",
+  },
+  {
+    name: "devflow.mistakes_add",
+    description: "Record a repo-local repeated agent mistake correction.",
+  },
+  {
+    name: "devflow.mistakes_list",
+    description: "List repo-local repeated agent mistake memory.",
+  },
+  {
+    name: "devflow.mistakes_detect",
+    description: "Detect known repeated agent mistake candidates from command output.",
   },
   {
     name: "devflow.finish",
@@ -302,6 +317,18 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.doctor") {
     return callDoctor(args);
+  }
+
+  if (name === "devflow.mistakes_add") {
+    return callMistakesAdd(args);
+  }
+
+  if (name === "devflow.mistakes_list") {
+    return callMistakesList(args);
+  }
+
+  if (name === "devflow.mistakes_detect") {
+    return callMistakesDetect(args);
   }
 
   if (name === "devflow.finish") {
@@ -876,6 +903,55 @@ async function callDoctor(args) {
   });
 
   return toolResult(summary, `devflow doctor: ${summary.platform.name}`);
+}
+
+async function callMistakesAdd(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const summary = await recordMistakeMemory(repoPath, {
+    id: args.id,
+    category: args.category,
+    scope: args.scope,
+    symptom: args.symptom,
+    correction: args.correction,
+    appliesTo: args.appliesTo ?? args.applies_to ?? [],
+    confidence: args.confidence,
+    evidence: args.evidence ?? [],
+  });
+
+  return toolResult(summary, `devflow mistakes_add: ${summary.mistake.id}`);
+}
+
+async function callMistakesList(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const memory = await readMistakeMemory(repoPath);
+  const summary = createMistakeListSummary({
+    mistakes: memory.mistakes,
+    warnings: memory.warnings,
+  });
+
+  return toolResult(summary, `devflow mistakes_list: ${summary.count}`);
+}
+
+async function callMistakesDetect(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const detection = createMistakeDetection({
+    platform: args.platform ?? "windows-powershell",
+    command: args.command,
+    stderr: args.stderr,
+    stdout: args.stdout,
+    exitCode: args.exitCode ?? args.exit_code,
+  });
+  const recorded = [];
+
+  if (args.record) {
+    for (const candidate of detection.candidates) {
+      const result = await recordMistakeMemory(repoPath, candidate);
+      recorded.push(result.mistake);
+    }
+  }
+
+  const summary = { ...detection, recorded };
+  return toolResult(summary, `devflow mistakes_detect: ${summary.candidates.length}`);
 }
 
 async function callFinish(args) {

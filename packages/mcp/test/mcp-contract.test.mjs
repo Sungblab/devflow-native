@@ -44,6 +44,9 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.work_list"));
   assert.ok(names.includes("devflow.review_record"));
   assert.ok(names.includes("devflow.review_request"));
+  assert.ok(names.includes("devflow.mistakes_add"));
+  assert.ok(names.includes("devflow.mistakes_list"));
+  assert.ok(names.includes("devflow.mistakes_detect"));
 });
 
 test("MCP harness tools inspect, plan, and health-check native setup", async () => {
@@ -337,6 +340,53 @@ test("MCP doctor returns the same structured execution contract", async () => {
     "Get-Content -LiteralPath",
   );
   assert.match(result.content[0].text, /doctor/);
+});
+
+test("MCP mistakes tools record detected candidates for doctor memory", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-mistakes-"));
+
+  const detected = await callTool("devflow.mistakes_detect", {
+    repo: repoPath,
+    platform: "windows-powershell",
+    command: "Get-Content -LiteralPath docs\\product-plan.md | Select-Object -Index 108..156",
+    stderr: "Cannot bind parameter 'Index'. Cannot convert value \"108..156\" to type \"System.Int32\".",
+    record: true,
+  });
+
+  assert.equal(detected.structuredContent.command, "mistakes_detect");
+  assert.equal(detected.structuredContent.candidates[0].id, "powershell-select-object-range-syntax");
+  assert.equal(detected.structuredContent.recorded[0].id, "powershell-select-object-range-syntax");
+
+  const listed = await callTool("devflow.mistakes_list", {
+    repo: repoPath,
+  });
+
+  assert.equal(listed.structuredContent.command, "mistakes_list");
+  assert.equal(listed.structuredContent.count, 1);
+
+  const added = await callTool("devflow.mistakes_add", {
+    repo: repoPath,
+    id: "playwright-module-unavailable",
+    category: "setup-tool-availability",
+    symptom: "Agent tried to run Playwright before the package or workspace runtime was available.",
+    correction: "Inspect package manager state before loading Playwright.",
+    appliesTo: ["playwright"],
+  });
+
+  assert.equal(added.structuredContent.command, "mistakes_add");
+  assert.equal(added.structuredContent.mistake.id, "playwright-module-unavailable");
+
+  const doctor = await callTool("devflow.doctor", {
+    repo: repoPath,
+    platform: "windows-powershell",
+  });
+
+  assert.equal(doctor.structuredContent.memory.repeatedMistakes.length, 2);
+  assert.ok(
+    doctor.structuredContent.recommendations.some(
+      (item) => item.source === "playwright-module-unavailable",
+    ),
+  );
 });
 
 test("MCP finish records evidence into local state", async () => {

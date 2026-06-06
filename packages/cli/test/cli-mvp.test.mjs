@@ -1997,6 +1997,127 @@ test("CLI doctor renders platform and mistake memory JSON", async () => {
   assert.match(parsed.recommendations[0].message, /Get-Content -LiteralPath/);
 });
 
+test("CLI mistakes add and list persist repo-local correction memory", async () => {
+  const repoPath = await createTempGitRepo();
+
+  const added = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "add",
+    "--repo",
+    repoPath,
+    "--id",
+    "powershell-select-object-range-syntax",
+    "--category",
+    "shell-file-io-friction",
+    "--symptom",
+    "Agent passed a PowerShell range expression as a string to Select-Object -Index.",
+    "--correction",
+    "Wrap PowerShell ranges in parentheses, for example Select-Object -Index (108..156).",
+    "--applies-to",
+    "windows-powershell",
+    "--json",
+  ]);
+  const addedJson = JSON.parse(added.stdout);
+
+  assert.equal(addedJson.command, "mistakes_add");
+  assert.equal(addedJson.mistake.id, "powershell-select-object-range-syntax");
+  assert.equal(addedJson.mistake.occurrences, 1);
+
+  const listed = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "list",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const listJson = JSON.parse(listed.stdout);
+
+  assert.equal(listJson.command, "mistakes_list");
+  assert.equal(listJson.count, 1);
+  assert.equal(listJson.mistakes[0].category, "shell-file-io-friction");
+  assert.match(listJson.mistakes[0].correction, /Select-Object -Index \(108\.\.156\)/);
+
+  const doctor = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "doctor",
+    "--repo",
+    repoPath,
+    "--platform",
+    "windows-powershell",
+    "--json",
+  ]);
+  const doctorJson = JSON.parse(doctor.stdout);
+
+  assert.equal(doctorJson.memory.repeatedMistakes[0].id, "powershell-select-object-range-syntax");
+  assert.match(
+    doctorJson.recommendations.find((item) => item.source === "powershell-select-object-range-syntax")
+      .message,
+    /PowerShell ranges/,
+  );
+});
+
+test("CLI mistakes detect records PowerShell and Playwright mistake candidates", async () => {
+  const repoPath = await createTempGitRepo();
+
+  const powershell = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "detect",
+    "--repo",
+    repoPath,
+    "--platform",
+    "windows-powershell",
+    "--command",
+    "Get-Content -LiteralPath docs\\product-plan.md | Select-Object -Index 108..156",
+    "--stderr",
+    "Cannot bind parameter 'Index'. Cannot convert value \"108..156\" to type \"System.Int32\".",
+    "--record",
+    "--json",
+  ]);
+  const powershellJson = JSON.parse(powershell.stdout);
+
+  assert.equal(powershellJson.command, "mistakes_detect");
+  assert.equal(powershellJson.candidates[0].id, "powershell-select-object-range-syntax");
+  assert.equal(powershellJson.recorded[0].id, "powershell-select-object-range-syntax");
+
+  const playwright = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "detect",
+    "--repo",
+    repoPath,
+    "--platform",
+    "windows-powershell",
+    "--command",
+    "node smoke.mjs",
+    "--stderr",
+    "Error: Cannot find module 'playwright'",
+    "--record",
+    "--json",
+  ]);
+  const playwrightJson = JSON.parse(playwright.stdout);
+
+  assert.equal(playwrightJson.candidates[0].id, "playwright-module-unavailable");
+  assert.equal(playwrightJson.recorded[0].id, "playwright-module-unavailable");
+
+  const listed = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "mistakes",
+    "list",
+    "--repo",
+    repoPath,
+    "--json",
+  ]);
+  const listJson = JSON.parse(listed.stdout);
+
+  assert.deepEqual(
+    listJson.mistakes.map((mistake) => mistake.id).sort(),
+    ["playwright-module-unavailable", "powershell-select-object-range-syntax"],
+  );
+});
+
 test("CLI sessions codex renders explicit read-only Codex discovery JSON", async () => {
   const repoPath = await createTempGitRepo();
   const codexHome = await mkdtemp(join(tmpdir(), "devflow-cli-codex-home-"));

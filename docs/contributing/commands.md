@@ -1004,6 +1004,51 @@ Outputs:
 Use this when work happened in a browser, terminal, IDE, meeting, or agent host
 that does not have a stable adapter yet.
 
+## `devflow mistakes`
+
+Records and detects repo-local repeated agent mistake memory. This is the
+mistake repair loop that feeds `devflow doctor`, start skills, and future
+plugin hooks without making Devflow a persistent autonomous agent.
+
+Examples:
+
+```powershell
+devflow mistakes add --repo C:\Projects\devflow-demo --id powershell-select-object-range-syntax --category shell-file-io-friction --symptom "Agent passed a PowerShell range expression as a string to Select-Object -Index." --correction "Wrap PowerShell ranges in parentheses, for example Select-Object -Index (108..156)." --applies-to windows-powershell --json
+devflow mistakes list --repo C:\Projects\devflow-demo --json
+devflow mistakes detect --repo C:\Projects\devflow-demo --platform windows-powershell --command 'Get-Content -LiteralPath docs\product-plan.md | Select-Object -Index 108..156' --stderr 'Cannot bind parameter ''Index''. Cannot convert value "108..156" to type "System.Int32".' --record --json
+```
+
+Subcommands:
+
+- `add`: writes a maintainer-approved correction into `.devflow/mistakes.json`
+- `list`: renders the current project mistake memory
+- `detect`: scans command output for known failure signatures and returns
+  candidate corrections
+
+Inputs:
+
+- repository path
+- mistake id, category, symptom, correction, and applies-to tags for `add`
+- platform, command text, stdout, stderr, and optional exit code for `detect`
+- `--record` on `detect` to upsert detected candidates into
+  `.devflow/mistakes.json`
+
+Outputs:
+
+- `mistakes_add`, `mistakes_list`, or `mistakes_detect` JSON
+- normalized mistake records with occurrence counts and bounded evidence text
+- local `.devflow/mistakes.json` updates only when `add` or
+  `detect --record` is used
+
+Current detection signatures cover:
+
+- PowerShell `Select-Object -Index 108..156` range syntax mistakes
+- Playwright package/runtime unavailable errors
+
+Detection records a candidate; it does not automatically edit `AGENTS.md` or
+skill files. Promotion to durable instruction files should remain
+confirmation-gated so project docs do not accumulate noisy one-off errors.
+
 ## `devflow doctor`
 
 Inspects the local execution contract that agent hosts should respect before

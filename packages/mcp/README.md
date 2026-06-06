@@ -34,6 +34,9 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.work_list`
 - `devflow.review_request`
 - `devflow.review_record`
+- `devflow.mistakes_add`
+- `devflow.mistakes_list`
+- `devflow.mistakes_detect`
 - `devflow.finish`
 - `devflow.record_gate`
 - `devflow.gates_run`
@@ -128,6 +131,15 @@ structured JSON.
 item. Use it after a separate reviewer agent or reviewer persona has inspected
 the work. It records reviewer, status, summary, and source; it does not perform
 the review itself.
+
+`devflow.mistakes_add`, `devflow.mistakes_list`, and
+`devflow.mistakes_detect` expose the repeated-mistake repair loop to MCP
+hosts. `mistakes_detect` accepts command text plus stdout/stderr and returns
+known mistake candidates such as PowerShell range syntax and unavailable
+Playwright runtime errors. With `record: true`, it upserts the candidates into
+`.devflow/mistakes.json`; `devflow.doctor` then injects those corrections into
+future session context. These tools do not edit `AGENTS.md` or skill files;
+promotion to durable instructions remains a confirmation-gated follow-up.
 
 `devflow.finish` returns the same false-completion guard contract as the CLI.
 It reads configured gates, recorded `gate.finished` events, and configured

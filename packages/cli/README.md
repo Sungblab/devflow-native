@@ -83,6 +83,9 @@ packages/cli/
 - `devflow sessions attach`
 - `devflow sessions list`
 - `devflow sessions note`
+- `devflow mistakes add`
+- `devflow mistakes list`
+- `devflow mistakes detect`
 
 `devflow init` currently renders a scaffold plan by default and writes the
 minimum project contract only when `--confirm` is provided. The first scaffold
