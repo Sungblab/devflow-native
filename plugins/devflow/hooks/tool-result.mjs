@@ -4,6 +4,7 @@ import {
   extractToolCommand,
   extractToolFailureText,
   extractToolStdout,
+  inferHookPlatform,
   parseJson,
   readHookInput,
   runDevflow,
@@ -17,6 +18,7 @@ const repoPath = input.cwd ?? process.cwd();
 const command = extractToolCommand(input);
 const stderr = extractToolFailureText(input);
 const stdout = extractToolStdout(input);
+const platform = inferHookPlatform(input);
 
 if (!command && !stderr && !stdout) {
   if (eventName === "HarnessHealth") {
@@ -30,6 +32,9 @@ if (!command && !stderr && !stdout) {
 const args = ["mistakes", "detect", "--json"];
 if (input.record !== false) {
   args.push("--record");
+}
+if (platform) {
+  args.push("--platform", platform);
 }
 if (command) {
   args.push("--command", command);
