@@ -45,7 +45,7 @@ jobs:
       - name: Publish to npm
         shell: bash
         run: |
-          if npm view "devflow-native@${PACKAGE_VERSION}" version >/dev/null 2>&1; then
+          if NPM_CONFIG_USERCONFIG=/dev/null npm view "devflow-native@${PACKAGE_VERSION}" version --registry https://registry.npmjs.org >/dev/null 2>&1; then
             echo "devflow-native@${PACKAGE_VERSION} is already published; skipping npm publish."
           else
             npm publish --access public
