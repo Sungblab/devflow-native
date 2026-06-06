@@ -19,6 +19,8 @@ import {
 } from "../../adapters/src/index.js";
 import {
   createFinishSummary,
+  createMistakeDetection,
+  createMistakeListSummary,
   readHarnessInspect,
   readHarnessHealth,
   readHarnessPlan,
@@ -43,6 +45,7 @@ import {
   readLatestHandoff,
   readMistakeMemory,
   recordFinishEvent,
+  recordMistakeMemory,
   recordManualSessionNoteEvent,
   recordReviewEvent,
   recordSessionAttachedEvent,
@@ -97,6 +100,12 @@ try {
     await renderFinish(args.slice(1));
   } else if (command === "doctor") {
     await renderDoctor(args.slice(1));
+  } else if (command === "mistakes" && args[1] === "add") {
+    await renderMistakeAdd(args.slice(2));
+  } else if (command === "mistakes" && args[1] === "list") {
+    await renderMistakeList(args.slice(2));
+  } else if (command === "mistakes" && args[1] === "detect") {
+    await renderMistakeDetect(args.slice(2));
   } else if (command === "gates" && args[1] === "run") {
     await renderGatesRun(args.slice(2));
   } else if (command === "review" && args[1] === "record") {
@@ -407,6 +416,60 @@ async function renderDoctor(argsForCommand) {
   });
 
   render(summary, options.json);
+}
+
+async function renderMistakeAdd(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const summary = await recordMistakeMemory(repoPath, {
+    id: options.id,
+    category: options.category,
+    scope: options.scope,
+    symptom: options.symptom,
+    correction: options.correction,
+    appliesTo: collectRepeated(options["applies-to"] ?? options.appliesTo),
+    confidence: options.confidence,
+    evidence: collectRepeated(options.evidence).map((text) => ({
+      kind: "user-correction",
+      text,
+    })),
+  });
+
+  render(summary, options.json);
+}
+
+async function renderMistakeList(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const memory = await readMistakeMemory(repoPath);
+  const summary = createMistakeListSummary({
+    mistakes: memory.mistakes,
+    warnings: memory.warnings,
+  });
+
+  render(summary, options.json);
+}
+
+async function renderMistakeDetect(argsForCommand) {
+  const options = parseOptions(argsForCommand);
+  const repoPath = options.repo ?? cwd();
+  const detection = createMistakeDetection({
+    platform: options.platform ?? defaultPlatformName(),
+    command: options.command,
+    stderr: options.stderr,
+    stdout: options.stdout,
+    exitCode: options["exit-code"],
+  });
+  const recorded = [];
+
+  if (options.record) {
+    for (const candidate of detection.candidates) {
+      const result = await recordMistakeMemory(repoPath, candidate);
+      recorded.push(result.mistake);
+    }
+  }
+
+  render({ ...detection, recorded }, options.json);
 }
 
 async function renderGatesRun(argsForCommand) {
@@ -967,6 +1030,11 @@ function renderHelp(group) {
     mcp: [
       "devflow mcp stdio",
     ],
+    mistakes: [
+      "devflow mistakes add --id <id> --symptom <text> --correction <text> [--json]",
+      "devflow mistakes list [--json]",
+      "devflow mistakes detect --stderr <text> [--command <text>] [--record] [--json]",
+    ],
   };
 
   if (group && groups[group]) {
@@ -998,6 +1066,7 @@ function renderHelp(group) {
       "  init                 Plan or write a .devflow project scaffold",
       "  health               Check the project scaffold",
       "  doctor               Inspect local shell/tooling rules",
+      "  mistakes <command>   Record and detect repeated agent mistake memory",
       "  status               Show repo, work, session, gate, and handoff state",
       "  harness <command>    Inspect/install/verify Codex and Claude harness files",
       "  mcp stdio            Run the Devflow MCP stdio server",
@@ -1019,6 +1088,7 @@ function renderHelp(group) {
       "Group help:",
       "  devflow harness --help",
       "  devflow mcp --help",
+      "  devflow mistakes --help",
       "  devflow work --help",
       "  devflow prompt --help",
       "",
@@ -1190,7 +1260,8 @@ function parseOptionsAndPositionals(rawArgs) {
       key === "once" ||
       key === "dry-run" ||
       key === "check" ||
-      key === "repo-visible"
+      key === "repo-visible" ||
+      key === "record"
     ) {
       options[key] = true;
       continue;

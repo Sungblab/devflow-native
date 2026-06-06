@@ -1608,6 +1608,107 @@ export async function readMistakeMemory(repoPath) {
   }
 }
 
+export function createMistakeListSummary(input = {}) {
+  const mistakes = Array.isArray(input.mistakes) ? input.mistakes : [];
+
+  return {
+    schemaVersion: "0.1",
+    command: "mistakes_list",
+    source: input.source ?? ".devflow/mistakes.json",
+    count: mistakes.length,
+    mistakes,
+    warnings: input.warnings ?? [],
+  };
+}
+
+export function createMistakeDetection(input = {}) {
+  const platform = input.platform ?? "unknown";
+  const commandText = input.command ?? "";
+  const stderr = input.stderr ?? "";
+  const stdout = input.stdout ?? "";
+  const combined = [commandText, stderr, stdout].filter(Boolean).join("\n");
+  const candidates = [];
+
+  if (detectPowerShellSelectObjectRange({ platform, commandText, combined })) {
+    candidates.push(
+      createMistakeRecord({
+        id: "powershell-select-object-range-syntax",
+        category: "shell-file-io-friction",
+        scope: "project",
+        symptom: "Agent passed a PowerShell range expression as a string to Select-Object -Index.",
+        correction: "Wrap PowerShell ranges in parentheses, for example Select-Object -Index (108..156).",
+        appliesTo: ["windows-powershell"],
+        confidence: "high",
+        evidence: createMistakeEvidence({ commandText, stderr, stdout }),
+      }),
+    );
+  }
+
+  if (detectPlaywrightModuleUnavailable(combined)) {
+    candidates.push(
+      createMistakeRecord({
+        id: "playwright-module-unavailable",
+        category: "setup-tool-availability",
+        scope: "project",
+        symptom: "Agent tried to run Playwright before the package or workspace runtime was available.",
+        correction:
+          "Inspect the repo package manager and installed dependencies before loading Playwright; install dependencies or use the bundled runtime path when the project expects it.",
+        appliesTo: ["playwright", "browser-automation"],
+        confidence: "high",
+        evidence: createMistakeEvidence({ commandText, stderr, stdout }),
+      }),
+    );
+  }
+
+  return {
+    schemaVersion: "0.1",
+    command: "mistakes_detect",
+    detection: {
+      platform,
+      command: commandText || null,
+      exitCode: input.exitCode ?? null,
+    },
+    candidates,
+    recorded: input.recorded ?? [],
+    warnings: input.warnings ?? [],
+  };
+}
+
+export async function recordMistakeMemory(repoPath, input, options = {}) {
+  const observedAt = options.observedAt ?? new Date().toISOString();
+  const memory = await readMistakeMemory(repoPath);
+  const incoming = createMistakeRecord(input, { observedAt });
+  const mistakes = upsertMistake(memory.mistakes, incoming, observedAt);
+
+  await writeMistakeMemory(repoPath, mistakes);
+
+  return {
+    schemaVersion: "0.1",
+    command: "mistakes_add",
+    source: ".devflow/mistakes.json",
+    mistake: mistakes.find((mistake) => mistake.id === incoming.id),
+    count: mistakes.length,
+    warnings: memory.warnings,
+  };
+}
+
+export async function writeMistakeMemory(repoPath, mistakes) {
+  const target = join(repoPath, ".devflow", "mistakes.json");
+  await mkdir(dirname(target), { recursive: true });
+  await writeFile(
+    target,
+    `${JSON.stringify(
+      {
+        schemaVersion: "0.1",
+        mistakes,
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+}
+
 export async function readDevflowConfig(repoPath) {
   let raw;
   try {
@@ -2716,6 +2817,147 @@ function createDoctorRecommendations(platform, mistakes) {
   }
 
   return recommendations;
+}
+
+function createMistakeRecord(input = {}, options = {}) {
+  const id = normalizeMistakeId(input.id);
+  if (!id) {
+    throw new Error("Mistake id is required.");
+  }
+
+  const symptom = normalizeRequiredText(input.symptom, "Mistake symptom is required.");
+  const correction = normalizeRequiredText(input.correction, "Mistake correction is required.");
+  const observedAt = options.observedAt ?? input.lastSeenAt ?? input.createdAt ?? new Date().toISOString();
+
+  return {
+    id,
+    category: normalizeOptionalText(input.category) ?? "agent-mistake",
+    scope: normalizeOptionalText(input.scope) ?? "project",
+    symptom,
+    correction,
+    appliesTo: normalizeStringList(input.appliesTo),
+    confidence: normalizeOptionalText(input.confidence) ?? "manual",
+    occurrences: Number.isFinite(Number(input.occurrences)) ? Number(input.occurrences) : 1,
+    firstSeenAt: input.firstSeenAt ?? input.createdAt ?? observedAt,
+    lastSeenAt: input.lastSeenAt ?? observedAt,
+    evidence: normalizeEvidence(input.evidence),
+  };
+}
+
+function upsertMistake(existingMistakes, incoming, observedAt) {
+  const mistakes = Array.isArray(existingMistakes)
+    ? existingMistakes.map((mistake) => createMistakeRecord(mistake))
+    : [];
+  const index = mistakes.findIndex((mistake) => mistake.id === incoming.id);
+
+  if (index === -1) {
+    return [...mistakes, incoming];
+  }
+
+  const existing = mistakes[index];
+  const merged = {
+    ...existing,
+    ...incoming,
+    occurrences: (Number(existing.occurrences) || 1) + 1,
+    firstSeenAt: existing.firstSeenAt ?? incoming.firstSeenAt,
+    lastSeenAt: observedAt,
+    evidence: mergeEvidence(existing.evidence, incoming.evidence),
+  };
+
+  return [
+    ...mistakes.slice(0, index),
+    merged,
+    ...mistakes.slice(index + 1),
+  ];
+}
+
+function detectPowerShellSelectObjectRange({ platform, commandText, combined }) {
+  if (platform !== "windows-powershell" && !/powershell|pwsh/i.test(combined)) {
+    return false;
+  }
+
+  return (
+    /Select-Object\s+-Index\s+\d+\.\.\d+/i.test(commandText) ||
+    (/Cannot bind parameter 'Index'/i.test(combined) &&
+      /Cannot convert value "\d+\.\.\d+" to type "System\.Int32"/i.test(combined))
+  );
+}
+
+function detectPlaywrightModuleUnavailable(combined) {
+  return (
+    /Cannot find (module|package) ['"]@?playwright(?:\/test)?['"]/i.test(combined) ||
+    /ERR_MODULE_NOT_FOUND[\s\S]*@?playwright(?:\/test)?/i.test(combined)
+  );
+}
+
+function createMistakeEvidence({ commandText, stderr, stdout }) {
+  return [
+    commandText ? { kind: "command", text: truncateMistakeText(commandText) } : null,
+    stderr ? { kind: "stderr", text: truncateMistakeText(stderr) } : null,
+    stdout ? { kind: "stdout", text: truncateMistakeText(stdout) } : null,
+  ].filter(Boolean);
+}
+
+function normalizeMistakeId(value) {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function normalizeRequiredText(value, errorMessage) {
+  const text = normalizeOptionalText(value);
+  if (!text) {
+    throw new Error(errorMessage);
+  }
+
+  return text;
+}
+
+function normalizeOptionalText(value) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function normalizeStringList(value) {
+  if (value === undefined || value === null) {
+    return [];
+  }
+
+  return (Array.isArray(value) ? value : [value])
+    .flatMap((item) => String(item).split(","))
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeEvidence(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (typeof item === "string") {
+        return { kind: "note", text: truncateMistakeText(item) };
+      }
+
+      const text = normalizeOptionalText(item?.text);
+      if (!text) {
+        return null;
+      }
+
+      return {
+        kind: normalizeOptionalText(item.kind) ?? "note",
+        text: truncateMistakeText(text),
+      };
+    })
+    .filter(Boolean)
+    .slice(-8);
+}
+
+function mergeEvidence(existing, incoming) {
+  return [...normalizeEvidence(existing), ...normalizeEvidence(incoming)].slice(-8);
+}
+
+function truncateMistakeText(value) {
+  const text = String(value).replace(/\s+/g, " ").trim();
+  return text.length > 500 ? `${text.slice(0, 497)}...` : text;
 }
 
 
