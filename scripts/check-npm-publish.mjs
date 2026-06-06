@@ -24,6 +24,11 @@ function runNpm(args, options = {}) {
   return execFileSync("npm", args, merged);
 }
 
+function isAlreadyPublishedError(error) {
+  const output = `${error?.stdout ?? ""}\n${error?.stderr ?? ""}\n${error?.message ?? ""}`;
+  return /cannot publish over the previously published versions/i.test(output);
+}
+
 function isPublishedPackageVersion(name, version) {
   try {
     runNpm(["view", `${name}@${version}`, "version", "--json"]);
@@ -93,7 +98,18 @@ if (forbiddenFiles.length > 0) {
 const alreadyPublished = isPublishedPackageVersion(manifest.name, manifest.version);
 
 if (!alreadyPublished) {
-  const output = runNpm(["publish", "--dry-run", "--json"]);
+  let output = "";
+  try {
+    output = runNpm(["publish", "--dry-run", "--json"]);
+  } catch (error) {
+    if (isAlreadyPublishedError(error)) {
+      process.stdout.write(
+        `npm pack dry-run passed for already-published ${manifest.name}@${manifest.version} with ${files.length} files.\n`,
+      );
+      process.exit(0);
+    }
+    throw error;
+  }
   const dryRun = JSON.parse(output);
 
   if (dryRun.id !== `${manifest.name}@${manifest.version}`) {
