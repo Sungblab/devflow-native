@@ -102,12 +102,33 @@ What to expect after Quick Try:
 - `devflow` works as a CLI through `npx` or a global npm install.
 - The target repo gets local `.devflow/` project state and, when confirmed,
   local `plugins/devflow/` harness files for Codex and Claude Code.
-- Codex can load Devflow through its plugin/MCP/hook surfaces when the local
-  plugin is registered in that Codex environment.
-- Claude Code can load the same Devflow workflow through its Claude plugin,
-  command, and hook surfaces when the local plugin is registered in that Claude
-  Code environment.
+- Codex can install Devflow from this repo's `.agents/plugins/marketplace.json`
+  and load its bundled skills, MCP server, and hooks after restart or a new
+  thread.
+- Claude Code can install Devflow from the same repo marketplace and load its
+  bundled skills, commands, MCP server, and hooks after restart or
+  `/reload-plugins`.
 - Future sessions in that repo receive compact Devflow context automatically.
+
+Host-native install commands:
+
+```powershell
+codex plugin marketplace add Sungblab/devflow-native
+codex plugin add devflow@devflow-native-local
+
+claude plugin marketplace add Sungblab/devflow-native
+claude plugin install devflow@devflow-native-local
+```
+
+MCP-only fallback:
+
+```powershell
+codex mcp add devflow -- npx --yes devflow-native@latest mcp stdio
+claude mcp add devflow -- npx --yes devflow-native@latest mcp stdio
+```
+
+The fallback exposes tools only. The full Devflow experience requires the
+plugin or repo-local harness so skills, commands, and hooks are loaded too.
 
 ## Manual Fallback
 

@@ -99,13 +99,34 @@ Quick Try 이후 기대 상태:
 - `devflow` CLI가 `npx` 또는 전역 npm 설치를 통해 동작합니다.
 - 대상 repo에는 local `.devflow/` 프로젝트 상태와, 확인 후
   `plugins/devflow/` Codex/Claude Code harness file이 생깁니다.
-- Codex는 해당 Codex 환경에 local plugin이 등록되면 Devflow plugin, MCP,
-  hook surface를 통해 Devflow를 로드할 수 있습니다.
-- Claude Code는 해당 Claude Code 환경에 local plugin이 등록되면 Claude
-  plugin, command, hook surface를 통해 같은 Devflow workflow를 로드할 수
+- Codex는 이 repo의 `.agents/plugins/marketplace.json`에서 Devflow를 설치하고,
+  재시작 또는 새 thread 이후 bundled skill, MCP server, hook을 로드할 수
+  있습니다.
+- Claude Code는 같은 repo marketplace에서 Devflow를 설치하고, 재시작 또는
+  `/reload-plugins` 이후 bundled skill, command, MCP server, hook을 로드할 수
   있습니다.
 - 이후 그 repo의 새 agent session은 compact Devflow context를 자동으로
   받습니다.
+
+Host-native 설치 명령:
+
+```powershell
+codex plugin marketplace add Sungblab/devflow-native
+codex plugin add devflow@devflow-native-local
+
+claude plugin marketplace add Sungblab/devflow-native
+claude plugin install devflow@devflow-native-local
+```
+
+MCP만 붙이는 fallback:
+
+```powershell
+codex mcp add devflow -- npx --yes devflow-native@latest mcp stdio
+claude mcp add devflow -- npx --yes devflow-native@latest mcp stdio
+```
+
+fallback은 tool만 노출합니다. skill, command, hook까지 포함한 전체 Devflow
+경험은 plugin 또는 repo-local harness가 로드되어야 합니다.
 
 ## 직접 실행할 때
 

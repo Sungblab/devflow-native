@@ -23,6 +23,15 @@ npm package makes the `devflow` command available; registering the local
 harness is what lets Codex or Claude Code load Devflow automatically in future
 sessions.
 
+The recommended install path follows the host-native plugin systems:
+
+- Codex: add the Devflow marketplace, install `devflow`, restart Codex, then
+  verify `/plugins` and `/mcp`.
+- Claude Code: add the Devflow marketplace, install `devflow`, restart or
+  `/reload-plugins`, then verify `/plugin` and `/mcp`.
+- Fallback: use `devflow harness install --confirm` and direct MCP registration
+  only when the host plugin marketplace flow is unavailable.
+
 Open Codex or Claude Code in the repository you want to equip, then paste:
 
 ```text
@@ -36,9 +45,11 @@ restart Codex or Claude Code.
 
 Expected verification:
 - Devflow CLI help works.
-- Source install or npm link exposes a `devflow` command.
+- The Devflow plugin is installed and enabled in the current agent host, or the
+  remaining host limitation is explicit.
 - Devflow doctor/status work for this repo.
-- Devflow harness health is ok, or the remaining host limitation is explicit.
+- Devflow MCP tools are visible through the host plugin or MCP UI.
+- Devflow harness health is ok.
 - Existing AGENTS.md, CLAUDE.md, README, tests, and project rules are preserved.
 ```
 
@@ -71,6 +82,81 @@ If a machine already has Devflow registered as a Codex or Claude Code plugin,
 opening a different folder in that same host can load the plugin without another
 npm install. A fresh machine or host cache still needs plugin/harness
 registration.
+
+## Host-Native Plugin Install
+
+Use these when you want Devflow to behave like Superpowers or another installed
+agent plugin, instead of only as a CLI.
+
+### Codex
+
+Codex uses plugin marketplaces. This repo already includes
+`.agents/plugins/marketplace.json`, so Codex can discover the Devflow plugin
+from the repository.
+
+```powershell
+codex plugin marketplace add Sungblab/devflow-native
+codex plugin add devflow@devflow-native-local
+codex plugin list
+codex mcp list
+```
+
+Then restart Codex or start a new thread and check `/plugins` and `/mcp`.
+
+For local source development:
+
+```powershell
+codex plugin marketplace add C:\path\to\devflow-native
+codex plugin add devflow@devflow-native-local
+```
+
+### Claude Code
+
+Claude Code also has a native plugin system. This repo includes
+`plugins/devflow/.claude-plugin/plugin.json`, `hooks/claude-hooks.json`, and a
+bundled `.mcp.json`.
+
+```powershell
+claude plugin marketplace add Sungblab/devflow-native
+claude plugin install devflow@devflow-native-local
+claude plugin list
+claude mcp list
+```
+
+Then restart Claude Code or run `/reload-plugins` in an interactive session and
+check `/plugin` and `/mcp`.
+
+For local source development:
+
+```powershell
+claude plugin marketplace add C:\path\to\devflow-native
+claude plugin install devflow@devflow-native-local
+```
+
+### MCP Fallback
+
+If plugin install is not available, register only the MCP server:
+
+```powershell
+codex mcp add devflow -- npx --yes devflow-native@latest mcp stdio
+claude mcp add devflow -- npx --yes devflow-native@latest mcp stdio
+```
+
+This exposes Devflow MCP tools, but it does not install the full plugin
+experience: skills, commands, and lifecycle hooks still require plugin or
+harness registration.
+
+## Official Host References
+
+- Codex official plugin docs describe plugins as bundles of skills, MCP
+  servers, app integrations, and hooks, installed through the plugin directory
+  or a marketplace.
+- Codex official MCP docs store MCP configuration in `config.toml` and support
+  `codex mcp add` for stdio servers.
+- Claude Code official plugin docs describe plugins as self-contained
+  directories with skills, commands, hooks, MCP servers, and install scopes.
+- Claude Code official MCP docs support `claude mcp add` and project `.mcp.json`
+  configuration.
 
 ## Manual Install
 

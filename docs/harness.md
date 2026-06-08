@@ -44,6 +44,24 @@ repo-local .codex/config.toml when appropriate
 AGENTS.md
 ```
 
+Codex's official plugin path is marketplace-based. Devflow therefore keeps a
+repo marketplace at `.agents/plugins/marketplace.json` that points at
+`plugins/devflow`, so a user can run:
+
+```powershell
+codex plugin marketplace add Sungblab/devflow-native
+codex plugin add devflow@devflow-native-local
+```
+
+Codex's official MCP path is separate from plugin installation. Users can also
+register a tool-only fallback with:
+
+```powershell
+codex mcp add devflow -- npx --yes devflow-native@latest mcp stdio
+```
+
+That fallback exposes MCP tools but not plugin skills or lifecycle hooks.
+
 The Codex plugin should provide daily workflow skills for status, split, next,
 finish, sessions, prompt rewrite, and explanation. Lifecycle hooks should feed
 Devflow cheap continuity signals at session start, user prompt submit, pre-tool
@@ -71,6 +89,24 @@ bundled .mcp.json
 project .claude/ files when appropriate
 AGENTS.md and CLAUDE.md compatibility
 ```
+
+Claude Code's official plugin path is also marketplace-based. Devflow's Claude
+plugin manifest lives at `plugins/devflow/.claude-plugin/plugin.json`, so a
+user can run:
+
+```powershell
+claude plugin marketplace add Sungblab/devflow-native
+claude plugin install devflow@devflow-native-local
+```
+
+Claude Code also supports direct MCP registration as a fallback:
+
+```powershell
+claude mcp add devflow -- npx --yes devflow-native@latest mcp stdio
+```
+
+That fallback exposes MCP tools but not the full plugin command, skill, or hook
+surface.
 
 Claude Code hooks should capture the same continuity moments as Codex where
 possible: session start, user prompt submit, slash-command prompt expansion,
