@@ -48,6 +48,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.mistakes_add"));
   assert.ok(names.includes("devflow.mistakes_list"));
   assert.ok(names.includes("devflow.mistakes_detect"));
+  assert.ok(tools.every((tool) => tool.inputSchema?.type === "object"));
 });
 
 test("MCP harness tools inspect, plan, and health-check native setup", async () => {

@@ -183,12 +183,19 @@ devflow mcp stdio
 ```
 
 The current transport accepts newline-delimited JSON-RPC requests on stdin and
-writes one JSON-RPC response per line on stdout.
+writes one JSON-RPC response per line on stdout. It processes complete request
+lines while stdin remains open, so long-running MCP clients do not need to
+close stdin before receiving startup or tool responses.
 
 Supported methods:
 
+- `initialize`
+- `notifications/initialized`
 - `tools/list`
 - `tools/call`
+
+`tools/list` returns every tool with a default JSON object `inputSchema`, so
+strict MCP clients can validate the tool list before calling Devflow commands.
 
 Example request:
 
@@ -196,8 +203,9 @@ Example request:
 {"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}
 ```
 
-The transport is intentionally small. Host-specific config templates and richer
-protocol features are follow-up slices.
+The transport is intentionally small and focused on the Devflow tool surface.
+Host-specific config templates and richer protocol features are follow-up
+slices.
 
 ## Codex Plugin Config
 

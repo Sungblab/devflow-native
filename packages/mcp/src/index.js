@@ -207,8 +207,17 @@ const tools = [
   },
 ];
 
+const defaultInputSchema = {
+  type: "object",
+  properties: {},
+  additionalProperties: true,
+};
+
 export function listTools() {
-  return tools;
+  return tools.map((tool) => ({
+    ...tool,
+    inputSchema: tool.inputSchema ?? defaultInputSchema,
+  }));
 }
 
 export async function callTool(name, args = {}) {

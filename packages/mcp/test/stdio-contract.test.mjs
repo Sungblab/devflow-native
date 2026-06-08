@@ -62,6 +62,65 @@ test("stdio transport calls devflow.doctor over JSON-RPC", async () => {
   );
 });
 
+test("stdio transport handles MCP initialize handshake", async () => {
+  const response = await runStdioRequest({
+    jsonrpc: "2.0",
+    id: 3,
+    method: "initialize",
+    params: {
+      protocolVersion: "2024-11-05",
+      capabilities: {},
+      clientInfo: {
+        name: "devflow-test",
+        version: "0",
+      },
+    },
+  });
+
+  assert.equal(response.id, 3);
+  assert.equal(response.result.protocolVersion, "2024-11-05");
+  assert.deepEqual(response.result.capabilities, { tools: {} });
+  assert.equal(response.result.serverInfo.name, "devflow-native");
+});
+
+test("stdio transport responds while stdin remains open", async () => {
+  const child = spawn(process.execPath, ["packages/mcp/src/stdio.js"], {
+    cwd: process.cwd(),
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  let stdout = "";
+  let stderr = "";
+
+  child.stdout.on("data", (chunk) => {
+    stdout += chunk;
+  });
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk;
+  });
+
+  child.stdin.write(`${JSON.stringify({
+    jsonrpc: "2.0",
+    id: 4,
+    method: "tools/list",
+    params: {},
+  })}\n`);
+
+  let response;
+  try {
+    response = await waitForJsonLine(() => stdout, 1000);
+  } finally {
+    child.stdin.end();
+    child.kill();
+    await new Promise((resolve) => {
+      child.on("close", resolve);
+    });
+  }
+
+  assert.equal(response.id, 4);
+  assert.ok(response.result.tools.some((tool) => tool.name === "devflow.status"));
+  assert.equal(stderr, "");
+});
+
 async function runStdioRequest(request) {
   const child = spawn(process.execPath, ["packages/mcp/src/stdio.js"], {
     cwd: process.cwd(),
@@ -85,4 +144,16 @@ async function runStdioRequest(request) {
 
   assert.equal(exitCode, 0, stderr);
   return JSON.parse(stdout.trim());
+}
+
+async function waitForJsonLine(readStdout, timeoutMs) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const line = readStdout().split("\n").find((entry) => entry.trim());
+    if (line) {
+      return JSON.parse(line);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error("Timed out waiting for stdio response while stdin remained open");
 }

@@ -1,20 +1,46 @@
 #!/usr/bin/env node
+import { createRequire } from "node:module";
 import { callTool, listTools } from "./index.js";
 
-let input = "";
+const require = createRequire(import.meta.url);
+const packageJson = require("../../../package.json");
+const serverInfo = {
+  name: "devflow-native",
+  version: packageJson.version,
+};
+
+let buffer = "";
+let pending = Promise.resolve();
 
 process.stdin.setEncoding("utf8");
 process.stdin.on("data", (chunk) => {
-  input += chunk;
-});
-process.stdin.on("end", async () => {
-  const lines = input.split("\n").filter((line) => line.trim());
+  buffer += chunk;
+  const lines = buffer.split("\n");
+  buffer = lines.pop() ?? "";
 
   for (const line of lines) {
-    const response = await handleRequestLine(line);
-    process.stdout.write(`${JSON.stringify(response)}\n`);
+    enqueueRequestLine(line);
   }
 });
+process.stdin.on("end", async () => {
+  if (buffer.trim()) {
+    enqueueRequestLine(buffer);
+    buffer = "";
+  }
+});
+
+function enqueueRequestLine(line) {
+  if (!line.trim()) {
+    return;
+  }
+
+  pending = pending.then(async () => {
+    const response = await handleRequestLine(line);
+    if (response) {
+      process.stdout.write(`${JSON.stringify(response)}\n`);
+    }
+  });
+}
 
 async function handleRequestLine(line) {
   let request;
@@ -25,6 +51,20 @@ async function handleRequestLine(line) {
   }
 
   try {
+    if (request.method === "initialize") {
+      return successResponse(request.id, {
+        protocolVersion: request.params?.protocolVersion ?? "2024-11-05",
+        capabilities: {
+          tools: {},
+        },
+        serverInfo,
+      });
+    }
+
+    if (request.method === "notifications/initialized") {
+      return null;
+    }
+
     if (request.method === "tools/list") {
       return successResponse(request.id, { tools: listTools() });
     }
