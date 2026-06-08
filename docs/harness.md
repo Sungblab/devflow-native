@@ -302,8 +302,9 @@ capture the resulting evidence. The native finish skill and prompt hooks also
 mention `devflow review request` and `devflow review record` so required review
 is visible inside Codex or Claude Code before a session closes. The repo-local
 Stop hook returns compact status plus the same review loop reminder instead of
-silently returning `{}` on ordinary session stops, and it blocks completion
-claims when `devflow status` still recommends a required review.
+silently returning `{}` on ordinary session stops. In Codex, completion guards
+are reported through `hookSpecificOutput.additionalContext` so Stop output stays
+compatible with Codex's Stop hook JSON parser.
 
 Tool lifecycle hooks are intentionally narrower than full automation. The
 pre-tool hook blocks high-confidence shell mismatch commands, such as Bash

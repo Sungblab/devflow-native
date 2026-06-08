@@ -160,8 +160,8 @@ contracts. Claude Code exposes plugin skills under the plugin namespace, so
 these are the first slash-like daily workflow surface. The shared Stop hook now
 returns compact status and review request/record reminders at session end, so
 the required review loop remains visible even when the agent is about to leave.
-For completion claims, the Stop hook can block when status still recommends
-review.
+For completion claims, the Stop hook surfaces guard context when status still
+recommends review.
 
 ### Hermes Agent
 

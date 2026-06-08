@@ -12,23 +12,24 @@ const parsedStatus = parseJson(status);
 const reviewRecommendation = parsedStatus?.recommendations?.find((item) => item.kind === "review");
 
 if (claimsDone && !mentionsEvidence && !input.stop_hook_active) {
-  process.stdout.write(
-    `${JSON.stringify({
-      decision: "block",
-      reason:
-        "Devflow finish guard: before closing, verify relevant gates, run devflow review request when review is required, record review/finish evidence or known gaps, and include the next-session handoff.",
-    })}\n`,
+  writeHookContext(
+    input.hook_event_name ?? "Stop",
+    [
+      "Devflow finish guard:",
+      "Before closing, verify relevant gates, run devflow review request when review is required,",
+      "record review/finish evidence or known gaps, and include the next-session handoff.",
+    ].join(" "),
   );
   process.exit(0);
 }
 
 if (claimsDone && reviewRecommendation && !mentionsReviewEvidence && !input.stop_hook_active) {
-  process.stdout.write(
-    `${JSON.stringify({
-      decision: "block",
-      reason:
-        `Devflow review guard: status recommends ${reviewRecommendation.command}. Run the review request and record the review outcome before claiming completion.`,
-    })}\n`,
+  writeHookContext(
+    input.hook_event_name ?? "Stop",
+    [
+      `Devflow review guard: status recommends ${reviewRecommendation.command}.`,
+      "Run the review request and record the review outcome before claiming completion.",
+    ].join(" "),
   );
   process.exit(0);
 }
