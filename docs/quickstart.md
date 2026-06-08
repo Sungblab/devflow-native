@@ -16,6 +16,13 @@ No hosted service is required for the v0.1 foundation loop.
 
 ## Recommended: Ask Your Agent To Install It
 
+Devflow can be used as a plain CLI, but the intended quick try is as an
+agent-native harness. The package includes repo-local Codex and Claude Code
+plugin drafts, skills/commands, hooks, and MCP configuration. Installing the
+npm package makes the `devflow` command available; registering the local
+harness is what lets Codex or Claude Code load Devflow automatically in future
+sessions.
+
 Open Codex or Claude Code in the repository you want to equip, then paste:
 
 ```text
@@ -48,6 +55,22 @@ User asks Codex or Claude Code to install Devflow
 
 The commands below are mainly for the installing agent, debugging, or users who
 prefer to inspect each step manually.
+
+## CLI Install vs Agent Plugin
+
+These are related but separate:
+
+| Setup step | What it gives you |
+| --- | --- |
+| `npx devflow-native@latest ...` | One-off latest CLI commands without changing global npm state. |
+| `npm install -g devflow-native` | A global `devflow` CLI command available from any folder. |
+| `devflow harness install --confirm` | Repo-local `.devflow/` state plus Codex/Claude harness files. |
+| Codex or Claude Code plugin registration/reload | Automatic session-start, prompt, tool, stop, MCP, skill, and command behavior in that host. |
+
+If a machine already has Devflow registered as a Codex or Claude Code plugin,
+opening a different folder in that same host can load the plugin without another
+npm install. A fresh machine or host cache still needs plugin/harness
+registration.
 
 ## Manual Install
 

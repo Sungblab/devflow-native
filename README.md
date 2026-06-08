@@ -58,8 +58,13 @@ agent cannot honestly claim "done" without proof.
 
 ## Quick Try
 
-The intended path is agent-native setup: open Codex or Claude Code in the target
-repo and ask it to install Devflow safely.
+The important path is agent-native setup. Devflow ships local harness files for
+both Codex and Claude Code: plugin manifests, skills/commands, hooks, and MCP
+configuration. A global npm install gives you the `devflow` CLI; the agent
+experience starts when a target repo has the Devflow harness installed and the
+agent host is restarted or reloaded if required.
+
+Open Codex or Claude Code in the target repo and paste:
 
 ```text
 Install Devflow Native for this repository.
@@ -92,6 +97,18 @@ When a prompt contains mixed signals, Devflow uses this priority:
 inspect repo state, run required gates, and record review evidence before
 claiming that work is complete.
 
+What to expect after Quick Try:
+
+- `devflow` works as a CLI through `npx` or a global npm install.
+- The target repo gets local `.devflow/` project state and, when confirmed,
+  local `plugins/devflow/` harness files for Codex and Claude Code.
+- Codex can load Devflow through its plugin/MCP/hook surfaces when the local
+  plugin is registered in that Codex environment.
+- Claude Code can load the same Devflow workflow through its Claude plugin,
+  command, and hook surfaces when the local plugin is registered in that Claude
+  Code environment.
+- Future sessions in that repo receive compact Devflow context automatically.
+
 ## Manual Fallback
 
 ```powershell
@@ -113,6 +130,11 @@ For repeated local use, a global install is still fine:
 npm install -g devflow-native
 devflow harness health
 ```
+
+Global npm install is not the same thing as registering an agent plugin. It
+only makes the `devflow` command available everywhere. Each Codex or Claude Code
+environment still needs the Devflow harness/plugin registration that the Quick
+Try prompt or `devflow harness install --confirm` verifies.
 
 To update an existing install:
 

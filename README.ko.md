@@ -56,8 +56,14 @@ Devflow는 주변 도구를 대체하려는 제품이 아닙니다.
 
 ## 빠르게 써보기
 
-권장 흐름은 agent-native setup입니다. 대상 repo에서 Codex나 Claude Code를 열고,
-설치와 점검을 에이전트에게 맡기세요.
+가장 중요한 흐름은 agent-native setup입니다. Devflow는 Codex와 Claude Code
+둘 다에 붙을 수 있는 local harness file을 제공합니다. 여기에는 plugin
+manifest, skill/command, hook, MCP 설정이 포함됩니다. 전역 npm 설치는
+`devflow` CLI를 잡아주는 단계이고, 실제 agent 경험은 대상 repo에 Devflow
+harness를 설치한 뒤 필요하면 Codex나 Claude Code를 재시작/리로드할 때
+시작됩니다.
+
+대상 repo에서 Codex나 Claude Code를 열고 아래 prompt를 붙여 넣으세요.
 
 ```text
 Install Devflow Native for this repository.
@@ -88,6 +94,19 @@ Prompt 안에 신호가 섞이면 Devflow는 `finish > handoff > review/pr > art
 > continue` 우선순위를 씁니다. 다만 agent는 여전히 repo 상태를 확인하고,
 필요한 gate를 실행하고, review evidence를 기록해야 완료라고 말할 수 있습니다.
 
+Quick Try 이후 기대 상태:
+
+- `devflow` CLI가 `npx` 또는 전역 npm 설치를 통해 동작합니다.
+- 대상 repo에는 local `.devflow/` 프로젝트 상태와, 확인 후
+  `plugins/devflow/` Codex/Claude Code harness file이 생깁니다.
+- Codex는 해당 Codex 환경에 local plugin이 등록되면 Devflow plugin, MCP,
+  hook surface를 통해 Devflow를 로드할 수 있습니다.
+- Claude Code는 해당 Claude Code 환경에 local plugin이 등록되면 Claude
+  plugin, command, hook surface를 통해 같은 Devflow workflow를 로드할 수
+  있습니다.
+- 이후 그 repo의 새 agent session은 compact Devflow context를 자동으로
+  받습니다.
+
 ## 직접 실행할 때
 
 ```powershell
@@ -108,6 +127,11 @@ npx devflow-native@latest status --simple
 npm install -g devflow-native
 devflow harness health
 ```
+
+전역 npm 설치와 agent plugin 등록은 다릅니다. 전역 설치는 `devflow` 명령을
+어디서나 쓸 수 있게 해줄 뿐입니다. Codex나 Claude Code에서 자동 hook/skill/MCP
+경험을 쓰려면 Quick Try prompt 또는 `devflow harness install --confirm`으로
+해당 agent 환경의 Devflow harness/plugin 등록 상태까지 확인해야 합니다.
 
 이미 설치한 Devflow를 업데이트할 때는:
 
