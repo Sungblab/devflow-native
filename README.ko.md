@@ -5,9 +5,19 @@
 AI 코딩 에이전트가 증거 없이 "완료"라고 말하지 못하게 만듭니다.
 
 Devflow Native는 Codex, Claude Code, shell session 주변에 붙는 repo-local
-evidence gate와 handoff layer입니다. 코드를 대신 짜는 도구가 아닙니다. 대신
-repo가 에이전트가 무엇을 바꿨고, 무엇을 실제로 검증했고, 무엇이 아직
-위험하고, 다음 세션이 어디서 이어가야 하는지 기억하게 만듭니다.
+evidence gate, handoff layer, reviewed mistake-memory loop입니다. 코드를
+대신 짜는 도구가 아닙니다. 대신 repo가 에이전트가 무엇을 바꿨고, 무엇을
+실제로 검증했고, 어떤 실수를 반복하고, 다음 세션이 어디서 이어가야 하는지
+기억하게 만듭니다.
+
+```text
+Agent: done.
+Devflow: not yet.
+- no gate evidence recorded
+- no review evidence recorded
+- repeated mistake candidate: skipped the repo's PowerShell-safe command rule
+Next: run the configured gate or record why it was skipped.
+```
 
 ## 왜 필요한가
 
@@ -27,6 +37,17 @@ continuity입니다.
 Claude Code, shell, 사람 리뷰 세션이 처음부터 다시 추측하지 않도록 repo 안에
 작업 상태를 남깁니다.
 
+## 실수를 repo 규칙으로 바꾸기
+
+Devflow는 단순히 세션이 있었다는 사실만 기억하지 않습니다. shell mismatch,
+unsafe command, 누락된 setup, encoding 문제, path 처리 실패, 잘못된 완료 선언
+같은 반복 agent 실수를 기록합니다.
+
+실수는 먼저 local evidence로 남고, 반복되면 promotion candidate가 됩니다. 그
+다음 review evidence를 거쳐야만 `AGENTS.md`, Devflow skill, hook rule 같은
+durable repo-local rule로 승격됩니다. 그래서 다음 agent session은 같은 실패를
+반복하는 대신 그 repo에서 이미 배운 규칙을 들고 시작합니다.
+
 ## 다른 도구와의 위치
 
 Devflow는 주변 도구를 대체하려는 제품이 아닙니다.
@@ -37,7 +58,7 @@ Devflow는 주변 도구를 대체하려는 제품이 아닙니다.
 | Claude hooks / Codex skills | host별 자동화와 지시문 제공 |
 | Superpowers | TDD, 디버깅, 계획, 리뷰 같은 작업 습관 제공 |
 | TaskMaster류 도구 | task와 agent 작업 queue 관리 |
-| Devflow Native | repo-local evidence 기록, 안전하지 않은 완료 선언 차단, 다음 세션 handoff 생성 |
+| Devflow Native | repo-local evidence 기록, 안전하지 않은 완료 선언 차단, 검토된 실수 규칙 승격, 다음 세션 handoff 생성 |
 
 쉽게 말하면, Devflow는 이전 세션이 어디서 멈췄는지 다음 에이전트가 추측하지
 않게 만들고, 현재 에이전트가 증거 없이 "완료"라고 말하지 못하게 만드는
@@ -52,7 +73,7 @@ Devflow는 주변 도구를 대체하려는 제품이 아닙니다.
 - `finish --dry-run`으로 정말 완료라고 말해도 되는지 미리 점검
 - 다음 에이전트 세션이 이어받을 prompt 생성
 - 반복되는 agent 실수를 기록하고, 반복 관측을 집계한 뒤 review evidence가
-  있을 때만 repo-local durable rule로 승격
+  있을 때만 repo-local durable rule, skill, hook으로 승격
 
 ## 빠르게 써보기
 

@@ -6,10 +6,20 @@
 
 Stop AI coding agents from saying "done" when your repo has no evidence.
 
-Devflow Native is a repo-local evidence gate and handoff layer for Codex,
-Claude Code, and shell sessions. It does not write code for you. It records what
-agents changed, what they actually verified, what still looks risky, and what
-the next session should pick up.
+Devflow Native is a repo-local evidence gate, handoff layer, and reviewed
+mistake-memory loop for Codex, Claude Code, and shell sessions. It does not
+write code for you. It records what agents changed, what they actually
+verified, which mistakes they keep repeating, and what the next session should
+pick up.
+
+```text
+Agent: done.
+Devflow: not yet.
+- no gate evidence recorded
+- no review evidence recorded
+- repeated mistake candidate: skipped the repo's PowerShell-safe command rule
+Next: run the configured gate or record why it was skipped.
+```
 
 ## Why This Exists
 
@@ -29,6 +39,17 @@ same as project-local workflow state. Devflow keeps that state in the repo so a
 new Codex, Claude Code, shell, or human review session can resume without
 rediscovering everything from scratch.
 
+## From Mistakes To Repo Rules
+
+Devflow does not just remember that a session happened. It records repeated
+agent mistakes such as shell mismatch, unsafe commands, skipped setup, encoding
+issues, path handling failures, or wrong finish claims.
+
+A mistake can stay local as evidence, become a promotion candidate after it
+repeats, and only then be reviewed into `AGENTS.md`, a Devflow skill, or a hook
+rule. The next agent session starts with that repo-specific lesson instead of
+repeating the same failure.
+
 ## How It Fits
 
 Devflow is not trying to replace the tools around it.
@@ -39,7 +60,7 @@ Devflow is not trying to replace the tools around it.
 | Claude hooks / Codex skills | Add host-specific automation and instructions. |
 | Superpowers | Teach workflow habits such as TDD, debugging, planning, and review. |
 | TaskMaster-style tools | Track tasks and agent work queues. |
-| Devflow Native | Record repo-local evidence, block unsafe finish claims, and generate next-session handoffs. |
+| Devflow Native | Record repo-local evidence, block unsafe finish claims, promote reviewed mistake rules, and generate next-session handoffs. |
 
 In plain terms: Devflow asks the repo to remember enough evidence that the next
 agent does not have to guess where the previous one stopped, and the current
@@ -54,7 +75,7 @@ agent cannot honestly claim "done" without proof.
 - Provides `finish --dry-run` to check whether a task can honestly be claimed complete.
 - Generates the prompt the next agent session should continue from.
 - Captures repeated agent mistakes, aggregates repeated observations, and promotes
-  durable repo-local rules only after review evidence.
+  durable repo-local rules, skills, or hooks only after review evidence.
 
 ## Quick Try
 
