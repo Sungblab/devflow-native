@@ -153,6 +153,7 @@ test("repo-local plugin hooks emit compact context for agent sessions", async ()
   assert.match(userPrompt.hookSpecificOutput.additionalContext, /continue_or_start/);
   assert.match(userPrompt.hookSpecificOutput.additionalContext, /Do not generate HTML unless requested/);
   assert.match(userPrompt.hookSpecificOutput.additionalContext, /devflow review request/);
+  assert.deepEqual(Object.keys(userPrompt.hookSpecificOutput).sort(), ["additionalContext", "hookEventName"]);
   assert.equal(stop.hookSpecificOutput.hookEventName, "Stop");
   assert.match(stop.hookSpecificOutput.additionalContext, /Devflow stop context/);
   assert.match(stop.hookSpecificOutput.additionalContext, /devflow review request/);
@@ -297,7 +298,7 @@ test("repo-local prompt hook rewrites vague maintainer requests into agent conte
   });
 
   assert.equal(prompt.hookSpecificOutput.hookEventName, "UserPromptSubmit");
-  assert.equal(prompt.hookSpecificOutput.sessionTitle, "Devflow prompt rewrite");
+  assert.deepEqual(Object.keys(prompt.hookSpecificOutput).sort(), ["additionalContext", "hookEventName"]);
   assert.match(prompt.hookSpecificOutput.additionalContext, /Devflow prompt interpretation context/);
   assert.match(prompt.hookSpecificOutput.additionalContext, /Agent-ready prompt/);
   assert.match(prompt.hookSpecificOutput.additionalContext, /Objective:/);

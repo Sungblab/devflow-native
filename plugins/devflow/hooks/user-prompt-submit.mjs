@@ -42,11 +42,7 @@ if (!intent && shouldRewritePrompt(prompt, intent)) {
     compactJson(status, 1800),
   ].join("\n");
 
-  writeHookContext(eventName, context, {
-    hookSpecificOutput: {
-      sessionTitle: "Devflow prompt rewrite",
-    },
-  });
+  writeHookContext(eventName, context);
   process.exit(0);
 }
 
@@ -71,8 +67,4 @@ const context = [
   compactJson(status, 3000),
 ].join("\n");
 
-writeHookContext(eventName, context, {
-  hookSpecificOutput: {
-    sessionTitle: intent === "continue_or_start" ? "Devflow continue" : `Devflow ${intent}`,
-  },
-});
+writeHookContext(eventName, context);

@@ -1,6 +1,6 @@
 {
   "name": "devflow-native",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Repo-local evidence gates and handoffs for AI coding agents.",
   "license": "MIT",
   "type": "module",
