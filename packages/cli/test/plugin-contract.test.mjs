@@ -154,11 +154,7 @@ test("repo-local plugin hooks emit compact context for agent sessions", async ()
   assert.match(userPrompt.hookSpecificOutput.additionalContext, /Do not generate HTML unless requested/);
   assert.match(userPrompt.hookSpecificOutput.additionalContext, /devflow review request/);
   assert.deepEqual(Object.keys(userPrompt.hookSpecificOutput).sort(), ["additionalContext", "hookEventName"]);
-  assert.equal(stop.hookSpecificOutput.hookEventName, "Stop");
-  assert.match(stop.hookSpecificOutput.additionalContext, /Devflow stop context/);
-  assert.match(stop.hookSpecificOutput.additionalContext, /devflow review request/);
-  assert.match(stop.hookSpecificOutput.additionalContext, /devflow review record/);
-  assert.match(stop.hookSpecificOutput.additionalContext, /Current compact status/);
+  assert.deepEqual(stop, {});
 });
 
 test("repo-local tool hooks block shell mismatch and record mistake candidates", async () => {
@@ -341,11 +337,10 @@ test("repo-local stop hook reports completion guard through Codex hook context",
     }),
   });
 
-  assert.equal(blocked.decision, undefined);
-  assert.equal(blocked.hookSpecificOutput.hookEventName, "Stop");
-  assert.match(blocked.hookSpecificOutput.additionalContext, /Devflow review guard/);
-  assert.match(blocked.hookSpecificOutput.additionalContext, /devflow review request --work guarded-work/);
-  assert.match(blocked.hookSpecificOutput.additionalContext, /record the review outcome/);
+  assert.equal(blocked.decision, "block");
+  assert.match(blocked.reason, /Devflow review guard/);
+  assert.match(blocked.reason, /devflow review request --work guarded-work/);
+  assert.match(blocked.reason, /record the review outcome/);
 });
 
 async function runHook(path, payload) {

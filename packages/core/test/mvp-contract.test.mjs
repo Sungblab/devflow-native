@@ -763,8 +763,9 @@ test("harness install writes missing native files only after confirmation", asyn
   assert.match(finishSkill, /devflow review request/);
   assert.match(finishSkill, /devflow review record/);
   assert.match(finishSkill, /review\.nextAction\.recordCommand/);
-  assert.match(stopHook, /devflow review request --work <id>/);
-  assert.match(stopHook, /review\.nextAction\.recordCommand/);
+  assert.match(stopHook, /decision: 'block'/);
+  assert.match(stopHook, /JSON\.stringify\(\{\}\)/);
+  assert.doesNotMatch(stopHook, /hookSpecificOutput/);
   assert.match(gitignore, /^\.devflow\/state\/$/m);
   assert.match(gitignore, /^\.devflow\/next-prompt\.md$/m);
   assert.match(gitignore, /^plugins\/devflow\/$/m);

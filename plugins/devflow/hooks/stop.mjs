@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { compactJson, readHookInput, runDevflow, writeHookContext } from "./devflow-hook-lib.mjs";
+import { readHookInput, runDevflow } from "./devflow-hook-lib.mjs";
 
 const input = await readHookInput();
 const repoPath = input.cwd ?? process.cwd();
@@ -12,8 +12,7 @@ const parsedStatus = parseJson(status);
 const reviewRecommendation = parsedStatus?.recommendations?.find((item) => item.kind === "review");
 
 if (claimsDone && !mentionsEvidence && !input.stop_hook_active) {
-  writeHookContext(
-    input.hook_event_name ?? "Stop",
+  writeStopBlock(
     [
       "Devflow finish guard:",
       "Before closing, verify relevant gates, run devflow review request when review is required,",
@@ -24,8 +23,7 @@ if (claimsDone && !mentionsEvidence && !input.stop_hook_active) {
 }
 
 if (claimsDone && reviewRecommendation && !mentionsReviewEvidence && !input.stop_hook_active) {
-  writeHookContext(
-    input.hook_event_name ?? "Stop",
+  writeStopBlock(
     [
       `Devflow review guard: status recommends ${reviewRecommendation.command}.`,
       "Run the review request and record the review outcome before claiming completion.",
@@ -34,17 +32,15 @@ if (claimsDone && reviewRecommendation && !mentionsReviewEvidence && !input.stop
   process.exit(0);
 }
 
-const context = [
-  "Devflow stop context:",
-  "- Before ending, check whether status recommends review, gates, finish, or handoff work.",
-  "- If review is required, run devflow review request, hand the prompt to a separate reviewer, then run devflow review record before devflow finish.",
-  "- If finish returns review.nextAction.command or review.nextAction.recordCommand, follow both before claiming completion.",
-  "",
-  "Current compact status:",
-  compactJson(status, 2600),
-].join("\n");
+writeStopOk();
 
-writeHookContext(input.hook_event_name ?? "Stop", context);
+function writeStopBlock(reason) {
+  process.stdout.write(`${JSON.stringify({ decision: "block", reason })}\n`);
+}
+
+function writeStopOk() {
+  process.stdout.write(`${JSON.stringify({})}\n`);
+}
 
 function parseJson(value) {
   if (!value) {

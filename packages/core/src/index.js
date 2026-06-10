@@ -3202,7 +3202,7 @@ function harnessFileContent(path) {
     "plugins/devflow/hooks/user-prompt-submit.mjs": createHarnessUserPromptSubmitScript(),
     "plugins/devflow/hooks/pre-tool-use.mjs": createHarnessPreToolUseScript(),
     "plugins/devflow/hooks/tool-result.mjs": createHarnessToolResultScript(),
-    "plugins/devflow/hooks/stop.mjs": createHarnessHookScript("Stop"),
+    "plugins/devflow/hooks/stop.mjs": createHarnessStopScript(),
     "plugins/devflow/skills/start/SKILL.md": [
       "---",
       "name: devflow-start",
@@ -3514,10 +3514,10 @@ function validateHarnessHookOutput(path, parsed) {
   if (path.endsWith("/stop.mjs")) {
     const empty = parsed && typeof parsed === "object" && Object.keys(parsed).length === 0;
     const decision = parsed?.decision;
-    if (empty || decision === "block" || decision === "approve" || parsed.hookSpecificOutput?.hookEventName) {
+    if (empty || decision === "block" || decision === "approve") {
       return { ok: true, message: "Stop hook executed and returned a valid decision payload." };
     }
-    return { ok: false, message: "Stop hook output must be empty JSON, include a valid decision, or include hook context." };
+    return { ok: false, message: "Stop hook output must be empty JSON or include a valid decision." };
   }
 
   if (!parsed.hookSpecificOutput?.hookEventName) {
@@ -3619,6 +3619,39 @@ function createHarnessHookScript(defaultEventName) {
     "    return '';",
     "  }",
     "}",
+  ].join("\n");
+}
+
+function createHarnessStopScript() {
+  return [
+    "#!/usr/bin/env node",
+    "",
+    "const chunks = [];",
+    "for await (const chunk of process.stdin) {",
+    "  chunks.push(chunk);",
+    "}",
+    "",
+    "let payload = {};",
+    "try {",
+    "  const raw = Buffer.concat(chunks).toString('utf8').trim();",
+    "  payload = raw ? JSON.parse(raw) : {};",
+    "} catch {",
+    "  payload = {};",
+    "}",
+    "",
+    "const message = payload.last_assistant_message ?? '';",
+    "const claimsDone = /(완료|마무리|done|complete|implemented|finished)/i.test(message);",
+    "const mentionsEvidence = /(verified|verification|tests?|테스트|검증|gate|finish|next-session|handoff)/i.test(message);",
+    "",
+    "if (claimsDone && !mentionsEvidence && !payload.stop_hook_active) {",
+    "  process.stdout.write(`${JSON.stringify({",
+    "    decision: 'block',",
+    "    reason: 'Devflow finish guard: verify relevant gates, record review/finish evidence or known gaps, and include the next-session handoff before claiming completion.',",
+    "  })}\\n`);",
+    "  process.exit(0);",
+    "}",
+    "",
+    "process.stdout.write(`${JSON.stringify({})}\\n`);",
   ].join("\n");
 }
 
