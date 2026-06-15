@@ -173,19 +173,39 @@ try {
 async function renderInit(argsForCommand) {
   const options = parseOptions(argsForCommand);
   const repoPath = options.repo ?? cwd();
+  const packageJson = await readPackageJson(repoPath);
   const plan = createInitPlan({
     repo: repoPath,
     profile: options.profile,
+    preset: options.preset,
     platform: options.platform ?? defaultPlatformName(),
+    targets: parseTargetList(options.targets),
+    ci: options.ci,
+    review: options.review,
+    packageJson,
   });
 
   if (options.confirm) {
-    const result = await writeInitPlan(repoPath, plan, { confirmed: true });
+    const result = await writeInitPlan(repoPath, plan, {
+      confirmed: true,
+      repoVisible: options["repo-visible"],
+    });
     render({ ...plan, result }, options.json);
     return;
   }
 
   render(plan, options.json);
+}
+
+async function readPackageJson(repoPath) {
+  try {
+    return JSON.parse(await readFile(join(repoPath, "package.json"), "utf8"));
+  } catch (error) {
+    if (error.code === "ENOENT" || error instanceof SyntaxError) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 async function renderHealth(argsForCommand) {
@@ -1224,6 +1244,13 @@ function readPackageVersion() {
 
 function renderHelp(group) {
   const groups = {
+    init: [
+      "devflow init [--json]",
+      "devflow init --preset solo-product --targets codex,claude --ci github --review required [--json]",
+      "devflow init --preset solo-product --targets codex,claude --ci github --review required --confirm [--json]",
+      "devflow init --preset research --review optional [--json]",
+      "devflow init --preset content-site --ci github [--json]",
+    ],
     harness: [
       "devflow harness inspect [--json]",
       "devflow harness plan [--json]",
@@ -1301,7 +1328,7 @@ function renderHelp(group) {
       "  node packages/cli/src/index.js harness health",
       "",
       "Core commands:",
-      "  init                 Plan or write a .devflow project scaffold",
+      "  init                 Plan or write a preset-based Devflow project bootstrap",
       "  health               Check the project scaffold",
       "  doctor               Inspect local shell/tooling rules",
       "  mistakes <command>   Record and detect repeated agent mistake memory",

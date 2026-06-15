@@ -728,6 +728,70 @@ test("CLI init --confirm writes the minimum project scaffold", async () => {
   assert.equal(config.review.required, true);
 });
 
+test("CLI init --confirm writes preset bootstrap files for native agents and github ci", async () => {
+  const repoPath = await createTempGitRepo();
+  await writeFile(
+    join(repoPath, "package.json"),
+    `${JSON.stringify(
+      {
+        scripts: {
+          "docs:check": "node scripts/check-doc-links.mjs",
+          lint: "eslint .",
+          test: "node --test",
+          build: "vite build",
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+
+  const { stdout } = await execFileAsync("node", [
+    "packages/cli/src/index.js",
+    "init",
+    "--repo",
+    repoPath,
+    "--preset",
+    "solo-product",
+    "--targets",
+    "codex,claude",
+    "--ci",
+    "github",
+    "--review",
+    "required",
+    "--confirm",
+    "--json",
+  ]);
+  const parsed = JSON.parse(stdout);
+  const config = JSON.parse(await readFile(join(repoPath, ".devflow", "config.json"), "utf8"));
+  const agents = await readFile(join(repoPath, "AGENTS.md"), "utf8");
+  const workflow = await readFile(join(repoPath, ".github", "workflows", "devflow.yml"), "utf8");
+  const initSkill = await readFile(join(repoPath, "plugins", "devflow", "skills", "init", "SKILL.md"), "utf8");
+  const initCommand = await readFile(join(repoPath, "plugins", "devflow", "commands", "init.md"), "utf8");
+  const codexManifest = JSON.parse(await readFile(join(repoPath, "plugins", "devflow", ".codex-plugin", "plugin.json"), "utf8"));
+  const claudeManifest = JSON.parse(await readFile(join(repoPath, "plugins", "devflow", ".claude-plugin", "plugin.json"), "utf8"));
+  const gitignore = await readFile(join(repoPath, ".gitignore"), "utf8");
+
+  assert.equal(parsed.preset, "solo-product");
+  assert.equal(parsed.ci, "github");
+  assert.deepEqual(parsed.targets, ["codex", "claude"]);
+  assert.equal(config.defaultProfile, "solo-product");
+  assert.equal(config.review.required, true);
+  assert.deepEqual(
+    config.gates.map((gate) => gate.command),
+    ["npm run docs:check", "npm run lint", "npm test", "npm run build"],
+  );
+  assert.match(agents, /Direct Main Exceptions/);
+  assert.match(workflow, /npm run docs:check/);
+  assert.match(initSkill, /devflow init --preset/);
+  assert.match(initSkill, /thin wrapper/);
+  assert.match(initCommand, /devflow init/);
+  assert.equal(codexManifest.name, "devflow");
+  assert.equal(claudeManifest.name, "devflow");
+  assert.match(gitignore, /^plugins\/devflow\/$/m);
+});
+
 test("CLI health reports missing scaffold files", async () => {
   const repoPath = await createTempGitRepo();
 
@@ -822,7 +886,7 @@ test("CLI harness inspect renders target readiness JSON", async () => {
   await writeFile(join(repoPath, "plugins", "devflow", "hooks", "stop.mjs"), "\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "skills", "start", "SKILL.md"), "# Start\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "skills", "finish", "SKILL.md"), "# Finish\n", "utf8");
-  for (const skill of ["status", "doctor", "harness", "work", "gates", "review", "split", "next", "rewrite", "sessions", "explain"]) {
+  for (const skill of ["init", "status", "doctor", "harness", "work", "gates", "review", "split", "next", "rewrite", "sessions", "explain"]) {
     await mkdir(join(repoPath, "plugins", "devflow", "skills", skill), { recursive: true });
     await writeFile(join(repoPath, "plugins", "devflow", "skills", skill, "SKILL.md"), `# ${skill}\n`, "utf8");
   }

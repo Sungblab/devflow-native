@@ -19,6 +19,7 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   const claudeHooks = JSON.parse(await readFile("plugins/devflow/hooks/claude-hooks.json", "utf8"));
   const mcpConfig = JSON.parse(await readFile("plugins/devflow/.mcp.json", "utf8"));
   const startSkill = await readFile("plugins/devflow/skills/start/SKILL.md", "utf8");
+  const initSkill = await readFile("plugins/devflow/skills/init/SKILL.md", "utf8");
   const statusSkill = await readFile("plugins/devflow/skills/status/SKILL.md", "utf8");
   const doctorSkill = await readFile("plugins/devflow/skills/doctor/SKILL.md", "utf8");
   const harnessSkill = await readFile("plugins/devflow/skills/harness/SKILL.md", "utf8");
@@ -32,6 +33,7 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   const sessionsSkill = await readFile("plugins/devflow/skills/sessions/SKILL.md", "utf8");
   const finishSkill = await readFile("plugins/devflow/skills/finish/SKILL.md", "utf8");
   const startCommand = await readFile("plugins/devflow/commands/start.md", "utf8");
+  const initCommand = await readFile("plugins/devflow/commands/init.md", "utf8");
   const statusCommand = await readFile("plugins/devflow/commands/status.md", "utf8");
   const explainCommand = await readFile("plugins/devflow/commands/explain.md", "utf8");
   const reviewCommand = await readFile("plugins/devflow/commands/review.md", "utf8");
@@ -74,6 +76,12 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.match(startSkill, /devflow doctor --json/);
   assert.match(startSkill, /not dependent on any one profile/);
   assert.match(startSkill, /Get-Content -LiteralPath/);
+
+  assert.match(initSkill, /devflow init --preset/);
+  assert.match(initSkill, /thin wrapper/);
+  assert.match(initSkill, /solo-product/);
+  assert.match(initSkill, /research/);
+  assert.match(initSkill, /content-site/);
 
   assert.match(statusSkill, /devflow status --json/);
   assert.match(doctorSkill, /devflow doctor --json/);
@@ -122,6 +130,7 @@ test("repo-local Codex plugin exposes devflow start skill and marketplace entry"
   assert.match(finishSkill, /commit, PR, continue, or next-session prompt/);
   assert.match(startCommand, /devflow doctor --json/);
   assert.match(startCommand, /devflow status --json/);
+  assert.match(initCommand, /devflow init/);
   assert.match(statusCommand, /devflow status --json/);
   assert.match(explainCommand, /devflow explain/);
   assert.match(explainCommand, /plain-language/);

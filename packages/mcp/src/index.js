@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import {
   discoverClaudeSessions,
@@ -15,6 +16,7 @@ import {
 import {
   createDoctorSummary,
   createFinishSummary,
+  createInitPlan,
   createMistakeDetection,
   createMistakeListSummary,
   createNextPrompt,
@@ -54,6 +56,7 @@ import {
   recordWorkUnblockedEvent,
   runConfiguredGate,
   writeHarnessRepair,
+  writeInitPlan,
 } from "../../core/src/index.js";
 
 const tools = [
@@ -64,6 +67,10 @@ const tools = [
   {
     name: "devflow.health",
     description: "Inspect required scaffold files and configured verification gates.",
+  },
+  {
+    name: "devflow.init",
+    description: "Plan or write a preset-based Devflow project bootstrap.",
   },
   {
     name: "devflow.harness_inspect",
@@ -227,6 +234,10 @@ export async function callTool(name, args = {}) {
 
   if (name === "devflow.health") {
     return callHealth(args);
+  }
+
+  if (name === "devflow.init") {
+    return callInit(args);
   }
 
   if (name === "devflow.harness_inspect") {
@@ -410,6 +421,44 @@ async function callHealth(args) {
   const summary = await readProjectHealth(repoPath, config);
 
   return toolResult(summary, `devflow health: ${summary.status}`);
+}
+
+async function callInit(args) {
+  const repoPath = args.repo ?? process.cwd();
+  const packageJson = args.packageJson ?? await readInitPackageJson(repoPath);
+  const plan = createInitPlan({
+    repo: repoPath,
+    profile: args.profile,
+    preset: args.preset,
+    platform: args.platform,
+    targets: parseHarnessTargets(args.targets),
+    ci: args.ci,
+    review: args.review,
+    packageJson,
+    gates: args.gates,
+  });
+
+  if (!args.confirm) {
+    return toolResult(plan, "devflow init: plan");
+  }
+
+  const result = await writeInitPlan(repoPath, plan, {
+    confirmed: true,
+    repoVisible: Boolean(args.repoVisible ?? args["repo-visible"]),
+  });
+
+  return toolResult({ ...plan, result }, "devflow init: written");
+}
+
+async function readInitPackageJson(repoPath) {
+  try {
+    return JSON.parse(await readFile(join(repoPath, "package.json"), "utf8"));
+  } catch (error) {
+    if (error.code === "ENOENT" || error instanceof SyntaxError) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 async function callHarnessInspect(args) {

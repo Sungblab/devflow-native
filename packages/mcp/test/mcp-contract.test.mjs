@@ -14,6 +14,7 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.doctor"));
   assert.ok(names.includes("devflow.status"));
   assert.ok(names.includes("devflow.health"));
+  assert.ok(names.includes("devflow.init"));
   assert.ok(names.includes("devflow.harness_inspect"));
   assert.ok(names.includes("devflow.harness_plan"));
   assert.ok(names.includes("devflow.harness_health"));
@@ -49,6 +50,82 @@ test("MCP lists initial devflow tools", () => {
   assert.ok(names.includes("devflow.mistakes_list"));
   assert.ok(names.includes("devflow.mistakes_detect"));
   assert.ok(tools.every((tool) => tool.inputSchema?.type === "object"));
+});
+
+test("MCP init renders a preset bootstrap dry run without writing files", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-init-plan-"));
+  await writeFile(
+    join(repoPath, "package.json"),
+    `${JSON.stringify({
+      scripts: {
+        "docs:check": "node scripts/check-doc-links.mjs",
+        lint: "eslint .",
+        test: "node --test",
+        build: "vite build",
+      },
+    })}\n`,
+    "utf8",
+  );
+
+  const result = await callTool("devflow.init", {
+    repo: repoPath,
+    preset: "solo-product",
+    targets: "codex,claude",
+    ci: "github",
+    review: "required",
+  });
+
+  assert.equal(result.structuredContent.command, "init");
+  assert.equal(result.structuredContent.preset, "solo-product");
+  assert.deepEqual(result.structuredContent.targets, ["codex", "claude"]);
+  assert.equal(result.structuredContent.ci, "github");
+  assert.deepEqual(
+    JSON.parse(result.structuredContent.files.find((file) => file.path === ".devflow/config.json").content).gates.map(
+      (gate) => gate.command,
+    ),
+    ["npm run docs:check", "npm run lint", "npm test", "npm run build"],
+  );
+  assert.ok(result.structuredContent.files.some((file) => file.path === "plugins/devflow/skills/init/SKILL.md"));
+  assert.match(result.content[0].text, /devflow init: plan/);
+  await assert.rejects(readFile(join(repoPath, ".devflow", "config.json"), "utf8"), /ENOENT/);
+});
+
+test("MCP init writes confirmed preset bootstrap files", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-mcp-init-confirm-"));
+  await writeFile(join(repoPath, "AGENTS.md"), "# Existing Rules\n\nKeep this.\n", "utf8");
+  await writeFile(
+    join(repoPath, "package.json"),
+    `${JSON.stringify({
+      scripts: {
+        "docs:check": "node scripts/check-doc-links.mjs",
+        test: "node --test",
+      },
+    })}\n`,
+    "utf8",
+  );
+
+  const result = await callTool("devflow.init", {
+    repo: repoPath,
+    preset: "solo-product",
+    targets: ["codex", "claude"],
+    ci: "github",
+    review: "required",
+    confirm: true,
+  });
+  const config = JSON.parse(await readFile(join(repoPath, ".devflow", "config.json"), "utf8"));
+  const agents = await readFile(join(repoPath, "AGENTS.md"), "utf8");
+  const workflow = await readFile(join(repoPath, ".github", "workflows", "devflow.yml"), "utf8");
+  const initSkill = await readFile(join(repoPath, "plugins", "devflow", "skills", "init", "SKILL.md"), "utf8");
+
+  assert.equal(result.structuredContent.result.command, "init_result");
+  assert.ok(result.structuredContent.result.updated.some((file) => file.path === "AGENTS.md"));
+  assert.equal(config.preset, "solo-product");
+  assert.equal(config.review.required, true);
+  assert.match(agents, /Keep this/);
+  assert.match(agents, /## Devflow Native/);
+  assert.match(workflow, /npm run docs:check/);
+  assert.match(initSkill, /devflow init --preset/);
+  assert.match(result.content[0].text, /devflow init: written/);
 });
 
 test("MCP harness tools inspect, plan, and health-check native setup", async () => {

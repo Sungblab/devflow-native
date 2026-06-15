@@ -48,7 +48,7 @@ packages/cli
   devflow harness/init/status/split/finish/doctor/gates/session/review
 
 packages/mcp
-  devflow.status/devflow.split/devflow.finish/devflow.doctor/devflow.next_prompt/devflow.rewrite_prompt/devflow.sessions_codex/devflow.sessions_attach_plan/devflow.sessions_attach/devflow.sessions_list/devflow.sessions_note tools
+  devflow.init/status/split/finish/doctor/next_prompt/rewrite_prompt/session/work/review/gate/harness tools
 
 packages/integrations
   Claude Code plugin, Codex plugin and MCP config, editor hooks
@@ -152,6 +152,7 @@ Initial tools:
 
 ```text
 devflow.status
+devflow.init
 devflow.split
 devflow.finish
 devflow.doctor
@@ -293,6 +294,8 @@ docs/contributing/workflow.md
 scripts/project-health.*
 .devflow/config.json
 .devflow/state/
+.github/workflows/devflow.yml
+plugins/devflow/
 ```
 
 ## Boundaries

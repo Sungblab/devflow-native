@@ -508,6 +508,89 @@ test("init plan writes scaffold files only after confirmation", async () => {
   assert.match(gitignore, /^\.devflow\/next-prompt\.md$/m);
 });
 
+test("init plan bootstraps solo product presets with native harness and github ci", () => {
+  const repoPath = "C:\\repo";
+  const plan = createInitPlan({
+    repo: repoPath,
+    preset: "solo-product",
+    targets: ["codex", "claude"],
+    ci: "github",
+    review: "required",
+    platform: "windows-powershell",
+    packageJson: {
+      scripts: {
+        "docs:check": "node scripts/check-doc-links.mjs",
+        lint: "eslint .",
+        test: "node --test",
+        build: "vite build",
+      },
+    },
+  });
+  const config = JSON.parse(plan.files.find((file) => file.path === ".devflow/config.json").content);
+  const agents = plan.files.find((file) => file.path === "AGENTS.md").content;
+  const workflow = plan.files.find((file) => file.path === ".github/workflows/devflow.yml").content;
+
+  assert.equal(plan.preset, "solo-product");
+  assert.deepEqual(plan.targets, ["codex", "claude"]);
+  assert.equal(plan.ci, "github");
+  assert.equal(config.defaultProfile, "solo-product");
+  assert.equal(config.review.required, true);
+  assert.deepEqual(
+    config.gates.map((gate) => gate.id),
+    ["docs-check", "lint", "test", "build"],
+  );
+  assert.ok(plan.files.some((file) => file.path === "plugins/devflow/skills/init/SKILL.md"));
+  assert.ok(plan.files.some((file) => file.path === "plugins/devflow/commands/init.md"));
+  assert.ok(plan.files.some((file) => file.path === "plugins/devflow/.codex-plugin/plugin.json"));
+  assert.ok(plan.files.some((file) => file.path === "plugins/devflow/.claude-plugin/plugin.json"));
+  assert.match(agents, /Direct Main Exceptions/);
+  assert.match(workflow, /npm run docs:check/);
+  assert.match(workflow, /npm run build/);
+});
+
+test("init plan exposes research and content-site preset policy", () => {
+  const research = createInitPlan({
+    repo: "C:\\repo",
+    preset: "research",
+    packageJson: { scripts: { bench: "node bench/run.mjs", test: "node --test" } },
+  });
+  const contentSite = createInitPlan({
+    repo: "C:\\repo",
+    preset: "content-site",
+    packageJson: { scripts: { build: "astro build", lint: "eslint .", "links:check": "lychee docs" } },
+  });
+  const researchConfig = JSON.parse(research.files.find((file) => file.path === ".devflow/config.json").content);
+  const contentConfig = JSON.parse(contentSite.files.find((file) => file.path === ".devflow/config.json").content);
+
+  assert.equal(research.preset, "research");
+  assert.equal(contentSite.preset, "content-site");
+  assert.equal(researchConfig.review.required, false);
+  assert.ok(researchConfig.gates.some((gate) => gate.id === "bench"));
+  assert.equal(contentConfig.review.required, false);
+  assert.deepEqual(
+    contentConfig.gates.map((gate) => gate.id),
+    ["lint", "build", "links-check"],
+  );
+});
+
+test("init write augments existing AGENTS instructions instead of replacing them", async () => {
+  const repoPath = await mkdtemp(join(tmpdir(), "devflow-init-agents-"));
+  await writeFile(join(repoPath, "AGENTS.md"), "# Existing Agent Rules\n\nKeep custom project rules.\n", "utf8");
+  const plan = createInitPlan({
+    repo: repoPath,
+    preset: "solo-product",
+    review: "required",
+  });
+
+  const result = await writeInitPlan(repoPath, plan, { confirmed: true });
+  const agents = await readFile(join(repoPath, "AGENTS.md"), "utf8");
+
+  assert.ok(result.updated.some((file) => file.path === "AGENTS.md"));
+  assert.match(agents, /Keep custom project rules/);
+  assert.match(agents, /## Devflow Native/);
+  assert.match(agents, /Direct Main Exceptions/);
+});
+
 test("init plan preserves and deduplicates Devflow runtime gitignore entries", async () => {
   const repoPath = await mkdtemp(join(tmpdir(), "devflow-init-gitignore-"));
   await writeFile(join(repoPath, ".gitignore"), "node_modules\n.devflow/state/\n", "utf8");
@@ -601,6 +684,7 @@ test("harness inspect summary reports native target readiness and recommendation
       "plugins/devflow/hooks/tool-result.mjs",
       "plugins/devflow/hooks/stop.mjs",
       "plugins/devflow/.mcp.json",
+      "plugins/devflow/skills/init/SKILL.md",
       "plugins/devflow/skills/start/SKILL.md",
       "plugins/devflow/skills/status/SKILL.md",
       "plugins/devflow/skills/doctor/SKILL.md",
@@ -661,7 +745,7 @@ test("harness inspector reads repo files without writing", async () => {
   await writeFile(join(repoPath, "plugins", "devflow", "hooks", "stop.mjs"), "\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "skills", "start", "SKILL.md"), "# Start\n", "utf8");
   await writeFile(join(repoPath, "plugins", "devflow", "skills", "finish", "SKILL.md"), "# Finish\n", "utf8");
-  for (const skill of ["status", "doctor", "harness", "work", "gates", "review", "split", "next", "rewrite", "sessions", "explain"]) {
+  for (const skill of ["init", "status", "doctor", "harness", "work", "gates", "review", "split", "next", "rewrite", "sessions", "explain"]) {
     await mkdir(join(repoPath, "plugins", "devflow", "skills", skill), { recursive: true });
     await writeFile(join(repoPath, "plugins", "devflow", "skills", skill, "SKILL.md"), `# ${skill}\n`, "utf8");
   }

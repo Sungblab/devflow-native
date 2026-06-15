@@ -26,6 +26,7 @@ This is the documentation router for Devflow Native.
 | OpenCairn split example | [examples/opencairn-parallel-split.md](./examples/opencairn-parallel-split.md) |
 | Simple status output example | [examples/simple-status-output.md](./examples/simple-status-output.md) |
 | Session list filter examples | [examples/session-list-filters.md](./examples/session-list-filters.md) |
+| Repo-local Codex/Claude plugin init skill | [../plugins/devflow/skills/init/SKILL.md](../plugins/devflow/skills/init/SKILL.md) |
 | Repo-local Codex plugin start skill | [../plugins/devflow/skills/start/SKILL.md](../plugins/devflow/skills/start/SKILL.md) |
 | Repo-local Codex/Claude plugin status skill | [../plugins/devflow/skills/status/SKILL.md](../plugins/devflow/skills/status/SKILL.md) |
 | Repo-local Codex/Claude plugin doctor skill | [../plugins/devflow/skills/doctor/SKILL.md](../plugins/devflow/skills/doctor/SKILL.md) |

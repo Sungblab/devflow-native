@@ -9,6 +9,7 @@ JSON-RPC transport for MCP-capable hosts.
 - `devflow.doctor`
 - `devflow.status`
 - `devflow.health`
+- `devflow.init`
 - `devflow.harness_inspect`
 - `devflow.harness_plan`
 - `devflow.harness_health`
@@ -61,6 +62,15 @@ command from a plain status call.
 missing files, configured gates, invalid gate definitions, and recommendations
 without reading private agent history. A gate is invalid when its id is missing,
 its command is missing, or its id duplicates another configured gate.
+
+`devflow.init` exposes the same preset-aware project bootstrap as the CLI.
+Without `confirm: true`, it returns the scaffold plan only. With
+`confirm: true`, it writes `.devflow/config.json`, project docs,
+`AGENTS.md` creation or augmentation, optional GitHub Actions workflow, and
+optional canonical `plugins/devflow/*` native harness files. It accepts
+`preset`, `targets`, `ci`, `review`, `repoVisible`, and optional `gates` or
+`packageJson`; otherwise it reads `package.json` from the target repo to infer
+conservative gates.
 
 `devflow.harness_inspect`, `devflow.harness_plan`, `devflow.harness_health`,
 and `devflow.harness_smoke` expose the native harness read path to MCP-capable
