@@ -87,14 +87,21 @@ packages/cli/
 - `devflow mistakes list`
 - `devflow mistakes detect`
 
-`devflow init` currently renders a scaffold plan by default and writes the
-minimum project contract only when `--confirm` is provided. The first scaffold
-includes `.devflow/config.json`, `AGENTS.md`, a docs router, workflow notes,
-testing strategy, and an architecture map index. It also sets
-`review.required` to `true` and points workflow notes through `devflow review
-request`, `devflow review record`, and `devflow finish`. Existing files are
-skipped instead of overwritten. `devflow health` checks that the same scaffold
-files and at least one configured gate are present. `devflow harness inspect` reports
+`devflow init` renders a scaffold plan by default and writes only when
+`--confirm` is provided. It now supports `--preset solo-product|research|content-site`,
+`--targets codex,claude`, `--ci github`, and `--review required|optional`.
+The scaffold includes `.devflow/config.json`, `AGENTS.md`, a docs router,
+workflow notes, testing strategy, and an architecture map index. With native
+targets, it also installs canonical `plugins/devflow/*` files for Codex and
+Claude and ignores them as local harness files unless `--repo-visible` is
+passed. With `--ci github`, it creates `.github/workflows/devflow.yml` from
+inferred package scripts. `AGENTS.md` is appended with a Devflow section when
+it already exists instead of being replaced. `solo-product` defaults to
+`review.required: true`; `research` and `content-site` default to risk-based
+or direct-docs-main review policy unless `--review required` is passed. Existing
+non-AGENTS files are skipped instead of overwritten. `devflow health` checks
+that the same scaffold files and at least one configured gate are present.
+`devflow harness inspect` reports
 native Codex and Claude Code readiness, MCP config presence, instruction files,
 Superpowers signals, CodeGraph-style provider signals, configured gates, and
 the smallest install or repair recommendations without writing files.
@@ -148,10 +155,9 @@ filtered by `--agent <name>`, `--work <id>`, `--since <iso-date>`, sorted by
 unchanged. Use `--json` for the stable agent contract or omit it for a short
 terminal summary with active filters, attached session ids, changed-file counts,
 observed times, limit totals, sort choice, or manual note summaries. The text
-summary also surfaces a compact warning count when local state has warnings. `devflow
-sessions note` records manual or external session context as local state. The
-future `devflow init` command can reuse the same rendering and config
-infrastructure once the MVP loop is stable.
+summary also surfaces a compact warning count when local state has warnings.
+`devflow sessions note` records manual or external session context as local
+state.
 
 `devflow finish --json` returns a false-completion guard contract in addition
 to the original evidence summary. It reads configured gates from

@@ -118,6 +118,7 @@ test("stdio transport responds while stdin remains open", async () => {
 
   assert.equal(response.id, 4);
   assert.ok(response.result.tools.some((tool) => tool.name === "devflow.status"));
+  assert.ok(response.result.tools.some((tool) => tool.name === "devflow.init"));
   assert.equal(stderr, "");
 });
 

@@ -151,8 +151,19 @@ to publish the latest handoff.
 
 ## Harness Commands
 
-The harness command group is the install and repair surface for existing repos.
-It should adopt mature repositories instead of blindly scaffolding over them.
+`devflow init` is the bootstrap surface for new repositories or repositories
+that want a full Devflow project contract in one step. It can write preset
+policy, `.devflow/config.json`, `AGENTS.md`, docs, inferred gates, GitHub CI,
+and native Codex/Claude plugin files:
+
+```text
+devflow init --preset solo-product --targets codex,claude --ci github --review required
+devflow init --preset solo-product --targets codex,claude --ci github --review required --confirm
+```
+
+The harness command group remains the install and repair surface for existing
+repos. It should adopt mature repositories instead of blindly scaffolding over
+them.
 
 ```text
 devflow harness inspect --targets codex,claude,superpowers,codegraph
@@ -223,6 +234,13 @@ manifests, malformed MCP config, hook scripts that fail `harness health`, or
 missing `review.required` config that can be merged without dropping existing
 gates. Project instructions and gate definitions are reported but not rewritten
 automatically.
+
+The Devflow init skill is intentionally a thin wrapper over this CLI behavior.
+It chooses `solo-product`, `research`, or `content-site`, runs a dry-run
+`devflow init` command, explains the plan, runs `--confirm` only when requested,
+then verifies with `devflow health` and `devflow harness health` when native
+targets were installed. Policy and file generation stay in Devflow core so
+Codex, Claude, shell sessions, and future hosts reproduce the same bootstrap.
 
 ## Install UX
 

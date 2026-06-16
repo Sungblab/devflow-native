@@ -7,6 +7,13 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const DEVFLOW_RUNTIME_GITIGNORE_ENTRIES = [".devflow/state/", ".devflow/next-prompt.md"];
 const DEVFLOW_LOCAL_HARNESS_GITIGNORE_ENTRIES = ["plugins/devflow/"];
+const INIT_PRESETS = new Set(["standard", "solo-product", "research", "content-site"]);
+const INIT_PRESET_GATE_ORDER = {
+  standard: ["docs:check", "test"],
+  "solo-product": ["docs:check", "lint", "test", "build"],
+  research: ["bench", "benchmark", "eval", "test"],
+  "content-site": ["lint", "build", "links:check", "link:check", "test"],
+};
 
 export function createStatusSummary(input = {}) {
   const changedFiles = input.changedFiles ?? [];
@@ -496,8 +503,17 @@ export function createPromptRewrite(input = {}) {
 
 export function createInitPlan(input = {}) {
   const repoPath = input.repo ?? process.cwd();
-  const profile = input.profile ?? "standard";
+  const preset = normalizeInitPreset(input);
+  const profile = input.profile ?? preset;
   const platform = input.platform ?? "windows-powershell";
+  const targets = normalizeInitTargets(input.targets);
+  const ci = normalizeInitCi(input.ci);
+  const reviewRequired = normalizeInitReviewRequired(input.review, preset);
+  const gates = inferInitGates({
+    preset,
+    packageJson: input.packageJson,
+    gates: input.gates,
+  });
   const files = [
     {
       path: ".devflow/config.json",
@@ -507,10 +523,12 @@ export function createInitPlan(input = {}) {
           schemaVersion: 1,
           defaultProfile: profile,
           defaultPlatform: platform,
+          preset,
           review: {
-            required: true,
+            required: reviewRequired,
+            policy: initReviewPolicy(preset, reviewRequired),
           },
-          gates: [{ id: "docs-check", command: "npm run docs:check" }],
+          gates,
         },
         null,
         2,
@@ -536,30 +554,12 @@ export function createInitPlan(input = {}) {
     {
       path: "docs/contributing/workflow.md",
       kind: "workflow",
-      content: [
-        "# Development Workflow",
-        "",
-        "1. Run `devflow status` before starting.",
-        "2. Before finishing, run `devflow review request --work <id>` when review is required.",
-        "3. Record review evidence with `devflow review record --work <id>`.",
-        "4. Record completed work with `devflow finish`.",
-        "5. Include changed files, gates, risks, review evidence, and the next-session prompt.",
-        "",
-      ].join("\n"),
+      content: createInitWorkflowDoc({ preset, reviewRequired, gates }),
     },
     {
       path: "docs/testing/strategy.md",
       kind: "testing",
-      content: [
-        "# Testing Strategy",
-        "",
-        "Record every verification gate that proves a work item is ready.",
-        "",
-        "## Initial Gate",
-        "",
-        "- `npm run docs:check`",
-        "",
-      ].join("\n"),
+      content: createInitTestingDoc({ preset, gates }),
     },
     {
       path: "docs/architecture/maps/README.md",
@@ -574,21 +574,32 @@ export function createInitPlan(input = {}) {
     {
       path: "AGENTS.md",
       kind: "agent-guide",
-      content: [
-        "# Agent Guide",
-        "",
-        "Start with `devflow doctor` and `devflow status` before command-heavy work.",
-        "Before claiming completion, request and record required review evidence, then run `devflow finish`.",
-        "",
-      ].join("\n"),
+      content: createInitAgentGuide({ preset, reviewRequired, targets, ci }),
     },
   ];
+  if (ci === "github") {
+    files.push({
+      path: ".github/workflows/devflow.yml",
+      kind: "ci-workflow",
+      content: createInitGithubWorkflow({ gates }),
+    });
+  }
+  for (const file of createInitHarnessFiles(targets)) {
+    files.push(file);
+  }
 
   return {
     schemaVersion: "0.1",
     command: "init",
     repo: {
       absolutePath: repoPath,
+    },
+    preset,
+    targets,
+    ci,
+    review: {
+      required: reviewRequired,
+      policy: initReviewPolicy(preset, reviewRequired),
     },
     profile: {
       name: profile,
@@ -603,6 +614,245 @@ export function createInitPlan(input = {}) {
     })),
     warnings: [],
   };
+}
+
+function normalizeInitPreset(input = {}) {
+  const rawPreset = input.preset ?? input.profile ?? "standard";
+  const preset = String(rawPreset || "standard").trim() || "standard";
+  if (input.preset !== undefined && !INIT_PRESETS.has(preset)) {
+    throw new Error(`Unsupported devflow init preset: ${preset}`);
+  }
+  return preset;
+}
+
+function normalizeInitTargets(targets) {
+  if (targets === undefined) {
+    return [];
+  }
+  if (Array.isArray(targets) && targets.length === 0) {
+    return [];
+  }
+  return normalizeHarnessTargets(Array.isArray(targets) ? targets : [targets])
+    .filter((target) => target === "codex" || target === "claude");
+}
+
+function normalizeInitCi(ci) {
+  if (ci === undefined || ci === false) {
+    return "none";
+  }
+  const normalized = String(ci).trim().toLowerCase();
+  if (normalized === "none") {
+    return "none";
+  }
+  if (normalized !== "github") {
+    throw new Error(`Unsupported devflow init ci provider: ${ci}`);
+  }
+  return normalized;
+}
+
+function normalizeInitReviewRequired(review, preset) {
+  if (review === undefined) {
+    return preset === "standard" || preset === "solo-product";
+  }
+  if (review === true) {
+    return true;
+  }
+  if (review === false) {
+    return false;
+  }
+  const normalized = String(review).trim().toLowerCase();
+  if (normalized === "required") {
+    return true;
+  }
+  if (normalized === "optional" || normalized === "none") {
+    return false;
+  }
+  throw new Error(`Unsupported devflow init review mode: ${review}`);
+}
+
+function initReviewPolicy(preset, required) {
+  if (required) {
+    return "required";
+  }
+  if (preset === "research") {
+    return "risk-based";
+  }
+  if (preset === "content-site") {
+    return "direct-docs-main";
+  }
+  return "optional";
+}
+
+function inferInitGates(input = {}) {
+  if (Array.isArray(input.gates) && input.gates.length > 0) {
+    return normalizeGates(input.gates);
+  }
+
+  const scripts = extractPackageScripts(input.packageJson);
+  const order = INIT_PRESET_GATE_ORDER[input.preset] ?? INIT_PRESET_GATE_ORDER.standard;
+  const gates = [];
+  const seen = new Set();
+
+  for (const script of order) {
+    if (!scripts.has(script) || seen.has(script)) {
+      continue;
+    }
+    seen.add(script);
+    gates.push({
+      id: scriptToGateId(script),
+      command: script === "test" ? "npm test" : `npm run ${script}`,
+    });
+  }
+
+  if (gates.length > 0) {
+    return gates;
+  }
+
+  return [{ id: "docs-check", command: "npm run docs:check" }];
+}
+
+function extractPackageScripts(packageJson) {
+  if (!packageJson) {
+    return new Set();
+  }
+  let parsed = packageJson;
+  if (typeof packageJson === "string") {
+    try {
+      parsed = JSON.parse(packageJson);
+    } catch {
+      return new Set();
+    }
+  }
+  if (!isPlainObject(parsed?.scripts)) {
+    return new Set();
+  }
+  return new Set(Object.keys(parsed.scripts));
+}
+
+function scriptToGateId(script) {
+  return String(script).replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function createInitWorkflowDoc(input = {}) {
+  const directMainLine = input.preset === "solo-product"
+    ? "Small docs-only or private-note edits can go direct main; feature, CI, security, database, or public behavior changes use PR review."
+    : input.preset === "research"
+      ? "Small experiment-note updates can go direct main; benchmark, fixture, scoring, or published-result changes use PR review."
+      : input.preset === "content-site"
+        ? "Small typo or article edits can go direct main; design, feature, SEO, routing, or build changes use PR review."
+        : "Small private docs edits can go direct main; cross-boundary or public behavior changes use PR review.";
+  return [
+    "# Development Workflow",
+    "",
+    `Preset: ${input.preset ?? "standard"}.`,
+    "",
+    "1. Run `devflow status` before starting.",
+    "2. Before finishing, run `devflow review request --work <id>` when review is required.",
+    "3. Record review evidence with `devflow review record --work <id>`.",
+    "4. Record completed work with `devflow finish`.",
+    "5. Include changed files, gates, risks, review evidence, and the next-session prompt.",
+    "",
+    "## Direct Main Exceptions",
+    "",
+    directMainLine,
+    "",
+    "## Initial Gates",
+    "",
+    ...(input.gates ?? []).map((gate) => `- ${gate.id}: \`${gate.command}\``),
+    "",
+  ].join("\n");
+}
+
+function createInitTestingDoc(input = {}) {
+  return [
+    "# Testing Strategy",
+    "",
+    "Record every verification gate that proves a work item is ready.",
+    "",
+    `Preset: ${input.preset ?? "standard"}.`,
+    "",
+    "## Initial Gates",
+    "",
+    ...(input.gates ?? []).map((gate) => `- \`${gate.command}\``),
+    "",
+  ].join("\n");
+}
+
+function createInitAgentGuide(input = {}) {
+  const reviewLine = input.reviewRequired
+    ? "Before claiming completion, request and record required review evidence, then run `devflow finish`."
+    : "Before claiming completion, record relevant gates, risk notes, and the next-session prompt with `devflow finish`.";
+  const directMainLine = input.preset === "content-site"
+    ? "Small writing-only edits may go direct main; design, feature, SEO, routing, or build changes should use PR review."
+    : input.preset === "research"
+      ? "Small notes may go direct main; benchmark, fixture, scoring, or public-result changes should use PR review."
+      : "Small docs-only edits may go direct main; feature, CI, security, database, or public behavior changes should use PR review.";
+  return [
+    "# Agent Guide",
+    "",
+    "## Devflow Native",
+    "",
+    `Preset: ${input.preset ?? "standard"}.`,
+    "",
+    "Start with `devflow doctor` and `devflow status` before command-heavy work.",
+    reviewLine,
+    "Use `devflow init` as the repo bootstrap surface; skills should call Devflow commands and interpret the result.",
+    "",
+    "## Direct Main Exceptions",
+    "",
+    directMainLine,
+    "",
+    "## Installed Agent Targets",
+    "",
+    input.targets?.length ? `- ${input.targets.join(", ")}` : "- none",
+    "",
+    "## CI",
+    "",
+    `- ${input.ci ?? "none"}`,
+    "",
+  ].join("\n");
+}
+
+function createInitGithubWorkflow(input = {}) {
+  const gates = input.gates?.length ? input.gates : [{ id: "docs-check", command: "npm run docs:check" }];
+  return [
+    "name: Devflow",
+    "",
+    "on:",
+    "  pull_request:",
+    "  push:",
+    "    branches: [main]",
+    "",
+    "jobs:",
+    "  gates:",
+    "    runs-on: ubuntu-latest",
+    "    steps:",
+    "      - uses: actions/checkout@v4",
+    "      - uses: actions/setup-node@v4",
+    "        with:",
+    "          node-version: 20",
+    "      - run: npm install",
+    ...gates.flatMap((gate) => [
+      `      - name: ${gate.id}`,
+      `        run: ${gate.command}`,
+    ]),
+    "",
+  ].join("\n");
+}
+
+function createInitHarnessFiles(targets) {
+  const paths = new Set();
+  for (const target of targets ?? []) {
+    const summary = createHarnessTargetSummary(target, []);
+    for (const check of summary.checks ?? []) {
+      if (check.path !== "AGENTS.md") {
+        paths.add(check.path);
+      }
+    }
+  }
+  return [...paths]
+    .map((path) => ({ path, kind: "harness", content: harnessFileContent(path) }))
+    .filter((file) => file.content !== null);
 }
 
 export function createHealthSummary(input = {}) {
@@ -1348,12 +1598,23 @@ export async function writeInitPlan(repoPath, plan, options = {}) {
   }
 
   const written = [];
+  const updated = [];
   const skipped = [];
 
   for (const file of plan.files ?? []) {
     const target = join(repoPath, file.path);
     try {
-      await readFile(target, "utf8");
+      const existing = await readFile(target, "utf8");
+      if (file.path === "AGENTS.md") {
+        const appended = appendDevflowAgentGuide(existing, file.content);
+        if (appended !== existing) {
+          await writeFile(target, appended, "utf8");
+          updated.push({ path: file.path, action: "append-devflow-section" });
+        } else {
+          skipped.push({ path: file.path, reason: "already-exists" });
+        }
+        continue;
+      }
       skipped.push({ path: file.path, reason: "already-exists" });
       continue;
     } catch (error) {
@@ -1367,7 +1628,10 @@ export async function writeInitPlan(repoPath, plan, options = {}) {
     written.push({ path: file.path });
   }
 
-  const gitignore = await ensureDevflowRuntimeGitignore(repoPath);
+  const hasLocalHarness = (plan.files ?? []).some((file) => file.path?.startsWith("plugins/devflow/"));
+  const gitignore = await ensureDevflowRuntimeGitignore(repoPath, {
+    includeLocalHarness: hasLocalHarness && !isRepoVisibleHarnessInstall(options),
+  });
   if (gitignore.status === "written") {
     written.push({ path: ".gitignore" });
   } else {
@@ -1378,8 +1642,20 @@ export async function writeInitPlan(repoPath, plan, options = {}) {
     schemaVersion: "0.1",
     command: "init_result",
     written,
+    updated,
     skipped,
   };
+}
+
+function appendDevflowAgentGuide(existing, generated) {
+  if (existing.includes("## Devflow Native")) {
+    return existing;
+  }
+  const markerIndex = generated.indexOf("## Devflow Native");
+  const section = markerIndex >= 0 ? generated.slice(markerIndex).trim() : generated.trim();
+  const normalized = existing.length > 0 && !existing.endsWith("\n") ? `${existing}\n` : existing;
+  const spacer = normalized.endsWith("\n\n") ? "" : "\n";
+  return `${normalized}${spacer}${section}\n`;
 }
 
 export async function ensureDevflowRuntimeGitignore(repoPath, options = {}) {
@@ -2742,6 +3018,7 @@ function harnessProbePaths() {
     "plugins/devflow/hooks/tool-result.mjs",
     "plugins/devflow/hooks/stop.mjs",
     "plugins/devflow/.mcp.json",
+    "plugins/devflow/skills/init/SKILL.md",
     "plugins/devflow/skills/start/SKILL.md",
     "plugins/devflow/skills/status/SKILL.md",
     "plugins/devflow/skills/doctor/SKILL.md",
@@ -2755,6 +3032,7 @@ function harnessProbePaths() {
     "plugins/devflow/skills/sessions/SKILL.md",
     "plugins/devflow/skills/explain/SKILL.md",
     "plugins/devflow/skills/finish/SKILL.md",
+    "plugins/devflow/commands/init.md",
     "plugins/devflow/commands/start.md",
     "plugins/devflow/commands/status.md",
     "plugins/devflow/commands/doctor.md",
@@ -2804,6 +3082,7 @@ function createHarnessTargetSummary(target, existingPaths) {
       { path: "plugins/devflow/hooks/tool-result.mjs", kind: "hook-script" },
       { path: "plugins/devflow/hooks/stop.mjs", kind: "hook-script" },
       { path: "plugins/devflow/.mcp.json", kind: "mcp-config" },
+      { path: "plugins/devflow/skills/init/SKILL.md", kind: "skill" },
       { path: "plugins/devflow/skills/start/SKILL.md", kind: "skill" },
       { path: "plugins/devflow/skills/status/SKILL.md", kind: "skill" },
       { path: "plugins/devflow/skills/doctor/SKILL.md", kind: "skill" },
@@ -2831,6 +3110,7 @@ function createHarnessTargetSummary(target, existingPaths) {
       { path: "plugins/devflow/hooks/tool-result.mjs", kind: "hook-script" },
       { path: "plugins/devflow/hooks/stop.mjs", kind: "hook-script" },
       { path: "plugins/devflow/.mcp.json", kind: "mcp-config" },
+      { path: "plugins/devflow/skills/init/SKILL.md", kind: "skill" },
       { path: "plugins/devflow/skills/start/SKILL.md", kind: "skill" },
       { path: "plugins/devflow/skills/status/SKILL.md", kind: "skill" },
       { path: "plugins/devflow/skills/doctor/SKILL.md", kind: "skill" },
@@ -2845,6 +3125,7 @@ function createHarnessTargetSummary(target, existingPaths) {
       { path: "plugins/devflow/skills/explain/SKILL.md", kind: "skill" },
       { path: "plugins/devflow/skills/finish/SKILL.md", kind: "skill" },
       { path: "plugins/devflow/commands/start.md", kind: "command" },
+      { path: "plugins/devflow/commands/init.md", kind: "command" },
       { path: "plugins/devflow/commands/status.md", kind: "command" },
       { path: "plugins/devflow/commands/doctor.md", kind: "command" },
       { path: "plugins/devflow/commands/harness.md", kind: "command" },
@@ -3203,6 +3484,11 @@ function harnessFileContent(path) {
     "plugins/devflow/hooks/pre-tool-use.mjs": createHarnessPreToolUseScript(),
     "plugins/devflow/hooks/tool-result.mjs": createHarnessToolResultScript(),
     "plugins/devflow/hooks/stop.mjs": createHarnessStopScript(),
+    "plugins/devflow/skills/init/SKILL.md": createHarnessSkillFile(
+      "init",
+      "Initialize or bootstrap a repository with Devflow Native presets.",
+      "This skill is a thin wrapper over `devflow init --preset <solo-product|research|content-site> --targets <targets> --ci <provider> --review <required|optional>`. Choose the preset, run a dry-run JSON plan first, explain writes and inferred gates, then run `--confirm` only when requested.",
+    ),
     "plugins/devflow/skills/start/SKILL.md": [
       "---",
       "name: devflow-start",
@@ -3282,6 +3568,11 @@ function harnessFileContent(path) {
       "If `devflow finish` returns `review.nextAction.command` or `review.nextAction.recordCommand`, follow both commands before claiming completion.",
       "",
     ].join("\n"),
+    "plugins/devflow/commands/init.md": createHarnessCommandFile(
+      "Initialize or bootstrap a repository with Devflow Native presets.",
+      "[--preset solo-product|research|content-site] [--targets codex,claude] [--ci github] [--review required] [--confirm]",
+      "Run `devflow init $ARGUMENTS --json`; when no arguments are provided, choose a preset first, dry-run before confirmed writes, then verify with `devflow health --json` and native `devflow harness health --targets codex,claude --json` when targets were installed.",
+    ),
     "plugins/devflow/commands/start.md": createHarnessCommandFile(
       "Load Devflow start context before command-heavy work.",
       "[--work <id>] [--agent <name>]",

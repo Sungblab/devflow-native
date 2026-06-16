@@ -76,14 +76,20 @@ Exit criteria:
 - a new repo can get a complete development workflow scaffold
 - health status can detect missing docs, workflow files, and malformed gates
 
-Current implementation note: `devflow init` has a first confirmation-gated
-scaffold path. The CLI renders a scaffold plan by default and writes
-`.devflow/config.json`, `AGENTS.md`, docs router, workflow, testing strategy,
-and architecture map index only with `--confirm`, skipping existing files
-instead of overwriting them. `devflow health` and MCP `devflow.health` can now
-report missing scaffold files, configured gates, and invalid gate definitions
-with missing ids, missing commands, or duplicate ids. Template customization
-remains later Phase 2 work.
+Current implementation note: `devflow init` has a confirmation-gated bootstrap
+path. The CLI renders a scaffold plan by default and writes only with
+`--confirm`. It supports `--preset solo-product|research|content-site`,
+`--targets codex,claude`, `--ci github`, and `--review required|optional`.
+It writes `.devflow/config.json`, `AGENTS.md`, docs router, workflow, testing
+strategy, architecture map index, optional GitHub Actions workflow, and optional
+canonical `plugins/devflow/*` native harness files. Existing non-AGENTS files
+are skipped; existing `AGENTS.md` files are augmented with a Devflow section.
+Gate definitions are inferred from conservative package scripts such as
+`docs:check`, `lint`, `test`, `build`, `bench`, and `links:check`. `devflow
+health` and MCP `devflow.health` can now report missing scaffold files,
+configured gates, and invalid gate definitions with missing ids, missing
+commands, or duplicate ids. Richer custom template packs remain later Phase 2
+work.
 
 Current implementation note: `devflow harness inspect --targets
 codex,claude,superpowers,codegraph` reports native plugin readiness, MCP launch
@@ -193,6 +199,7 @@ Build:
 - local Devflow MCP server
 - `devflow.doctor` MCP tool
 - `devflow.status` MCP tool
+- `devflow.init` MCP tool
 - `devflow.harness_inspect` MCP tool
 - `devflow.harness_plan` MCP tool
 - `devflow.harness_health` MCP tool
@@ -234,7 +241,7 @@ Exit criteria:
 - plugin/slash-command UX calls the same core contracts as the CLI
 
 Current implementation note: `packages/mcp` has testable handler functions for
-`devflow.status`, `devflow.harness_inspect`, `devflow.harness_plan`,
+`devflow.status`, `devflow.init`, `devflow.harness_inspect`, `devflow.harness_plan`,
 `devflow.harness_health`, `devflow.harness_smoke`, confirmed-write
 `devflow.harness_repair`, `devflow.split`, `devflow.explain_term`,
 `devflow.doctor`, `devflow.finish`, `devflow.record_gate`, `devflow.gates_run`,

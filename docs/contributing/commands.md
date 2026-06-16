@@ -70,10 +70,11 @@ This loop should answer three daily questions before larger surfaces exist:
 
 `devflow split` now has a CLI renderer over the core split contract, can read
 project-specific split tasks, and can register generated sessions into the
-local work item registry. `devflow init` now has a first guarded scaffold implementation:
+local work item registry. `devflow init` now has a preset-aware bootstrap path:
 without `--confirm`, it renders the plan only; with `--confirm`, it writes the
-minimum project contract, sets `review.required` to `true`, and skips existing
-files instead of overwriting them. `devflow health` checks those scaffold files
+project contract, optional native harness files, optional GitHub CI, inferred
+gates, and review policy while skipping existing non-AGENTS files and
+augmenting existing `AGENTS.md`. `devflow health` checks those scaffold files
 and configured gates.
 `devflow gates run` executes one configured gate and records pass/fail
 evidence.
@@ -179,32 +180,45 @@ output for a chosen platform.
 
 Creates or updates a project contract.
 
-The MVP implementation is confirmation-gated:
+The implementation is confirmation-gated and preset-aware:
 
 ```powershell
 devflow init --repo C:\path\to\repo --profile standard --platform windows-powershell --json
 devflow init --repo C:\path\to\repo --profile standard --platform windows-powershell --confirm --json
+devflow init --preset solo-product --targets codex,claude --ci github --review required --json
+devflow init --preset solo-product --targets codex,claude --ci github --review required --confirm --json
 ```
 
 Inputs:
 
 - profile
+- preset: `solo-product`, `research`, or `content-site`
 - platform
+- native targets: `codex`, `claude`
+- CI provider: `github`
+- review mode: `required` or `optional`
 - docs template
-- gate profile
+- inferred gate profile from package scripts
 
 Outputs:
 
 - `AGENTS.md`
+- `AGENTS.md` Devflow section append when the file already exists
 - docs router
 - architecture maps
 - testing strategy
 - `.devflow/config.json`
+- optional `plugins/devflow/*` native harness files
+- optional `.github/workflows/devflow.yml`
 
-The generated `.devflow/config.json` enables `review.required` by default so a
-newly initialized repo gets the strict review loop immediately. The generated
-workflow notes point agents through `devflow review request`, `devflow review
-record`, and then `devflow finish`.
+The generated `.devflow/config.json` records the chosen preset, platform,
+review policy, and inferred gates. `solo-product` enables
+`review.required` by default. `research` and `content-site` default to
+risk-based or direct-docs-main policy unless `--review required` is passed.
+The generated workflow notes point agents through `devflow review request`,
+`devflow review record`, and then `devflow finish` when review is required.
+Native harness files use the same canonical contents as `devflow harness
+install`, and the generated init skill is a thin wrapper over the CLI.
 
 Safety rules:
 
