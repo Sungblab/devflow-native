@@ -10,8 +10,8 @@ permissions:
   id-token: write
 
 jobs:
-  publish:
-    name: Publish npm package and GitHub Release
+  release:
+    name: Verify npm package and publish GitHub Release
     runs-on: ubuntu-latest
     environment: npm-publish
     steps:
@@ -42,16 +42,19 @@ jobs:
       - name: Run publish checks
         run: npm run publish:check
 
-      - name: Publish to npm
+      - name: Verify npm package is published
         shell: bash
         run: |
           if NPM_CONFIG_USERCONFIG=/dev/null npm view "devflow-native@${PACKAGE_VERSION}" version --registry https://registry.npmjs.org >/dev/null 2>&1; then
-            echo "devflow-native@${PACKAGE_VERSION} is already published; skipping npm publish."
+            echo "devflow-native@${PACKAGE_VERSION} is published."
+            echo "NPM_PACKAGE_PUBLISHED=true" >> "$GITHUB_ENV"
           else
-            npm publish --access public
+            echo "::notice title=Manual npm publish required::devflow-native@${PACKAGE_VERSION} is not published yet. Run npm publish --access public from an authenticated local shell, then rerun this workflow."
+            echo "NPM_PACKAGE_PUBLISHED=false" >> "$GITHUB_ENV"
           fi
 
       - name: Create or update GitHub Release
+        if: env.NPM_PACKAGE_PUBLISHED == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
